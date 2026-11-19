@@ -1,0 +1,23 @@
+# Outillage Flutter reproductible (ADR-007). Le backend local est lancé par `supabase start`.
+# Usage : docker compose run --rm flutter <commande>
+services:
+  flutter:
+    image: ghcr.io/cirruslabs/flutter:3.41.7
+    working_dir: /app
+    volumes:
+      - .:/app
+      # Caches propres au conteneur : ceux de l'hôte Windows contiennent des chemins incompatibles.
+      - dart_tool:/app/.dart_tool
+      - build:/app/build
+      - pub_cache:/root/.pub-cache
+      - gradle_cache:/root/.gradle
+      # Conserve la clé de signature de debug : sans elle, chaque build est signé
+      # différemment et Android refuse de mettre à jour l'app installée.
+      - android_home:/root/.android
+
+volumes:
+  android_home:
+  dart_tool:
+  build:
+  pub_cache:
+  gradle_cache:

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Couleurs du brand kit utilisées avant le démarrage de Flutter (icône, écran de lancement). -->
+<resources>
+    <color name="brand_deep_green">#174D43</color>
+    <color name="brand_ivory">#F7F4EA</color>
+    <color name="brand_dark_surface">#111A17</color>
+</resources>

@@ -1,0 +1,141 @@
+{
+  "@@locale": "fr",
+  "appTitle": "Journal de Langue",
+  "appTagline": "Écris chaque jour. Progresse à chaque phrase.",
+  "tabJournal": "Journal",
+  "tabHistory": "Historique",
+  "tabReview": "Réviser",
+  "tabProgress": "Progrès",
+  "tabProfile": "Profil",
+  "journalEmpty": "Aujourd'hui, j'ai appris…",
+  "historyEmpty": "Ton premier journal apparaîtra ici.",
+  "reviewEmpty": "Corrige un journal pour obtenir des mots à réviser.",
+  "progressEmpty": "Ta série commencera avec ton premier journal.",
+  "aboutApp": "À propos",
+  "actionContinue": "Continuer",
+  "actionCancel": "Annuler",
+  "actionRetry": "Réessayer",
+  "authSignInTitle": "Connexion",
+  "authSignUpTitle": "Créer un compte",
+  "authEmailLabel": "E-mail",
+  "authPasswordLabel": "Mot de passe",
+  "authNewPasswordLabel": "Nouveau mot de passe",
+  "authSignInAction": "Se connecter",
+  "authSignUpAction": "Créer mon compte",
+  "authNoAccount": "Pas encore de compte ? Créer un compte",
+  "authHaveAccount": "Déjà un compte ? Se connecter",
+  "authForgotPassword": "Mot de passe oublié ?",
+  "authEmailInvalid": "Saisis une adresse e-mail valide.",
+  "authPasswordTooShort": "8 caractères minimum.",
+  "authCodeInvalid": "Saisis les 6 chiffres du code.",
+  "verifyTitle": "Confirme ton e-mail",
+  "verifyInstructions": "Saisis le code à 6 chiffres envoyé à {email}.",
+  "@verifyInstructions": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "verifyCodeLabel": "Code",
+  "verifyAction": "Confirmer",
+  "verifyResend": "Renvoyer le code",
+  "verifyResent": "Nouveau code envoyé.",
+  "verifyEnterCode": "Saisir le code",
+  "forgotTitle": "Mot de passe oublié",
+  "forgotInstructions": "Saisis ton e-mail pour recevoir un code.",
+  "forgotSendCode": "Recevoir un code",
+  "forgotCodeSent": "Si un compte existe pour {email}, un code vient d'être envoyé.",
+  "@forgotCodeSent": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "forgotResetAction": "Changer mon mot de passe",
+  "onboardingTitle": "Quelle langue veux-tu apprendre ?",
+  "languageEnglish": "Anglais",
+  "languageSpanish": "Espagnol",
+  "languageGerman": "Allemand",
+  "languageFrench": "Français",
+  "profileLanguage": "Langue apprise",
+  "profileChangeLanguageNote": "Avec l'offre gratuite, tu pratiques une langue à la fois. Ton historique est conservé.",
+  "profileSignOut": "Se déconnecter",
+  "profileDeleteAccount": "Supprimer mon compte",
+  "deleteAccountTitle": "Supprimer ton compte ?",
+  "deleteAccountBody": "Tes journaux, corrections et mots à réviser seront effacés.",
+  "deleteAccountFinalTitle": "Suppression définitive",
+  "deleteAccountFinalBody": "Cette action ne peut pas être annulée.",
+  "deleteAccountConfirm": "Supprimer définitivement",
+  "startupError": "Impossible de charger ton compte.",
+  "errorNetwork": "Connexion impossible. Vérifie ta connexion internet.",
+  "errorInvalidCredentials": "E-mail ou mot de passe incorrect.",
+  "errorEmailNotConfirmed": "Ton e-mail n'est pas encore confirmé.",
+  "errorWeakPassword": "Ce mot de passe est trop faible. Choisis-en un plus long.",
+  "errorInvalidCode": "Code incorrect ou expiré.",
+  "errorRateLimited": "Trop de tentatives. Réessaie dans quelques minutes.",
+  "errorUnexpected": "Une erreur est survenue. Réessaie.",
+  "journalSentenceCount": "{count} / {max} phrases",
+  "@journalSentenceCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "journalTooManySentences": "Ton offre permet {max} phrases par journal.",
+  "@journalTooManySentences": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "journalSubmit": "Corriger",
+  "journalSubmitting": "Claude lit ton journal…",
+  "journalDailyLimitReached": "Tu as utilisé ta correction gratuite du jour. Reviens demain pour continuer ta série.",
+  "journalViewCorrection": "Voir la correction",
+  "correctionTitle": "Correction",
+  "correctionYourVersion": "Ta version",
+  "correctionCorrectedVersion": "Version corrigée",
+  "correctionPointsTitle": "{count, plural, =1{1 point à retenir} other{{count} points à retenir}}",
+  "@correctionPointsTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "correctionNoMistakes": "Aucune faute : bravo !",
+  "correctionItemLabel": "{original} devient {corrected}",
+  "@correctionItemLabel": {
+    "placeholders": {
+      "original": {
+        "type": "String"
+      },
+      "corrected": {
+        "type": "String"
+      }
+    }
+  },
+  "correctionDone": "Terminer",
+  "errorAiUnavailable": "La correction n'a pas abouti. Ta correction du jour n'a pas été utilisée.",
+  "errorTooManySentences": "Ce journal dépasse le nombre de phrases de ton offre.",
+  "errorInvalidText": "Ce texte est vide ou trop long.",
+  "errorLanguageNotActive": "Cette langue n'est pas active sur ton compte.",
+  "errorInvalidDate": "La date de ton téléphone semble incorrecte.",
+  "errorWrongLanguage": "Ce texte ne semble pas écrit dans la langue que tu apprends.",
+  "errorContentRefused": "Ce texte ne peut pas être corrigé.",
+  "journalTitle": "Mon journal",
+  "journalGreeting": "Bonjour !",
+  "journalHeadline": "Une phrase à la fois.",
+  "journalIntro": "Prends quelques minutes pour écrire dans la langue que tu apprends.",
+  "journalCardTitle": "Mon journal du jour",
+  "journalCorrectedTitle": "Ton journal est corrigé.",
+  "journalCorrectedBody": "Découvre ce que tu as appris.",
+  "correctionEncouragement": "Chaque erreur est une occasion d'apprendre."
+}

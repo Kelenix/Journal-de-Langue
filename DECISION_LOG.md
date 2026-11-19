@@ -1,0 +1,309 @@
+# Journal de décisions (DECISION_LOG)
+
+> ADR léger. Chaque décision structurante prise par Claude **en autonomie** y est consignée :
+> contexte → décision → alternatives écartées → conséquences. Le plus récent en haut.
+
+---
+
+## ADR-019 — Application du brand kit
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Utilisateur (brand kit fourni) ; arbitrages d'application par Claude
+- **Contexte** : L'utilisateur a fourni le brand kit en cours de projet : palette vert
+  profond / ivoire / corail, DM Sans et Inter, cartes arrondies, ton bienveillant, concept
+  de logo (carnet ouvert + bulle de dialogue). La direction visuelle choisie par Claude en
+  phase 3 est remplacée.
+- **Décision** :
+  - Palette, formes, typographie et microtextes du brand kit appliqués dans
+    `lib/core/theme/` et `lib/l10n/` (`docs/design/design-system.md`).
+  - Polices téléchargées depuis github.com/google/fonts avec l'accord de l'utilisateur et
+    **embarquées** (pas de chargement à l'exécution, donc aucun appel à Google depuis
+    l'appareil).
+  - Accessibilité : le corail n'est jamais utilisé pour du texte (contraste 1,8 sur
+    ivoire) ; le petit texte secondaire utilise un gris plus foncé que celui du brand kit
+    (5,1 au lieu de 3,5).
+  - Icône et logo : première exécution du concept, générée par
+    `tool/generate_app_icons.py` ; à remplacer par le logo définitif.
+  - Mode sombre dérivé de la palette, le brand kit n'en définissant pas.
+- **Écarts assumés** : l'aperçu du brand kit mentionne « 10 phrases maximum » ; la limite
+  validée reste 7 (ADR-008). Pas d'écran d'accueil intermédiaire avec « Écrire mon
+  journal » : l'onglet Journal ouvre la rédaction.
+- **Impact** : métier (image de marque), technique (réversible : tout est centralisé).
+
+## ADR-018 — Tests de la correction avec un faux serveur Claude
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôle : qa-engineer)
+- **Contexte** : Aucune clé API Anthropic n'est disponible ; même avec une clé, des tests
+  automatiques ne doivent ni coûter de l'argent ni dépendre des réponses du modèle.
+- **Décision** : Les tests d'intégration lancent un faux serveur de l'API Anthropic ; la
+  fonction `correct-entry` y est dirigée par `ANTHROPIC_BASE_URL` (variable lue nativement
+  par le SDK), définie dans `supabase/functions/.env.test`. Le reste de la chaîne est réel :
+  app, fonction, SDK Anthropic, base.
+- **Alternatives écartées** : Appeler la vraie API dans les tests (coût, non déterminisme) ;
+  ne tester que des doublures (la chaîne réelle ne serait pas exercée).
+- **Conséquences** : La chaîne technique est vérifiée, **pas la qualité des corrections**
+  du vrai modèle : à relire à la main dès qu'une clé existe (tâche manuelle).
+- **Impact** : technique (réversible).
+
+## ADR-017 — Brouillon du journal dans le stockage sécurisé
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôle : security-engineer)
+- **Contexte** : Le brouillon doit survivre hors ligne et à la fermeture de l'app. Un
+  journal est un texte personnel.
+- **Décision** : Brouillon chiffré dans le Keystore / Keychain (`flutter_secure_storage`,
+  déjà présent), un par compte et par langue ; effacé après correction et à la
+  suppression du compte.
+- **Alternatives écartées** : `shared_preferences` (texte personnel en clair, dépendance
+  de plus) ; base locale (disproportionné pour un seul texte).
+- **Impact** : sécurité, technique (réversible).
+
+## ADR-016 — Jour civil fourni par l'appareil et contrôlé par le serveur
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôle : database-architect)
+- **Contexte** : « Un journal par jour » s'entend dans le fuseau de l'utilisateur. Stocker
+  son fuseau demandait un plugin, une colonne et une écriture de plus.
+- **Décision** : L'app envoie sa date locale. Le serveur l'accepte si elle est
+  « aujourd'hui » dans au moins un fuseau (UTC-12 à UTC+14) et si elle ne recule pas par
+  rapport au dernier journal.
+- **Alternatives écartées** : Fuseau stocké dans le profil (même possibilité de triche,
+  plus de code) ; jour UTC (le quota se renouvellerait à 1 h ou 2 h du matin en France).
+- **Conséquences** : Un tricheur gagne au plus une correction d'avance, une seule fois.
+- **Impact** : métier (faible), technique (réversible).
+
+## ADR-015 — Modèle Claude de la correction de base : Haiku 5.5
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté (à confirmer après relecture de vraies corrections)
+- **Décideur** : Claude (rôle : backend-engineer), d'après l'INTAKE §8.3
+- **Contexte** : L'INTAKE demande « un modèle Claude moins coûteux pour les corrections
+  simples » ; le coût IA est le premier risque du projet (R1).
+- **Décision** : `claude-haiku-5-5`, effort `low`, sortie structurée validée par schéma,
+  SDK officiel `@anthropic-ai/sdk`. Tarif relevé le 2026-11-03 : 0,10 $ par million de
+  tokens en entrée, 0,50 $ en sortie. Le modèle se change sans redéployer l'app, par la
+  variable `CORRECTION_MODEL` de la fonction.
+- **Alternatives écartées** : Sonnet 5.5 (2 $ / 10 $) ou Opus 5.5 (4 $ / 20 $) : 20 à 40
+  fois plus chers, réservés aux corrections avancées Premium (Inc-5) si la qualité le
+  justifie.
+- **Conséquences** : Ordre de grandeur d'une correction gratuite (7 phrases) : quelques
+  centièmes de centime. Chaque appel est journalisé dans `ai_usage` pour le vérifier.
+  Les refus de sécurité de ce modèle n'ont pas de repli automatique : la fonction les
+  traite comme « texte non corrigeable », sans débit.
+- **Impact** : financier (réversible par configuration).
+
+## ADR-014 — Connexion Google et Apple livrée séparément (Inc-1b)
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôle : project-director)
+- **Contexte** : US-01 prévoit e-mail, Google et Apple. Les deux derniers exigent des
+  identifiants OAuth et un compte Apple Developer qui n'existent pas encore ; le code ne
+  pourrait pas être vérifié.
+- **Décision** : Inc-1 livre le compte par e-mail, testé de bout en bout. Google et Apple
+  forment Inc-1b, démarré quand les identifiants sont fournis.
+- **Alternatives écartées** : Écrire le code sans pouvoir le lancer (contraire à « vérifier
+  avant de dire fait »).
+- **Conséquences** : US-01 partiellement couverte tant qu'Inc-1b n'est pas livré. Apple
+  exige la connexion Apple dès que Google est proposé sur iOS : les deux sortent ensemble.
+- **Impact** : fonctionnel (réversible).
+
+## ADR-013 — Écritures de compte par fonctions SQL, sans Edge Function
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôle : backend-engineer)
+- **Contexte** : Activer une langue et supprimer son compte sont des écritures sous contrôle
+  serveur. Le plan initial citait une Edge Function `delete-account`.
+- **Décision** : Deux fonctions Postgres `security definer` appelées par RPC :
+  `activate_language` et `delete_account`. La langue de l'interface n'est pas stockée : elle
+  suit le téléphone et sera transmise à chaque demande de correction.
+- **Alternatives écartées** : Edge Function (un service de plus pour une seule requête SQL).
+- **Conséquences** : Moins de code et de déploiement ; règles testées en SQL (pgTAP).
+  Les Edge Functions arrivent en Inc-2, où elles sont nécessaires (clé Anthropic).
+- **Impact** : technique (réversible).
+
+## ADR-012 — E-mail confirmé par code à 6 chiffres
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôle : security-engineer)
+- **Contexte** : Le compte obligatoire (ADR-004) sert à protéger le quota gratuit, donc le
+  coût IA. Sans vérification de l'e-mail, créer des comptes jetables reste trivial.
+- **Décision** : L'inscription envoie un code à 6 chiffres, valable 15 minutes, à saisir
+  dans l'app. Le mot de passe oublié suit le même mécanisme. Pas de lien à ouvrir.
+- **Alternatives écartées** : Pas de confirmation (quota contournable) ; lien de
+  confirmation (exige des liens profonds et casse si l'e-mail est lu sur un autre appareil) ;
+  connexion sans mot de passe (s'écarte de l'hypothèse H1 validée).
+- **Conséquences** : Un écran de plus à l'inscription. **En production il faut un service
+  SMTP** (l'envoi intégré de Supabase est limité à quelques e-mails par heure) et reporter
+  les modèles d'e-mail : tâches manuelles ajoutées.
+- **Impact** : métier (friction à l'inscription), financier (service SMTP, offres gratuites
+  existantes), sécurité.
+
+## ADR-011 — Ports Supabase locaux sur la plage 5532x
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôle : backend-engineer)
+- **Contexte** : Un autre projet Supabase local (`flirt-coach`) occupe déjà la plage par
+  défaut 5432x sur ce poste ; `supabase start` échouait.
+- **Décision** : Ce projet utilise 55320 à 55329 (`supabase/config.toml`). L'autre projet
+  n'a pas été touché.
+- **Alternatives écartées** : Arrêter l'autre projet (il n'appartient pas à ce travail).
+- **Conséquences** : Les deux projets tournent en parallèle ; l'URL locale est
+  `http://10.0.2.2:55321` depuis l'émulateur.
+- **Impact** : technique (réversible).
+
+## ADR-010 — Identifiant d'application `com.journaldelangue.journal_de_langue`
+
+- **Date** : 2026-11-19
+- **Statut** : Proposé (à confirmer avant la première publication)
+- **Décideur** : Claude (rôle : mobile-architect)
+- **Contexte** : `flutter create` exige une organisation ; aucune n'est donnée dans l'INTAKE.
+- **Décision** : Organisation `com.journaldelangue`.
+- **Conséquences** : Modifiable librement tant que l'app n'est pas publiée ; **définitif**
+  après la première mise en ligne sur un store. Confirmation inscrite dans
+  `docs/manual-tasks.md`.
+- **Impact** : irréversible après publication.
+
+## ADR-009 — Riverpod sans génération de code
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôle : state-management-engineer)
+- **Contexte** : Le skill recommande `@riverpod` (code généré). Avec Flutter 3.41.7,
+  `riverpod_generator` ne se résout pas : il exige `meta ^1.18` alors que le SDK fige
+  `meta 1.17.0`.
+- **Décision** : Riverpod 3 avec providers déclarés à la main (`Provider`,
+  `NotifierProvider`, `AsyncNotifierProvider`).
+- **Alternatives écartées** : Rétrograder Riverpod pour retrouver un générateur compatible
+  (versions anciennes) ; changer de canal Flutter (moins stable).
+- **Conséquences** : Un peu plus de déclarations manuelles ; une chaîne de génération en
+  moins. Réversible quand le SDK Flutter aura évolué.
+- **Impact** : technique (réversible).
+
+## ADR-008 — Réponses aux questions de cadrage Q1 à Q5
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Utilisateur (« Oui, lance » : plan validé avec les valeurs par défaut)
+- **Décision** :
+  - Q1 : achats intégrés via **RevenueCat**.
+  - Q2 : Pack Examinateur = **une simulation complète par achat**, rachetable (consommable).
+  - Q3 : **Android d'abord**, code compatible iOS, build iOS ensuite par CI macOS.
+  - Q4 : gratuit = **7 phrases**, **4 jours** d'historique ; essai **3 jours** ; prix à
+    saisir dans les stores : 2,99 €/semaine, 4,99 €/mois, 29,99 €/an, sans publicité 2,99 €.
+  - Q5 : Claude rédige des modèles de politique de confidentialité et de conditions
+    d'utilisation ; validation juridique et identité de l'éditeur à la charge de l'utilisateur.
+  - Hypothèses H1 à H10 de `docs/PLAN.md` acceptées.
+- **Impact** : métier, financier, légal.
+
+## ADR-007 — Développement sous Docker
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Utilisateur (exigence) ; périmètre précisé par Claude (interprétation)
+- **Contexte** : L'utilisateur demande que le développement utilise Docker.
+- **Décision** : Backend Supabase local dans Docker (`supabase start`) ; conteneur Flutter à
+  version figée pour analyse, tests et build Android, réutilisé en CI. Exécution de l'app
+  sur émulateur ou appareil depuis l'hôte.
+- **Alternatives écartées** : Tout sur l'hôte (non conforme à la demande) ; émulateur
+  Android dans un conteneur (pas d'accélération matérielle ni d'USB fiables sous Windows).
+- **Conséquences** : Environnement reproductible ; Docker Desktop doit être démarré ; le
+  build iOS reste hors Docker (macOS requis).
+- **Impact** : technique (réversible).
+
+## ADR-006 — Suivi des indicateurs sans SDK d'analytics
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôle : project-director)
+- **Contexte** : Le §9 demande conversion, rétention à 7 jours, coût API par utilisateur,
+  annulations, avis négatifs.
+- **Décision** : Coût API et rétention par requêtes SQL sur Supabase (table d'usage IA) ;
+  conversion et annulations dans le tableau de bord des achats ; avis dans les consoles stores.
+- **Alternatives écartées** : Firebase Analytics, PostHog (SDK et consentement
+  supplémentaires pour des chiffres déjà disponibles).
+- **Conséquences** : Moins de données personnelles collectées ; pas d'entonnoir d'écrans détaillé.
+- **Impact** : technique (réversible).
+
+## ADR-005 — Voix et PDF sur l'appareil
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôle : mobile-architect)
+- **Contexte** : Dictée, lecture à voix haute et export PDF sont des fonctions Premium.
+- **Décision** : Reconnaissance et synthèse vocales du système ; PDF généré localement.
+- **Alternatives écartées** : Services vocaux cloud (coût récurrent par utilisation).
+- **Conséquences** : Coût nul ; qualité dépendante de l'appareil ; permission micro demandée
+  seulement à la première dictée.
+- **Impact** : technique (réversible).
+
+## ADR-004 — Compte obligatoire, pas de mode invité
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté (hypothèse H1, contestable)
+- **Décideur** : Claude (rôle : security-engineer)
+- **Contexte** : Le quota gratuit déclenche un coût IA à chaque correction.
+- **Décision** : Inscription requise (e-mail + mot de passe, Google, Apple).
+- **Alternatives écartées** : Session anonyme (quota contournable par réinstallation).
+- **Conséquences** : Une étape de plus avant le premier journal ; Apple Sign-In obligatoire
+  dès lors que Google est proposé sur iOS.
+- **Impact** : métier (modéré), sécurité.
+
+## ADR-003 — Quotas et droits appliqués côté serveur
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôle : security-engineer)
+- **Contexte** : Limites gratuites, crédits consommables, accès temporaires, droits Premium.
+- **Décision** : Toute vérification et tout débit se font dans Postgres et les Edge
+  Functions ; le débit de crédit est atomique ; l'app ne fait qu'afficher l'état.
+- **Alternatives écartées** : Contrôle dans l'app (falsifiable).
+- **Conséquences** : Pas de correction hors ligne ; cohérence garantie entre appareils.
+- **Impact** : sécurité, financier (protège le coût IA).
+
+## ADR-002 — Appels à Claude via Edge Functions Supabase
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôle : backend-engineer)
+- **Contexte** : La clé Anthropic ne doit jamais se trouver dans le binaire.
+- **Décision** : Edge Functions authentifiées détenant la clé ; sortie structurée validée ;
+  modèle économique pour la correction de base, modèle supérieur pour les fonctions
+  Premium ; journalisation des tokens par utilisateur.
+- **Alternatives écartées** : Appel direct depuis l'app (clé exposée) ; serveur dédié
+  (infrastructure supplémentaire sans besoin).
+- **Conséquences** : Coût mesurable par utilisateur (§8.3) ; latence d'un saut réseau en plus.
+- **Impact** : sécurité, financier.
+
+## ADR-001 — Gestion d'état : Riverpod
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôle : mobile-architect / state-management-engineer)
+- **Contexte** : Besoin d'une gestion d'état Flutter testable, sûre et scalable.
+- **Décision** : Utiliser **Riverpod** (stack par défaut du skill).
+- **Alternatives écartées** : Bloc (plus verbeux), Provider seul, setState, GetX.
+- **Conséquences** : État découplé de `BuildContext`, providers testables.
+- **Impact** : technique (réversible avec effort).
+
+---
+
+## ADR-000 — Modèle d'enregistrement
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Contexte** : Établit le format des décisions.
+- **Décision** : Utiliser ce gabarit pour toute décision ayant un impact sur l'architecture,
+  les dépendances, la sécurité, le coût ou le comportement produit.
+- **Conséquences** : Traçabilité complète ; l'utilisateur peut revenir sur tout choix.
+
+> Décisions en attente de l'utilisateur (non consignées tant qu'elles ne sont pas tranchées) :
+> Q1 à Q5 de `docs/PLAN.md`.

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fond affiché pendant le démarrage de l'app, aux couleurs du thème Flutter. -->
+<resources>
+    <color name="launch_background">@color/brand_ivory</color>
+</resources>
