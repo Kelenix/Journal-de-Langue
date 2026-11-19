@@ -14,9 +14,13 @@ services:
       # Conserve la clé de signature de debug : sans elle, chaque build est signé
       # différemment et Android refuse de mettre à jour l'app installée.
       - android_home:/root/.android
+      # Conserve les composants que Gradle ajoute au SDK Android (NDK d'environ 1 Go, CMake,
+      # build-tools) : sans ce volume, ils sont retéléchargés à chaque build.
+      - android_sdk:/opt/android-sdk-linux
 
 volumes:
   android_home:
+  android_sdk:
   dart_tool:
   build:
   pub_cache:

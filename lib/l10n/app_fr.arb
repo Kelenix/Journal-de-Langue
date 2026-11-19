@@ -137,5 +137,40 @@
   "journalCardTitle": "Mon journal du jour",
   "journalCorrectedTitle": "Ton journal est corrigé.",
   "journalCorrectedBody": "Découvre ce que tu as appris.",
-  "correctionEncouragement": "Chaque erreur est une occasion d'apprendre."
+  "correctionEncouragement": "Chaque erreur est une occasion d'apprendre.",
+  "correctionVocabularyTitle": "À réviser",
+  "reviewLearnedCount": "{count, plural, =0{Aucun mot appris pour l'instant} =1{1 mot appris} other{{count} mots appris}}",
+  "@reviewLearnedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewMarkLearned": "Marquer comme appris",
+  "reviewMarkToReview": "Remettre à réviser",
+  "historyMistakes": "{count, plural, =0{Aucune faute} =1{1 faute} other{{count} fautes}}",
+  "@historyMistakes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "historyLocked": "{count, plural, =1{1 journal plus ancien est conservé.} other{{count} journaux plus anciens sont conservés.}}",
+  "@historyLocked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "historyWindow": "Ton offre affiche les {days} derniers jours.",
+  "@historyWindow": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  }
 }

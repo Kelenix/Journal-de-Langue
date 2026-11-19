@@ -23,6 +23,9 @@
 | Injection d'instructions | Le journal est transmis à Claude dans un champ JSON, présenté comme texte à corriger ; la réponse est contrainte par un schéma ; le modèle n'a ni outil ni accès aux données | Tests d'intégration (forme de la requête) |
 | Données envoyées à l'IA | Le texte du journal et la langue ; aucun identifiant, e-mail ou métadonnée | Revue de code |
 | Journaux techniques du serveur | Messages d'erreur seulement, jamais le texte d'un journal | Revue de code |
+| Historique limité | Fenêtre de 4 jours appliquée par la RLS : un journal plus ancien est illisible même par un client modifié | `supabase test db` |
+| Vocabulaire | Lecture de ses mots uniquement ; seule la colonne « appris » est modifiable ; limite de 5 par jour appliquée en base | `supabase test db`, tests d'intégration |
+| Données de démonstration | `supabase/seed.sql` n'est joué qu'en local ; son compte de test n'existe pas en production | Revue |
 | Brouillon | Chiffré sur l'appareil (Keystore / Keychain) ; effacé après correction et à la suppression du compte | Tests d'écran |
 
 ## Permissions demandées

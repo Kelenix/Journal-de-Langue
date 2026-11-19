@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../languages/domain/learning_language.dart';
+import '../../vocabulary/domain/vocabulary_item.dart';
 
 part 'journal_entry.freezed.dart';
 part 'journal_entry.g.dart';
@@ -42,6 +43,11 @@ abstract class JournalEntry with _$JournalEntry {
     required String originalText,
     required String correctedText,
     @JsonKey(name: 'correction_items') required List<CorrectionItem> items,
+
+    /// Mots à réviser tirés de ce journal.
+    @JsonKey(name: 'vocabulary_items')
+    @Default(<VocabularyItem>[])
+    List<VocabularyItem> vocabulary,
   }) = _JournalEntry;
 
   factory JournalEntry.fromJson(Map<String, dynamic> json) =>
@@ -60,4 +66,20 @@ abstract class JournalAllowance with _$JournalAllowance {
 
   factory JournalAllowance.fromJson(Map<String, dynamic> json) =>
       _$JournalAllowanceFromJson(json);
+}
+
+/// Étendue de l'historique lisible avec l'offre de l'utilisateur.
+@freezed
+abstract class HistoryOverview with _$HistoryOverview {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory HistoryOverview({
+    /// Nombre de jours d'historique lisibles.
+    required int historyDays,
+
+    /// Journaux plus anciens, conservés mais non lisibles avec cette offre.
+    required int lockedEntries,
+  }) = _HistoryOverview;
+
+  factory HistoryOverview.fromJson(Map<String, dynamic> json) =>
+      _$HistoryOverviewFromJson(json);
 }

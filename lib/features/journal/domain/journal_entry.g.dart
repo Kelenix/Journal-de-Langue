@@ -42,6 +42,11 @@ _JournalEntry _$JournalEntryFromJson(Map<String, dynamic> json) =>
       items: (json['correction_items'] as List<dynamic>)
           .map((e) => CorrectionItem.fromJson(e as Map<String, dynamic>))
           .toList(),
+      vocabulary:
+          (json['vocabulary_items'] as List<dynamic>?)
+              ?.map((e) => VocabularyItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <VocabularyItem>[],
     );
 
 Map<String, dynamic> _$JournalEntryToJson(_JournalEntry instance) =>
@@ -52,6 +57,7 @@ Map<String, dynamic> _$JournalEntryToJson(_JournalEntry instance) =>
       'original_text': instance.originalText,
       'corrected_text': instance.correctedText,
       'correction_items': instance.items,
+      'vocabulary_items': instance.vocabulary,
     };
 
 const _$LearningLanguageEnumMap = {
@@ -73,4 +79,16 @@ Map<String, dynamic> _$JournalAllowanceToJson(_JournalAllowance instance) =>
       'max_sentences': instance.maxSentences,
       'max_characters': instance.maxCharacters,
       'corrections_left': instance.correctionsLeft,
+    };
+
+_HistoryOverview _$HistoryOverviewFromJson(Map<String, dynamic> json) =>
+    _HistoryOverview(
+      historyDays: (json['history_days'] as num).toInt(),
+      lockedEntries: (json['locked_entries'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$HistoryOverviewToJson(_HistoryOverview instance) =>
+    <String, dynamic>{
+      'history_days': instance.historyDays,
+      'locked_entries': instance.lockedEntries,
     };

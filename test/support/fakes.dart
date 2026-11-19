@@ -7,6 +7,8 @@ import 'package:journal_de_langue/features/journal/domain/journal_entry.dart';
 import 'package:journal_de_langue/features/journal/domain/journal_repository.dart';
 import 'package:journal_de_langue/features/languages/domain/language_repository.dart';
 import 'package:journal_de_langue/features/languages/domain/learning_language.dart';
+import 'package:journal_de_langue/features/vocabulary/domain/vocabulary_item.dart';
+import 'package:journal_de_langue/features/vocabulary/domain/vocabulary_repository.dart';
 
 /// Compte en mémoire. [failure], s'il est défini, fait échouer chaque appel.
 class FakeAuthRepository implements AuthRepository {
@@ -103,14 +105,24 @@ class FakeLanguageRepository implements LanguageRepository {
   }
 }
 
-/// Journal corrigé d'exemple : une faute, « has » → « have ».
+/// Mot à réviser d'exemple.
+const sampleWord = VocabularyItem(
+  id: 'word-1',
+  term: 'a cat',
+  translation: 'un chat',
+  example: 'The cat is sleeping.',
+);
+
+/// Journal corrigé d'exemple : une faute, « has » → « have », et un mot à
+/// réviser.
 JournalEntry sampleEntry({
   String id = 'entry-1',
   String originalText = 'I has a cat.',
+  DateTime? entryDate,
 }) => JournalEntry(
   id: id,
   language: LearningLanguage.english,
-  entryDate: DateTime(2026, 11, 19),
+  entryDate: entryDate ?? DateTime(2026, 11, 19),
   originalText: originalText,
   correctedText: 'I have a cat.',
   items: const [
@@ -121,16 +133,25 @@ JournalEntry sampleEntry({
       explanation: 'With "I", use "have".',
     ),
   ],
+  vocabulary: const [sampleWord],
 );
 
 /// Journaux en mémoire, avec la règle gratuite : une correction par jour.
 class FakeJournalRepository implements JournalRepository {
+  FakeJournalRepository({this.vocabulary});
+
+  /// Reçoit le vocabulaire des journaux corrigés, comme le fait le serveur.
+  final FakeVocabularyRepository? vocabulary;
+
   final submissions = <({String text, String idempotencyKey})>[];
   final _entries = <String, JournalEntry>{};
   JournalEntry? _entryOfDay;
   int correctionsLeft = 1;
 
-  /// Fait échouer le chargement de la situation du jour.
+  /// Journaux plus anciens que ce que l'offre permet de relire.
+  int lockedEntries = 0;
+
+  /// Fait échouer le chargement de la situation du jour et de l'historique.
   Failure? loadFailure;
 
   /// Fait échouer l'envoi d'un journal.
@@ -138,10 +159,25 @@ class FakeJournalRepository implements JournalRepository {
 
   /// Place un journal déjà corrigé aujourd'hui.
   void seedCorrectedToday(JournalEntry entry) {
-    _entries[entry.id] = entry;
+    seedPast(entry);
     _entryOfDay = entry;
     correctionsLeft = 0;
   }
+
+  /// Place un journal corrigé un jour précédent.
+  void seedPast(JournalEntry entry) => _entries[entry.id] = entry;
+
+  @override
+  Future<List<JournalEntry>> recentEntries() async {
+    final failure = loadFailure;
+    if (failure != null) throw failure;
+    return _entries.values.toList()
+      ..sort((a, b) => b.entryDate.compareTo(a.entryDate));
+  }
+
+  @override
+  Future<HistoryOverview> historyOverview() async =>
+      HistoryOverview(historyDays: 4, lockedEntries: lockedEntries);
 
   @override
   Future<JournalAllowance> allowance(DateTime day) async {
@@ -177,7 +213,34 @@ class FakeJournalRepository implements JournalRepository {
       originalText: text,
     );
     seedCorrectedToday(entry);
+    vocabulary?.items.insertAll(0, entry.vocabulary);
     return entry;
+  }
+}
+
+/// Vocabulaire en mémoire.
+class FakeVocabularyRepository implements VocabularyRepository {
+  FakeVocabularyRepository([List<VocabularyItem> items = const []])
+    : items = [...items];
+
+  final List<VocabularyItem> items;
+  Failure? failure;
+
+  @override
+  Future<List<VocabularyItem>> list(LearningLanguage language) async {
+    final failure = this.failure;
+    if (failure != null) throw failure;
+    return List.unmodifiable(items);
+  }
+
+  @override
+  Future<void> setLearned(String itemId, {required bool isLearned}) async {
+    final failure = this.failure;
+    if (failure != null) throw failure;
+    final index = items.indexWhere((item) => item.id == itemId);
+    items[index] = items[index].copyWith(
+      learnedAt: isLearned ? DateTime(2026, 11, 19) : null,
+    );
   }
 }
 

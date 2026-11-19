@@ -8,10 +8,14 @@
 - **Phase courante** : 4 — Implémentation
 - **Dernière mise à jour** : 2026-11-19
 - **Santé** : 🟡 attention (build Android impossible sur l'hôte, contourné par Docker)
-- **Prochaine action** : Inc-3 — vocabulaire du jour et historique.
+- **Prochaine action** : Inc-4 — abonnements Premium et essai. Bloqué pour un achat
+  réel tant que les comptes Google Play et RevenueCat n'existent pas ; la partie
+  indépendante des stores (droits côté serveur, écran d'offres) peut avancer.
   En parallèle, côté utilisateur : fournir une clé API Anthropic pour relire de vraies
   corrections (voir `docs/manual-tasks.md`).
-- **Mode** : PLAN_PUIS_VALIDATION (plan validé le 2026-11-19, valeurs par défaut retenues)
+- **Mode** : PLAN_PUIS_VALIDATION (plan validé le 2026-11-19, valeurs par défaut retenues).
+  Règle fixée par l'utilisateur le 2026-11-19 : **demander son feu vert avant de commencer
+  chaque nouvel incrément** ; vérifications complètes, build Docker compris, à chaque incrément.
 
 ## Avancement par phase
 
@@ -21,7 +25,7 @@
 | 1 — Définition produit      | ✅ fait | `docs/product/user-stories.md` (24 stories) |
 | 2 — Planification           | ✅ fait | `docs/risks.md`, backlog ci-dessous |
 | 3 — Architecture & design   | ✅ fait | `docs/architecture.md`, `system-design.md`, `data-model.md`, `design/` |
-| 4 — Implémentation          | 🔄 en cours | Inc-0, Inc-1 et Inc-2 livrés |
+| 4 — Implémentation          | 🔄 en cours | Inc-0 à Inc-3 livrés : jalon J1 (boucle gratuite complète) |
 | 5 — Qualité & performance   | ⬜ à faire | QA et revue faites à chaque incrément |
 | 6 — Publication (stores)    | ⬜ à faire | |
 | 7 — Documentation           | ⬜ à faire | README et docs tenus au fil de l'eau |
@@ -37,7 +41,7 @@
 | Inc-1 | Compte par e-mail, choix de la langue, suppression de compte | US-01 (e-mail), US-02, US-03 | ✅ | |
 | Inc-1b | Connexion Google et Apple | US-01 (reste) | ⏸️ | attend les identifiants OAuth (ADR-014) |
 | Inc-2 | Journal et correction de base | US-05, 06, 07 | ✅ | chaîne technique vérifiée avec un faux Claude ; qualité des vraies corrections à relire (ADR-018) |
-| Inc-3 | Vocabulaire et historique | US-08, 09 | ⬜ | |
+| Inc-3 | Vocabulaire et historique | US-08, 09 | ✅ | historique complet et filtre par langue avec Premium (Inc-4) |
 | Inc-4 | Abonnements Premium et essai | US-04, 10, 11 | ⬜ | attend comptes stores et RevenueCat |
 | Inc-5 | IA Premium | US-12, 13, 14 | ⬜ | |
 | Inc-6 | Voix, statistiques, PDF, multi-langues | US-04, 15, 16, 17 | ⬜ | |
@@ -50,23 +54,31 @@
 | Vérification | Résultat |
 |--------------|----------|
 | `flutter analyze` (hôte et conteneur) | 0 problème |
-| `flutter test` (hôte et conteneur) | 67 tests verts |
-| `flutter test test_integration` (Supabase local, fonction de correction, faux Claude) | 17 tests verts |
-| `supabase test db` (RLS et fonctions) | 48 tests verts |
+| `flutter test` (hôte et conteneur) | 79 tests verts |
+| `flutter test test_integration --concurrency=1` (Supabase local, fonction de correction, faux Claude) | 21 tests verts |
+| `supabase test db` (RLS et fonctions) | 68 tests verts |
+| `supabase db reset` (migrations rejouées depuis zéro, données de démonstration) | réussi |
 | Build APK de debug | réussi dans Docker ; **échoue sur l'hôte** (JDK) |
-| Parcours sur émulateur Android (APK de debug) | inscription, code reçu par e-mail local, choix de la langue, session conservée après redémarrage, profil : OK. Suppression de compte non rejouée à la main sur l'émulateur (couverte par les tests d'intégration). |
+| Parcours sur émulateur Android (APK de debug) | inscription avec code reçu par e-mail local, choix de la langue, session et brouillon conservés après mise à jour de l'app, compteur de phrases, envoi sans clé Claude (message « rien n'est débité »), déconnexion : OK. Non rejoués à la main : suppression de compte, correction réussie (couverts par les tests). |
+| Rendu du brand kit sur émulateur | écran Journal, écran de connexion, icône dans le tiroir d'applications : conformes. Mode sombre et iOS non contrôlés visuellement. |
+| Écrans Réviser et Historique (Inc-3) sur émulateur | **en attente** : l'APK n'est pas encore construit. Le build retéléchargeait le NDK Android (environ 1 Go) à chaque fois ; il est maintenant conservé dans le volume Docker `android_sdk`, mais le premier téléchargement est en cours sur une connexion lente. |
 
-Un compte de test `emu-…@example.test` reste connecté sur l'émulateur et dans la base locale.
+Un compte de test `emu-…@example.test` existe dans la base locale ; l'émulateur est resté sur l'écran de connexion.
 
 ## Reste à faire sur les incréments livrés
 
 - Liens vers les textes légaux sur l'écran d'inscription : avec les textes, en Inc-9.
+- Journaux plus anciens que 4 jours : signalés comme conservés, sans proposition
+  d'achat tant que Premium n'existe pas (Inc-4).
+- Historique et vocabulaire chargés en une fois : la pagination viendra avec
+  l'historique complet de Premium (Inc-4).
 - Message de limite du jour : texte neutre pour l'instant (« reviens demain ») ; la
   proposition Premium, les crédits et la vidéo s'y ajoutent en Inc-4, 7 et 8.
 - L'écran Journal ne se rafraîchit pas seul au passage de minuit : rouvrir l'app.
 - Correction avec le vrai modèle : jamais exécutée (pas de clé API).
 - CI GitHub Actions : à exécuter une première fois après création du dépôt distant.
-- Icône iOS et visuels des stores à produire depuis `design/app_icon_1024.png` (Inc-9).
+- Icône iOS générée mais jamais vue sur un appareil ; visuels des stores à produire depuis
+  `design/app_icon_1024.png` (Inc-9).
 - Mode sombre dérivé du brand kit : à faire valider.
 - Rien n'est commité : le dépôt Git local est initialisé, sans commit.
 
@@ -95,6 +107,10 @@ Un compte de test `emu-…@example.test` reste connecté sur l'émulateur et dan
 
 ## Journal de session (résumé court, le plus récent en haut)
 
+- 2026-11-19 — Inc-3 livré : Claude propose jusqu'à 5 mots par correction (limite de 5
+  par jour et dédoublonnage en base), écran Réviser avec mots appris, écran Historique
+  limité aux 4 derniers jours par la RLS, journaux anciens conservés. Données de
+  démonstration locales (`supabase/seed.sql`). ADR-020.
 - 2026-11-19 — Brand kit fourni par l'utilisateur et appliqué : palette, DM Sans et Inter
   embarquées, cartes et boutons, microtextes, écran Journal, icône Android et logo
   générés par script. ADR-019. Reste : icône iOS et visuels des stores (Inc-9), logo

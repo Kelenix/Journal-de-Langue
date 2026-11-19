@@ -78,7 +78,8 @@ texte. Il est dessiné une seule fois, dans `tool/generate_app_icons.py`, qui pr
 | `android/…/mipmap-*/ic_launcher_foreground.png` | Icône adaptative Android 8+ (fond `#174D43`), aussi utilisée en silhouette monochrome |
 | `android/…/mipmap-*/ic_launcher.png` | Icône pleine, Android 7 |
 | `assets/brand/logo.png` | Logo affiché dans l'app (écran de connexion) |
-| `design/app_icon_1024.png` | Original 1024 × 1024 pour les stores et l'icône iOS (Inc-9) |
+| `ios/…/AppIcon.appiconset/*.png` | Icône iOS, toutes tailles (non contrôlée sur appareil) |
+| `design/app_icon_1024.png` | Original 1024 × 1024 pour les fiches des stores (Inc-9) |
 
 C'est une première exécution du concept du brand kit, à remplacer par le logo définitif
 quand il existera : il suffira de changer le dessin dans le script.

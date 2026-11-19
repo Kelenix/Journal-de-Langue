@@ -1,6 +1,6 @@
 // Tests d'intégration des repositories de compte contre le Supabase local (Docker).
 // Prérequis : `supabase start` et `env/dev.json`.
-// Lancer : flutter test test_integration
+// Lancer : flutter test test_integration --concurrency=1
 import 'package:flutter_test/flutter_test.dart';
 import 'package:journal_de_langue/core/errors/failure.dart';
 import 'package:journal_de_langue/features/auth/data/supabase_auth_repository.dart';

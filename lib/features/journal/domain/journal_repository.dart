@@ -11,6 +11,12 @@ abstract interface class JournalRepository {
 
   Future<JournalEntry> entry(String id);
 
+  /// Journaux corrigés que l'offre permet de relire, du plus récent au plus
+  /// ancien.
+  Future<List<JournalEntry>> recentEntries();
+
+  Future<HistoryOverview> historyOverview();
+
   /// Fait corriger [text]. Rejouer le même [idempotencyKey] après une coupure
   /// rend la correction déjà faite sans consommer une seconde fois le quota.
   Future<JournalEntry> submit({

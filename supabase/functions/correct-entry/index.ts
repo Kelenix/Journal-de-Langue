@@ -69,10 +69,13 @@ async function loadEntry(entryId: string): Promise<unknown> {
     .from("journal_entries")
     .select(
       "id, language, entry_date, original_text, corrected_text, " +
-        "correction_items(position, original, corrected, category, explanation)",
+        "correction_items(position, original, corrected, category, explanation), " +
+        "vocabulary_items(id, term, translation, example, learned_at)",
     )
     .eq("id", entryId)
     .order("position", { referencedTable: "correction_items" })
+    .order("created_at", { referencedTable: "vocabulary_items" })
+    .order("term", { referencedTable: "vocabulary_items" })
     .single();
   if (error) throw error;
   return data;
@@ -150,6 +153,7 @@ Deno.serve(async (request) => {
     p_entry_id: entryId,
     p_corrected_text: result.correctedText,
     p_items: result.items,
+    p_vocabulary: result.vocabulary,
     p_model: result.usage.model,
     p_input_tokens: result.usage.inputTokens,
     p_output_tokens: result.usage.outputTokens,

@@ -89,5 +89,12 @@
   "journalCardTitle": "Today's journal",
   "journalCorrectedTitle": "Your journal is corrected.",
   "journalCorrectedBody": "See what you've learned.",
-  "correctionEncouragement": "Every mistake is a chance to learn."
+  "correctionEncouragement": "Every mistake is a chance to learn.",
+  "correctionVocabularyTitle": "To review",
+  "reviewLearnedCount": "{count, plural, =0{No words learned yet} =1{1 word learned} other{{count} words learned}}",
+  "reviewMarkLearned": "Mark as learned",
+  "reviewMarkToReview": "Move back to review",
+  "historyMistakes": "{count, plural, =0{No mistakes} =1{1 mistake} other{{count} mistakes}}",
+  "historyLocked": "{count, plural, =1{1 older journal entry is kept.} other{{count} older journal entries are kept.}}",
+  "historyWindow": "Your plan shows the last {days} days."
 }

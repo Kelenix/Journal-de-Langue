@@ -2,7 +2,7 @@
 // `correct-entry` → base, avec un faux serveur Claude.
 // Prérequis : `supabase start`, `env/dev.json`, puis dans un autre terminal
 //   supabase functions serve --env-file supabase/functions/.env.test
-// Lancer : flutter test test_integration
+// Lancer : flutter test test_integration --concurrency=1
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -33,6 +33,18 @@ const _goodCorrection = <String, Object?>{
       'corrected': 'is',
       'category': 'conjugation',
       'explanation': 'Avec « she », le verbe « to be » se conjugue « is ».',
+    },
+  ],
+  'vocabulary': [
+    {
+      'term': 'a cat',
+      'translation': 'un chat',
+      'example': 'The cat is sleeping on the sofa.',
+    },
+    {
+      'term': 'nice',
+      'translation': 'gentil',
+      'example': 'My neighbours are very nice.',
     },
   ],
 };
@@ -195,6 +207,7 @@ void main() {
         'is_target_language': false,
         'corrected_text': '',
         'items': <Object?>[],
+        'vocabulary': <Object?>[],
       };
 
       await expectLater(

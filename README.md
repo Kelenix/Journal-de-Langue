@@ -31,6 +31,9 @@ Cahier des charges : `INTAKE.md` · Plan : `docs/PLAN.md` · Avancement : `PROJE
    flutter run --dart-define-from-file=env/dev.json
    ```
 
+Un compte de démonstration avec des journaux corrigés et du vocabulaire est créé par
+`supabase db reset` : ses identifiants sont en tête de `supabase/seed.sql`.
+
 Pour obtenir de vraies corrections, copier `supabase/functions/.env.example` vers
 `supabase/functions/.env`, y mettre la clé API Anthropic, puis relancer `supabase stop`
 et `supabase start`. Sans clé, l'app affiche « La correction n'a pas abouti » et ne
@@ -52,6 +55,9 @@ docker compose run --rm flutter sh -c "flutter pub get && flutter build apk --de
 ```powershell
 & "$env:LOCALAPPDATA\Android\sdk\platform-tools\adb.exe" install -r dist/app-debug.apk
 ```
+
+Le premier build télécharge le NDK Android (environ 1 Go) : il peut durer plus de dix
+minutes. Les suivants réutilisent le volume Docker `android_sdk` et sont bien plus courts.
 
 Si adb répond `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, l'app installée a été signée avec une
 autre clé de debug : la désinstaller une fois (`adb uninstall
@@ -85,7 +91,7 @@ supabase functions serve --env-file supabase/functions/.env.test
 Puis dans un second :
 
 ```powershell
-flutter test test_integration
+flutter test test_integration --concurrency=1
 ```
 
 Ces tests ne consomment aucun crédit Anthropic. Après eux, relancer `supabase start`

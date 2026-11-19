@@ -85,6 +85,21 @@ class _CorrectionContent extends StatelessWidget {
             ),
           ),
         for (final item in items) _CorrectionItemCard(item: item),
+        if (entry.vocabulary.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xl),
+          _SectionTitle(l10n.correctionVocabularyTitle),
+          Card(
+            child: Column(
+              children: [
+                for (final word in entry.vocabulary)
+                  ListTile(
+                    title: Text(word.term),
+                    subtitle: Text(word.translation),
+                  ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: AppSpacing.xl),
         FilledButton(
           onPressed: () => context.pop(),

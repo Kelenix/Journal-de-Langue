@@ -5,6 +5,7 @@ import '../../../core/utils/clock.dart';
 import '../../../core/utils/uuid.dart';
 import '../../auth/application/auth_providers.dart';
 import '../../languages/domain/learning_language.dart';
+import '../../vocabulary/application/vocabulary_providers.dart';
 import '../data/secure_journal_draft_store.dart';
 import '../data/supabase_journal_repository.dart';
 import '../domain/journal_draft_store.dart';
@@ -37,6 +38,23 @@ final journalDayProvider = FutureProvider.autoDispose<JournalDay>(
   // Pas de nouvel essai automatique : l'écran propose « Réessayer ».
   retry: (retryCount, error) => null,
 );
+
+/// Journaux relisibles avec l'offre, et ce qui reste verrouillé au-delà.
+typedef JournalHistory = ({
+  List<JournalEntry> entries,
+  HistoryOverview overview,
+});
+
+final journalHistoryProvider = FutureProvider.autoDispose<JournalHistory>((
+  ref,
+) async {
+  // Recalculé quand l'utilisateur change.
+  await ref.watch(currentUserIdProvider.future);
+  final repository = ref.watch(journalRepositoryProvider);
+  final entries = await repository.recentEntries();
+  final overview = await repository.historyOverview();
+  return (entries: entries, overview: overview);
+}, retry: (retryCount, error) => null);
 
 final journalEntryProvider = FutureProvider.autoDispose
     .family<JournalEntry, String>(
@@ -81,7 +99,13 @@ class JournalSubmissionController extends Notifier<AsyncValue<void>> {
     if (!ref.mounted) return result.value;
 
     state = result;
-    if (result.hasValue) ref.invalidate(journalDayProvider);
+    if (result.hasValue) {
+      // Une correction change le quota du jour, l'historique et le vocabulaire.
+      ref
+        ..invalidate(journalDayProvider)
+        ..invalidate(journalHistoryProvider)
+        ..invalidate(vocabularyProvider);
+    }
     return result.value;
   }
 }

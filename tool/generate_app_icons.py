@@ -21,6 +21,9 @@ FULL_ICON_ZOOM = CANVAS / 72
 ROOT = Path(__file__).resolve().parent.parent
 ANDROID_RES = ROOT / "android" / "app" / "src" / "main" / "res"
 DENSITIES = {"mdpi": 1.0, "hdpi": 1.5, "xhdpi": 2.0, "xxhdpi": 3.0, "xxxhdpi": 4.0}
+IOS_ICONS = ROOT / "ios" / "Runner" / "Assets.xcassets" / "AppIcon.appiconset"
+# Taille en points → échelles attendues par le projet iOS généré par Flutter.
+IOS_SIZES = {20: (1, 2, 3), 29: (1, 2, 3), 40: (1, 2, 3), 60: (2, 3), 76: (1, 2), 83.5: (2,), 1024: (1,)}
 
 
 def curve(start, control, end, steps=24):
@@ -96,6 +99,11 @@ def main():
         save(rounded(legacy), folder / "ic_launcher.png")
 
     full_icon = {"background": GREEN, "zoom": FULL_ICON_ZOOM}
+    # iOS : icônes pleines, sans transparence ni coins arrondis (le système les arrondit).
+    for points, scales in IOS_SIZES.items():
+        for scale in scales:
+            icon = draw_symbol(round(points * scale), **full_icon).convert("RGB")
+            save(icon, IOS_ICONS / f"Icon-App-{points}x{points}@{scale}x.png")
     # Logo affiché dans l'application.
     save(draw_symbol(256, **full_icon), ROOT / "assets" / "brand" / "logo.png")
     # Original pour les fiches des stores et l'icône iOS (non embarqué dans l'app).

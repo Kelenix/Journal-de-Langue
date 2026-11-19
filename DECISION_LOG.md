@@ -5,6 +5,30 @@
 
 ---
 
+## ADR-020 — Vocabulaire et historique (Inc-3)
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôles : database-architect, backend-engineer)
+- **Contexte** : US-08 (5 mots à réviser par jour) et US-09 (historique de 4 jours en
+  gratuit, journaux plus anciens conservés mais verrouillés).
+- **Décision** :
+  - Le vocabulaire est demandé à Claude **dans le même appel** que la correction : aucun
+    coût d'appel supplémentaire.
+  - La limite de 5 mots par jour et l'absence de doublon (par utilisateur et par langue)
+    sont appliquées en base, dans `complete_correction`.
+  - La fenêtre de 4 jours est une règle RLS : un journal plus ancien reste en base mais
+    l'app ne peut pas le lire, même en modifiant le client. La fenêtre est calculée sur
+    le fuseau le plus en retard, donc jamais moins de 4 jours pour personne.
+  - Le vocabulaire reste lisible quel que soit l'âge du journal d'origine.
+  - L'app ne peut modifier que l'état « appris » d'un mot (droit limité à cette colonne).
+  - `supabase/seed.sql` crée un compte de démonstration local pour tester sans clé API.
+- **Alternatives écartées** : Second appel à Claude pour le vocabulaire (coût doublé) ;
+  masquer les vieux journaux dans l'app seulement (contournable).
+- **Conséquences** : Les tests d'intégration partagent le port du faux Claude et se
+  lancent un fichier à la fois (`--concurrency=1`).
+- **Impact** : métier, sécurité, financier (aucun surcoût IA).
+
 ## ADR-019 — Application du brand kit
 
 - **Date** : 2026-11-19

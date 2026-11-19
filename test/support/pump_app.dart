@@ -6,6 +6,7 @@ import 'package:journal_de_langue/core/utils/clock.dart';
 import 'package:journal_de_langue/features/auth/application/auth_providers.dart';
 import 'package:journal_de_langue/features/journal/application/journal_providers.dart';
 import 'package:journal_de_langue/features/languages/application/language_providers.dart';
+import 'package:journal_de_langue/features/vocabulary/application/vocabulary_providers.dart';
 import 'package:journal_de_langue/l10n/app_localizations.dart';
 
 import 'fakes.dart';
@@ -35,6 +36,7 @@ Future<void> pumpApp(
   required FakeAuthRepository auth,
   required FakeLanguageRepository languages,
   FakeJournalRepository? journal,
+  FakeVocabularyRepository? vocabulary,
   InMemoryJournalDraftStore? drafts,
 }) async {
   tester.view
@@ -42,14 +44,16 @@ Future<void> pumpApp(
     ..devicePixelRatio = _phonePixelRatio;
   addTearDown(tester.view.reset);
 
+  final vocabularyRepository = vocabulary ?? FakeVocabularyRepository();
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         authRepositoryProvider.overrideWithValue(auth),
         languageRepositoryProvider.overrideWithValue(languages),
         journalRepositoryProvider.overrideWithValue(
-          journal ?? FakeJournalRepository(),
+          journal ?? FakeJournalRepository(vocabulary: vocabularyRepository),
         ),
+        vocabularyRepositoryProvider.overrideWithValue(vocabularyRepository),
         journalDraftStoreProvider.overrideWithValue(
           drafts ?? InMemoryJournalDraftStore(),
         ),

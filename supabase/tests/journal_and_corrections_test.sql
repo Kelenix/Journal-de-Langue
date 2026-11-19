@@ -100,6 +100,7 @@ select lives_ok(
        '[{"original": "text", "corrected": "text, corrected", "category": "phrasing",
           "explanation": "Exemple."},
          {"original": "x", "corrected": "y", "category": "spelling", "explanation": "Exemple 2."}]'::jsonb,
+       '[]'::jsonb,
        'claude-haiku-5-5', 120, 80) $$,
   'la correction est enregistrée'
 );
@@ -136,7 +137,7 @@ select is(
   'impossible de revenir à la veille pour obtenir une autre correction'
 );
 select throws_ok(
-  $$ select public.complete_correction(gen_random_uuid(), 'x', '[]'::jsonb, 'm', 1, 1) $$,
+  $$ select public.complete_correction(gen_random_uuid(), 'x', '[]'::jsonb, '[]'::jsonb, 'm', 1, 1) $$,
   'P0002', null,
   'terminer une réservation inexistante échoue'
 );
