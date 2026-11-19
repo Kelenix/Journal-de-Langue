@@ -7,6 +7,7 @@ import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/auth/presentation/verify_email_screen.dart';
 import '../features/billing/presentation/paywall_screen.dart';
+import '../features/exercises/presentation/exercise_screen.dart';
 import '../features/history/presentation/history_screen.dart';
 import '../features/home/presentation/home_shell.dart';
 import '../features/home/presentation/startup_screen.dart';
@@ -35,6 +36,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       _route(AppRoutes.signUp, const SignUpScreen()),
       _route(AppRoutes.forgotPassword, const ForgotPasswordScreen()),
       _route(AppRoutes.onboarding, const OnboardingScreen()),
+      _route(AppRoutes.exercises, const ExerciseScreen()),
       GoRoute(
         path: AppRoutes.verifyEmail,
         // L'e-mail à confirmer est transmis par l'écran précédent.

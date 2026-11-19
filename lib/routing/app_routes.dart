@@ -15,6 +15,7 @@ abstract final class AppRoutes {
   static const onboarding = '/onboarding';
 
   static const paywall = '/paywall';
+  static const exercises = '/exercises';
 
   static const correctionEntryId = 'entryId';
   static const correction = '/correction/:$correctionEntryId';

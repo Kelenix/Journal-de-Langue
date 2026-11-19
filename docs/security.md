@@ -16,9 +16,10 @@
 | Suppression de compte | Double confirmation ; suppression de l'utilisateur et, par cascade, de toutes ses données | Tests d'intégration et SQL |
 | Journaux techniques | Seules les erreurs imprévues sont journalisées, sans e-mail ni mot de passe | Revue de code |
 | Validation des entrées | E-mail, mot de passe, code : dans l'app et par le serveur d'authentification | Tests unitaires et d'intégration |
-| Clé Anthropic | Uniquement dans les secrets de la fonction `correct-entry` ; jamais dans l'app ni dans le dépôt (`supabase/functions/.env` ignoré par Git) | Revue, `git check-ignore` |
+| Clé Anthropic | Uniquement dans les secrets des fonctions (`correct-entry`, `rewrite-sentence`, `next-exercises`) ; jamais dans l'app ni dans le dépôt (`supabase/functions/.env` ignoré par Git) | Revue, `git check-ignore` |
 | Quota et coût IA | Réservé en base avant l'appel à Claude, sous verrou par utilisateur ; rendu si la correction échoue ; rejeu du même envoi sans second débit | `supabase test db`, tests d'intégration |
 | Accès aux journaux | RLS : lecture de ses journaux corrigés uniquement, aucune écriture ; les fonctions de réservation ne sont exécutables que par le rôle service | `supabase test db` (48 tests) |
+| Fonctions Premium (`rewrite-sentence`, `next-exercises`) | Droit Premium et limites du jour vérifiés en base, jamais dans l'app ; une phrase à reformuler doit figurer dans la version corrigée d'un journal de l'utilisateur (500 caractères au plus) ; la bonne réponse d'un exercice ne quitte la base qu'après la réponse | `supabase test db`, tests d'intégration |
 | Fonction `correct-entry` | Jeton de l'utilisateur vérifié auprès du serveur d'authentification ; entrées validées (langue, date, identifiant, taille) ; limites de l'offre appliquées en base | Tests d'intégration |
 | Injection d'instructions | Le journal est transmis à Claude dans un champ JSON, présenté comme texte à corriger ; la réponse est contrainte par un schéma ; le modèle n'a ni outil ni accès aux données | Tests d'intégration (forme de la requête) |
 | Données envoyées à l'IA | Le texte du journal et la langue ; aucun identifiant, e-mail ou métadonnée | Revue de code |

@@ -75,6 +75,14 @@ void main() {
       );
       expect(fromFunction(401, 'non autorisé'), isA<UnexpectedFailure>());
     });
+
+    test('traduit les refus des fonctions réservées à Premium', () {
+      Failure fromFunction(String code) =>
+          map(FunctionException(status: 403, details: {'error': code}));
+
+      expect(fromFunction('premium_required'), isA<PremiumRequiredFailure>());
+      expect(fromFunction('rewrite_limit'), isA<UsageLimitFailure>());
+    });
   });
 
   group('guardFailures', () {

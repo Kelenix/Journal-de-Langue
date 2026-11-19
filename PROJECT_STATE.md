@@ -8,9 +8,9 @@
 - **Phase courante** : 4 — Implémentation
 - **Dernière mise à jour** : 2026-11-19
 - **Santé** : 🟡 attention (build Android impossible sur l'hôte, contourné par Docker)
-- **Prochaine action** : Inc-5 — IA Premium (corrections avancées, reformulations,
-  exercices), après feu vert de l'utilisateur. En attente côté utilisateur : comptes
-  stores et RevenueCat (Inc-4b), clé API Anthropic.
+- **Prochaine action** : Inc-6 — voix, statistiques, PDF, multi-langues, après feu
+  vert de l'utilisateur. En attente côté utilisateur : comptes stores et RevenueCat
+  (Inc-4b), clé API Anthropic.
   En parallèle, côté utilisateur : fournir une clé API Anthropic pour relire de vraies
   corrections (voir `docs/manual-tasks.md`).
 - **Mode** : PLAN_PUIS_VALIDATION (plan validé le 2026-11-19, valeurs par défaut retenues).
@@ -25,7 +25,7 @@
 | 1 — Définition produit      | ✅ fait | `docs/product/user-stories.md` (24 stories) |
 | 2 — Planification           | ✅ fait | `docs/risks.md`, backlog ci-dessous |
 | 3 — Architecture & design   | ✅ fait | `docs/architecture.md`, `system-design.md`, `data-model.md`, `design/` |
-| 4 — Implémentation          | 🔄 en cours | Inc-0 à Inc-4 livrés : jalon J1 (boucle gratuite complète) atteint |
+| 4 — Implémentation          | 🔄 en cours | Inc-0 à Inc-5 livrés : jalon J1 (boucle gratuite complète) atteint |
 | 5 — Qualité & performance   | ⬜ à faire | QA et revue faites à chaque incrément |
 | 6 — Publication (stores)    | ⬜ à faire | |
 | 7 — Documentation           | ⬜ à faire | README et docs tenus au fil de l'eau |
@@ -44,7 +44,7 @@
 | Inc-3 | Vocabulaire et historique | US-08, 09 | ✅ | historique complet et filtre par langue avec Premium (Inc-4) |
 | Inc-4 | Abonnements Premium et essai : droits serveur, webhook, écran d'offres | US-10, 11 | ✅ | testé avec un faux store et des notifications simulées (ADR-021) |
 | Inc-4b | Achat réel : SDK RevenueCat (`purchases_flutter`) | US-11 (reste) | ⏸️ | attend comptes Google Play, RevenueCat et produits |
-| Inc-5 | IA Premium | US-12, 13, 14 | ⬜ | |
+| Inc-5 | IA Premium : corrections avancées, reformulations, exercices | US-12, 13, 14 | ✅ | testé avec un faux Claude ; qualité réelle à relire avec une clé API (ADR-023, ADR-024) |
 | Inc-6 | Voix, statistiques, PDF, multi-langues | US-04, 15, 16, 17 | ⬜ | |
 | Inc-7 | Achats ponctuels | US-18 à 21 | ⬜ | |
 | Inc-8 | Publicités | US-22, 23 | ⬜ | attend le compte AdMob |
@@ -55,16 +55,15 @@
 | Vérification | Résultat |
 |--------------|----------|
 | `flutter analyze` (hôte et conteneur) | 0 problème |
-| `flutter test` (hôte) | 101 tests verts |
-| `flutter test test_integration --concurrency=1` (Supabase local, fonctions de correction et d'achat, faux Claude) | 30 tests verts |
-| `supabase test db` (RLS et fonctions) | 95 tests verts |
+| `flutter test` (hôte) | 115 tests verts |
+| `flutter test test_integration --concurrency=1` (Supabase local, fonctions de correction, d'achat, de reformulation et d'exercices, faux Claude) | 40 tests verts |
+| `supabase test db` (RLS et fonctions) | 125 tests verts |
 | `supabase db reset` (migrations rejouées depuis zéro, données de démonstration) | réussi |
 | Build APK de debug | réussi dans Docker ; **échoue sur l'hôte** (JDK) |
 | Parcours sur émulateur Android (APK de debug) | inscription avec code reçu par e-mail local, choix de la langue, session et brouillon conservés après mise à jour de l'app, compteur de phrases, envoi sans clé Claude (message « rien n'est débité »), déconnexion : OK. Non rejoués à la main : suppression de compte, correction réussie (couverts par les tests). |
 | Rendu du brand kit sur émulateur | écran Journal, écran de connexion, icône dans le tiroir d'applications : conformes. Mode sombre et iOS non contrôlés visuellement. |
-| Écrans Réviser et Historique (Inc-3) sur émulateur | **en attente** : l'APK n'est pas encore construit. Le build retéléchargeait le NDK Android (environ 1 Go) à chaque fois ; il est maintenant conservé dans le volume Docker `android_sdk`, mais le premier téléchargement est en cours sur une connexion lente. |
+| Écrans Inc-3 à Inc-5 sur émulateur (APK construit dans Docker, Supabase local) | conformes : Réviser avec carte Exercices, séance d'exercices corrigée par le serveur (bonne réponse et choix faux marqués d'une icône), Historique limité puis complet avec Premium, écran d'offres depuis une phrase à reformuler en gratuit, trois reformulations en Premium (faux Claude). Données temporaires retirées ensuite. |
 
-Un compte de test `emu-…@example.test` existe dans la base locale ; l'émulateur est resté sur l'écran de connexion.
 
 ## Reste à faire sur les incréments livrés
 
@@ -77,12 +76,19 @@ Un compte de test `emu-…@example.test` existe dans la base locale ; l'émulate
 - Message de limite du jour : texte neutre pour l'instant (« reviens demain ») ; la
   proposition Premium, les crédits et la vidéo s'y ajoutent en Inc-4, 7 et 8.
 - L'écran Journal ne se rafraîchit pas seul au passage de minuit : rouvrir l'app.
-- Correction avec le vrai modèle : jamais exécutée (pas de clé API).
+- Correction, reformulation et génération d'exercices avec le vrai modèle : jamais
+  exécutées (pas de clé API). La qualité des exercices et des corrections avancées
+  reste à relire.
+- Exercices : 3 exercices de plus par vidéo récompensée (US-14) avec Inc-8 ; les
+  résultats alimenteront les statistiques en Inc-6.
+- Reformulations : une phrase de plus de 500 caractères est refusée par le serveur
+  avec un message générique.
 - CI GitHub Actions : à exécuter une première fois après création du dépôt distant.
 - Icône iOS générée mais jamais vue sur un appareil ; visuels des stores à produire depuis
   `design/app_icon_1024.png` (Inc-9).
 - Mode sombre dérivé du brand kit : à faire valider.
-- Rien n'est commité : le dépôt Git local est initialisé, sans commit.
+- Inc-0 à Inc-4 sont commités par l'utilisateur ; Inc-5 l'est en partie (base et
+  fonctions), le reste attend son commit.
 
 ## Décisions ouvertes / questions à l'utilisateur
 
@@ -109,6 +115,12 @@ Un compte de test `emu-…@example.test` existe dans la base locale ; l'émulate
 
 ## Journal de session (résumé court, le plus récent en haut)
 
+- 2026-11-19 — Inc-5 livré : corrections avancées pour les abonnés (Claude Sonnet 5.5,
+  fautes classées par catégorie), reformulation d'une phrase en trois registres
+  depuis l'écran de correction (offres présentées sans abonnement), exercices à
+  choix multiple depuis l'onglet Réviser (3 par jour en gratuit, 20 en Premium sur
+  l'erreur la plus fréquente), réserve d'exercices partagée et corrigée par le
+  serveur. ADR-023, ADR-024.
 - 2026-11-19 — Inc-4 livré : abonnements et limites par offre en base, fonction
   `revenuecat-webhook`, écran d'offres (annuel mis en avant, essai, conditions),
   proposition Premium à la limite du jour, dans l'historique et le profil, jamais avant

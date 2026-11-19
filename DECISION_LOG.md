@@ -5,6 +5,56 @@
 
 ---
 
+## ADR-024 — Exercices : réserve partagée, corrigés par le serveur
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôles : backend-engineer, flutter-engineer)
+- **Contexte** : Générer des exercices à chaque demande coûterait un appel à Claude par
+  séance et ferait attendre l'utilisateur (INTAKE §9 : mettre en cache les exercices
+  répétitifs). Envoyer la bonne réponse à l'app permettrait de la lire avant de répondre.
+- **Décision** : (1) Les exercices sont des questions à 4 choix, rangées dans une réserve
+  **partagée** par langue apprise, type d'erreur et langue d'interface. Claude n'est
+  appelé (8 questions par appel) que si l'utilisateur a épuisé les questions qu'il n'a
+  jamais faites et que la réserve compte moins de 60 questions ; au-delà, les anciennes
+  questions sont resservies. (2) La bonne réponse et l'explication restent en base ;
+  l'app les reçoit de `answer_exercise` après avoir répondu. C'est cette réponse qui
+  consomme la limite du jour (3 en gratuit, 20 en Premium), pas l'affichage.
+  (3) Gratuit : le type d'erreur change chaque jour ; Premium : le type le plus fréquent
+  dans les corrections de l'utilisateur pour cette langue. (4) Une reformulation est
+  enregistrée par journal et par phrase : la redemander ne rappelle pas Claude et ne
+  consomme rien (limite : 30 nouvelles reformulations par jour).
+- **Alternatives écartées** : Exercices générés par utilisateur (coût et attente à
+  chaque séance) ; correction faite dans l'app (réponse lisible, limite contournable).
+- **Conséquences** : Coût d'exercices quasi nul une fois la réserve constituée. Les
+  questions ne citent pas les phrases de l'utilisateur : la personnalisation porte sur
+  le type d'erreur. Qualité des questions à relire avec le vrai modèle. La vidéo
+  récompensée (3 exercices de plus) viendra avec Inc-8.
+- **Impact** : fonctionnel et financier modéré (réversible).
+
+## ADR-023 — Modèles de l'IA Premium
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté (modèle des corrections avancées choisi par l'utilisateur)
+- **Décideur** : utilisateur pour le modèle avancé ; Claude pour le reste
+- **Contexte** : Premium promet des corrections plus fines (registre, formulation
+  naturelle, explications détaillées), des reformulations et des exercices. Le choix du
+  modèle fixe à la fois la qualité et le coût par abonné.
+- **Décision** : Corrections avancées avec **Claude Sonnet 5.5** (choix de
+  l'utilisateur) ; correction de base, reformulations et génération d'exercices avec
+  Claude Haiku 5.5. Chaque modèle se change sans redéployer l'app, par une variable
+  d'environnement des fonctions (`CORRECTION_MODEL`, `ADVANCED_CORRECTION_MODEL`,
+  `REWRITE_MODEL`, `EXERCISE_MODEL`). Si le modèle refuse un texte, la fonction ne
+  bascule pas vers un autre modèle : l'utilisateur est informé que ce texte ne peut pas
+  être traité, et rien n'est décompté.
+- **Alternatives écartées** : Haiku partout (qualité Premium peu différenciée) ; Opus
+  pour les corrections avancées (coût par abonné trop élevé pour le prix visé).
+- **Conséquences** : Coût d'une correction Premium plus élevé que celui d'une correction
+  gratuite, borné par 30 corrections et 40 phrases par jour ; à mesurer dans `ai_usage`
+  (US-24) avant de fixer les prix définitifs. Aucune correction réelle n'a encore été
+  exécutée (pas de clé API).
+- **Impact** : financier (réversible par configuration).
+
 ## ADR-022 — Pas de provider dérivé d'un provider rechargé à la demande
 
 - **Date** : 2026-11-19

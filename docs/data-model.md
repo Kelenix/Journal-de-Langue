@@ -34,15 +34,16 @@ erDiagram
 |-------|----------------------|-----------|
 | `profiles` | `id` (= auth.users), `created_at` | Inc-1 |
 | `user_languages` | `user_id`, `language`, `is_active`, `activated_at` ; clé (user, language) | Inc-1 |
-| `journal_entries` | `id`, `user_id`, `language`, `entry_date`, `original_text`, `corrected_text`, `sentence_count`, `idempotency_key` (unique par user), `created_at`, `corrected_at` (null = correction en cours) ; `level` et `source` arriveront avec les offres payantes | Inc-2 |
+| `journal_entries` | `id`, `user_id`, `language`, `entry_date`, `original_text`, `corrected_text`, `sentence_count`, `idempotency_key` (unique par user), `created_at`, `corrected_at` (null = correction en cours), `level` (`basic` ou `advanced`, Inc-5) ; `source` arrivera avec les offres payantes | Inc-2 |
 | `correction_items` | `entry_id`, `position` (clé), `original`, `corrected`, `category`, `explanation` | Inc-2 |
-| `daily_usage` | `user_id`, `usage_date`, `exercises`, `reward_corrections`, `reward_exercises` ; PK (user, date). Corrections et vocabulaire du jour se comptent dans leurs propres tables | Inc-5 |
+| `daily_usage` | `user_id`, `usage_date`, `reward_corrections`, `reward_exercises` ; PK (user, date). Corrections, vocabulaire, exercices et reformulations du jour se comptent dans leurs propres tables | Inc-8 |
 | `ai_usage` | `id`, `user_id`, `feature`, `model`, `input_tokens`, `output_tokens`, `created_at` | Inc-2 |
 | `vocabulary_items` | `id`, `user_id`, `entry_id`, `language`, `term`, `translation`, `example`, `learned_at`, `created_at` ; unique (user, langue, terme sans casse) | Inc-3 |
 | `subscriptions` | `user_id` (PK), `plan`, `expires_at`, `in_trial`, `last_event_at`, `updated_at` | Inc-4 |
 | `purchase_events` | `event_id` (PK, fourni par RevenueCat), `user_id`, `type`, `product_id`, `event_at`, `received_at` | Inc-4 |
-| `exercises` | `id`, `language`, `category`, `ui_locale`, `payload` (jsonb), `created_at` — cache partagé | Inc-5 |
-| `exercise_attempts` | `id`, `user_id`, `exercise_id`, `correct`, `created_at` | Inc-5 |
+| `exercises` | `id`, `language`, `category`, `ui_locale`, `question`, `options` (4 choix), `answer_index`, `explanation`, `created_at` — réserve partagée entre utilisateurs (ADR-024) | Inc-5 |
+| `exercise_attempts` | `id`, `user_id`, `exercise_id`, `attempt_date`, `choice`, `is_correct`, `created_at` — sert aussi de compteur du jour | Inc-5 |
+| `sentence_rewrites` | `id`, `entry_id`, `sentence`, `polite`, `casual`, `professional`, `created_at` ; unique (journal, phrase) | Inc-5 |
 | `wallets` | `user_id` (PK), `correction_credits` (≥ 0), `exam_credits` (≥ 0), `ads_removed` | Inc-7 |
 | `language_passes` | `id`, `user_id`, `language`, `expires_at` | Inc-7 |
 | `exams` | `id`, `user_id`, `language`, `prompt`, `answer`, `result` (jsonb), `status`, `created_at` | Inc-7 |
@@ -59,12 +60,13 @@ depuis `profiles` (la suppression du compte efface tout).
 | `journal_entries`, `correction_items` | ses lignes ; en gratuit, restreint aux 4 derniers jours | aucun |
 | `vocabulary_items` | ses lignes | update de `learned_at` uniquement |
 | `daily_usage`, `subscriptions`, `wallets`, `language_passes`, `exams`, `exercise_attempts` | ses lignes | aucun |
-| `exercises` | aucun accès direct (servi par Edge Function) | aucun |
+| `exercises`, `sentence_rewrites` | aucun accès direct (servis par Edge Function ; la bonne réponse d'un exercice n'est rendue qu'après la réponse) | aucun |
 | `ai_usage`, `purchase_events` | aucun | aucun |
 
 Les écritures passent par des fonctions `security definer` appelées par les Edge Functions
 avec le rôle service : `reserve_correction`, `complete_correction`, `release_correction`,
-`apply_purchase`, `claim_reward`. `activate_language`, `delete_account`, `get_entitlements`
+`reserve_rewrite`, `save_rewrite`, `pick_exercises`, `add_exercises`,
+`apply_purchase`, `claim_reward`. `activate_language`, `delete_account`, `get_entitlements`, `answer_exercise`
 et `get_stats` sont appelables par l'utilisateur connecté et n'agissent que sur ses données.
 
 La limite d'historique gratuit est dans la policy `select` (et non dans l'app) : elle
@@ -91,7 +93,9 @@ restantes ; l'app n'a aucune constante de limite.
 
 - `journal_entries (user_id, language, entry_date desc)` — historique, quota du jour, série.
 - `correction_items (entry_id)` ; `vocabulary_items (user_id, language, created_at desc)`.
-- `exercises (language, category, ui_locale)` — cache.
+- `exercises (language, category, ui_locale)` — réserve ;
+  `exercise_attempts (user_id, attempt_date)` — limite du jour ;
+  `sentence_rewrites (entry_id, md5(sentence))` unique — pas de second appel.
 - `ai_usage (user_id, created_at)` — coût par utilisateur.
 
 ## Vues de suivi (Inc-9)

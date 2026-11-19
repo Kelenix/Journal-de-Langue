@@ -6,6 +6,7 @@ import 'package:journal_de_langue/core/utils/clock.dart';
 import 'package:journal_de_langue/core/utils/external_links.dart';
 import 'package:journal_de_langue/features/auth/application/auth_providers.dart';
 import 'package:journal_de_langue/features/billing/application/billing_providers.dart';
+import 'package:journal_de_langue/features/exercises/application/exercise_providers.dart';
 import 'package:journal_de_langue/features/journal/application/journal_providers.dart';
 import 'package:journal_de_langue/features/languages/application/language_providers.dart';
 import 'package:journal_de_langue/features/vocabulary/application/vocabulary_providers.dart';
@@ -42,6 +43,7 @@ Future<void> pumpApp(
   InMemoryJournalDraftStore? drafts,
   FakeSubscriptionRepository? subscriptions,
   FakeBillingRepository? billing,
+  FakeExerciseRepository? exercises,
   List<Uri>? openedUrls,
 }) async {
   tester.view
@@ -68,6 +70,10 @@ Future<void> pumpApp(
         ),
         billingRepositoryProvider.overrideWithValue(
           billing ?? FakeBillingRepository(subscriptionRepository),
+        ),
+        exerciseRepositoryProvider.overrideWithValue(
+          exercises ??
+              FakeExerciseRepository(subscriptions: subscriptionRepository),
         ),
         urlOpenerProvider.overrideWithValue((uri) async {
           openedUrls?.add(uri);

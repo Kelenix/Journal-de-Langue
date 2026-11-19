@@ -8,7 +8,9 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/widgets/async_view.dart';
 import '../application/journal_providers.dart';
 import '../domain/journal_entry.dart';
+import 'category_labels.dart';
 import 'highlighted_text.dart';
+import 'rewrite_section.dart';
 
 /// Correction d'un journal : version d'origine, version corrigée, explications.
 class CorrectionScreen extends ConsumerWidget {
@@ -43,10 +45,19 @@ class _CorrectionContent extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.extension<AppColors>()!;
     final items = entry.items;
+    final isAdvanced = entry.level == CorrectionLevel.advanced;
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
+        if (isAdvanced)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: Chip(label: Text(l10n.correctionAdvanced)),
+            ),
+          ),
         _SectionTitle(l10n.correctionYourVersion),
         // Jamais la couleur seule : la faute est aussi barrée.
         HighlightedText(
@@ -84,7 +95,9 @@ class _CorrectionContent extends StatelessWidget {
               ),
             ),
           ),
-        for (final item in items) _CorrectionItemCard(item: item),
+        for (final item in items)
+          // Premium : chaque faute est classée par catégorie (US-12).
+          _CorrectionItemCard(item: item, showsCategory: isAdvanced),
         if (entry.vocabulary.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xl),
           _SectionTitle(l10n.correctionVocabularyTitle),
@@ -100,6 +113,8 @@ class _CorrectionContent extends StatelessWidget {
             ),
           ),
         ],
+        const SizedBox(height: AppSpacing.xl),
+        RewriteSection(entry: entry),
         const SizedBox(height: AppSpacing.xl),
         FilledButton(
           onPressed: () => context.pop(),
@@ -128,9 +143,10 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _CorrectionItemCard extends StatelessWidget {
-  const _CorrectionItemCard({required this.item});
+  const _CorrectionItemCard({required this.item, required this.showsCategory});
 
   final CorrectionItem item;
+  final bool showsCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -144,6 +160,16 @@ class _CorrectionItemCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (showsCategory)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                child: Text(
+                  errorCategoryName(l10n, item.category),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             Semantics(
               label: l10n.correctionItemLabel(item.original, item.corrected),
               excludeSemantics: true,

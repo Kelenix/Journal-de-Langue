@@ -28,6 +28,8 @@
 
       supabase secrets set ANTHROPIC_API_KEY=<ta clé>
       supabase functions deploy correct-entry
+      supabase functions deploy rewrite-sentence
+      supabase functions deploy next-exercises
 
 - [ ] Fixer une limite de dépense mensuelle dans la console Anthropic.
 

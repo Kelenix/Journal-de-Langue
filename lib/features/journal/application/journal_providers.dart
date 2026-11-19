@@ -74,6 +74,17 @@ final journalEntryProvider = FutureProvider.autoDispose
       retry: (retryCount, error) => null,
     );
 
+/// Phrase d'un journal à reformuler.
+typedef RewriteRequest = ({String entryId, String sentence});
+
+final sentenceRewriteProvider = FutureProvider.autoDispose
+    .family<SentenceRewrite, RewriteRequest>(
+      (ref, request) => ref
+          .watch(journalRepositoryProvider)
+          .rewrite(entryId: request.entryId, sentence: request.sentence),
+      retry: (retryCount, error) => null,
+    );
+
 /// Envoi du journal en cours de rédaction.
 class JournalSubmissionController extends Notifier<AsyncValue<void>> {
   String? _attemptText;

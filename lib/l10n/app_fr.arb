@@ -123,7 +123,7 @@
     }
   },
   "correctionDone": "Terminer",
-  "errorAiUnavailable": "La correction n'a pas abouti. Ta correction du jour n'a pas été utilisée.",
+  "errorAiUnavailable": "Claude n'a pas pu répondre. Rien n'a été décompté de ton offre. Réessaie dans un instant.",
   "errorTooManySentences": "Ce journal dépasse le nombre de phrases de ton offre.",
   "errorInvalidText": "Ce texte est vide ou trop long.",
   "errorLanguageNotActive": "Cette langue n'est pas active sur ton compte.",
@@ -276,5 +276,57 @@
   "errorBillingUnavailable": "Les abonnements ne sont pas encore disponibles dans cette version.",
   "errorPurchaseFailed": "L'achat n'a pas abouti. Rien n'a été débité.",
   "errorPurchasePending": "Ton achat est enregistré. Premium sera actif dans quelques instants.",
-  "errorNothingToRestore": "Aucun achat à restaurer sur ce compte."
+  "errorNothingToRestore": "Aucun achat à restaurer sur ce compte.",
+  "categorySpelling": "Orthographe",
+  "categoryGrammar": "Grammaire",
+  "categoryConjugation": "Conjugaison",
+  "categoryVocabulary": "Vocabulaire",
+  "categoryRegister": "Registre",
+  "categoryPhrasing": "Formulation",
+  "categoryPunctuation": "Ponctuation",
+  "correctionAdvanced": "Correction avancée",
+  "rewriteTitle": "Reformuler une phrase",
+  "rewriteHint": "Choisis une phrase pour la voir en version polie, familière et professionnelle.",
+  "rewriteLocked": "Réservé aux abonnés",
+  "rewritePolite": "Poli",
+  "rewriteCasual": "Familier",
+  "rewriteProfessional": "Professionnel",
+  "exercisesTitle": "Exercices",
+  "exercisesCardBody": "Quelques questions pour ancrer ce que tu apprends.",
+  "exercisesPersonalized": "Choisi d'après tes erreurs les plus fréquentes",
+  "exerciseProgress": "Question {current} / {total}",
+  "@exerciseProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "exerciseCorrect": "Bonne réponse !",
+  "exerciseIncorrect": "Pas tout à fait.",
+  "exerciseRightAnswer": "Bonne réponse",
+  "exerciseYourAnswer": "Ta réponse",
+  "exerciseNext": "Suivant",
+  "exerciseSeeResult": "Voir mon résultat",
+  "exerciseScore": "Bonnes réponses : {correct} / {total}",
+  "@exerciseScore": {
+    "placeholders": {
+      "correct": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "exercisesDone": "Terminer",
+  "exercisesLimitFree": "Tu as terminé tes exercices gratuits du jour. À demain !",
+  "exercisesLimitPremium": "Tu as terminé tes exercices du jour. À demain !",
+  "errorPremiumRequired": "Cette fonction est réservée aux abonnés.",
+  "errorUsageLimit": "Tu as atteint la limite du jour. À demain !",
+  "paywallBenefitAdvanced": "Corrections avancées et reformulations",
+  "paywallBenefitExercises": "Exercices sur tes propres erreurs"
 }

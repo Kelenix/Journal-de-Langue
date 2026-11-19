@@ -29,6 +29,31 @@ void main() {
     }
   });
 
+  group('splitSentences', () {
+    test('rend chaque phrase avec sa ponctuation, telle qu\'elle figure dans '
+        'le texte', () {
+      expect(splitSentences('I have a cat.  She is nice!\nWait... what?!'), [
+        'I have a cat.',
+        'She is nice!',
+        'Wait...',
+        'what?!',
+      ]);
+    });
+
+    test('ignore les lignes vides et accepte une fin sans ponctuation', () {
+      expect(splitSentences('  \n First line\r\n\r\nsecond line  '), [
+        'First line',
+        'second line',
+      ]);
+      expect(splitSentences(''), isEmpty);
+    });
+
+    test('trouve autant de phrases que le compteur', () {
+      const text = '¿Qué tal? ¡Muy bien! A. B. C';
+      expect(splitSentences(text), hasLength(countSentences(text)));
+    });
+  });
+
   group('highlightFragments', () {
     String rendered(String text, List<String> fragments) => highlightFragments(
       text,

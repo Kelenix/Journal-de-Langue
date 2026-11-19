@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/failure.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../routing/app_routes.dart';
 import '../../../shared/presentation/failure_message.dart';
 import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../application/vocabulary_providers.dart';
 import '../domain/vocabulary_item.dart';
 
-/// Mots et expressions à réviser, tirés des journaux corrigés (US-08).
+/// Exercices, puis mots et expressions à réviser tirés des journaux corrigés
+/// (US-08, US-14).
 class ReviewScreen extends ConsumerWidget {
   const ReviewScreen({super.key});
 
@@ -23,20 +26,15 @@ class ReviewScreen extends ConsumerWidget {
         child: AsyncView(
           value: ref.watch(vocabularyProvider),
           onRetry: () => ref.invalidate(vocabularyProvider),
-          builder: (items) => items.isEmpty
-              ? EmptyState(
-                  icon: Icons.style_outlined,
-                  message: l10n.reviewEmpty,
-                )
-              : _VocabularyList(items: items),
+          builder: (items) => _ReviewList(items: items),
         ),
       ),
     );
   }
 }
 
-class _VocabularyList extends StatelessWidget {
-  const _VocabularyList({required this.items});
+class _ReviewList extends StatelessWidget {
+  const _ReviewList({required this.items});
 
   final List<VocabularyItem> items;
 
@@ -51,13 +49,28 @@ class _VocabularyList extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
-        Text(
-          l10n.reviewLearnedCount(learned.length),
-          style: theme.textTheme.titleMedium,
+        Card(
+          clipBehavior: Clip.antiAlias,
+          child: ListTile(
+            leading: const Icon(Icons.quiz_outlined),
+            title: Text(l10n.exercisesTitle),
+            subtitle: Text(l10n.exercisesCardBody),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(AppRoutes.exercises),
+          ),
         ),
-        const SizedBox(height: AppSpacing.md),
-        for (final item in [...toReview, ...learned])
-          _VocabularyCard(key: ValueKey(item.id), item: item),
+        const SizedBox(height: AppSpacing.lg),
+        if (items.isEmpty)
+          EmptyState(icon: Icons.style_outlined, message: l10n.reviewEmpty)
+        else ...[
+          Text(
+            l10n.reviewLearnedCount(learned.length),
+            style: theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          for (final item in [...toReview, ...learned])
+            _VocabularyCard(key: ValueKey(item.id), item: item),
+        ],
       ],
     );
   }

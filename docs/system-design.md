@@ -26,12 +26,12 @@ jamais d'exception Supabase.
 | `AuthRepository` | `watchUserId`, `signUp`, `confirmSignUp`, `resendSignUpCode`, `signIn`, `requestPasswordReset`, `resetPassword`, `signOut`, `deleteAccount` (Google / Apple en Inc-1b) | Auth + RPC `delete_account` |
 | `LanguageRepository` | `activeLanguages`, `activate` | Postgres + RPC `activate_language` |
 | `EntitlementsRepository` | `watch()` → `Entitlements` (offre, limites, crédits, restant du jour) | RPC `get_entitlements` |
-| `JournalRepository` | `allowance(day)`, `entryOfDay(day)`, `entry(id)`, `submit(text, language, uiLocale, day, idempotencyKey)` | RPC `get_entitlements`, Postgres, EF `correct-entry` |
+| `JournalRepository` | `allowance(day)`, `entryOfDay(day)`, `entry(id)`, `submit(text, language, uiLocale, day, idempotencyKey)`, `rewrite(entryId, sentence)` | RPC `get_entitlements`, Postgres, EF `correct-entry`, EF `rewrite-sentence` |
 | `JournalDraftStore` | `load`, `save`, `clearAll` | stockage sécurisé de l'appareil |
 | `HistoryRepository` | `list(language, page)`, `get(entryId)` | Postgres |
 | `VocabularyRepository` | `today()`, `list(page)`, `markLearned(id)` | Postgres |
 | `RewriteRepository` | `rewrite(entryId, sentenceIndex)` | EF `rewrite-sentence` |
-| `ExerciseRepository` | `next()`, `answer(id, value)` | EF `generate-exercises`, Postgres |
+| `ExerciseRepository` | `next(language, uiLocale, day)`, `answer(exerciseId, choice, day)` | EF `next-exercises`, RPC `answer_exercise` |
 | `StatsRepository` | `get(language)` | RPC `get_stats` |
 | `BillingRepository` | `offerings()`, `purchase(package)`, `restore()` | RevenueCat SDK |
 | `RewardRepository` | `claim(kind, adToken)` | EF `claim-reward` |

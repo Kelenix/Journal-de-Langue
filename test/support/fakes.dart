@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:journal_de_langue/core/errors/failure.dart';
 import 'package:journal_de_langue/features/auth/domain/auth_repository.dart';
 import 'package:journal_de_langue/features/billing/domain/billing_repository.dart';
 import 'package:journal_de_langue/features/billing/domain/offer.dart';
 import 'package:journal_de_langue/features/billing/domain/subscription.dart';
+import 'package:journal_de_langue/features/exercises/domain/exercise.dart';
+import 'package:journal_de_langue/features/exercises/domain/exercise_repository.dart';
 import 'package:journal_de_langue/features/journal/domain/journal_draft_store.dart';
 import 'package:journal_de_langue/features/journal/domain/journal_entry.dart';
 import 'package:journal_de_langue/features/journal/domain/journal_repository.dart';
@@ -122,12 +125,14 @@ JournalEntry sampleEntry({
   String id = 'entry-1',
   String originalText = 'I has a cat.',
   DateTime? entryDate,
+  CorrectionLevel level = CorrectionLevel.basic,
 }) => JournalEntry(
   id: id,
   language: LearningLanguage.english,
   entryDate: entryDate ?? DateTime(2026, 11, 19),
   originalText: originalText,
   correctedText: 'I have a cat.',
+  level: level,
   items: const [
     CorrectionItem(
       original: 'has',
@@ -165,6 +170,18 @@ class FakeJournalRepository implements JournalRepository {
 
   /// Fait échouer l'envoi d'un journal.
   Failure? submitFailure;
+
+  /// Reformulation rendue aux abonnés.
+  static const sampleRewrite = SentenceRewrite(
+    polite: 'I am the owner of a cat.',
+    casual: 'Got a cat.',
+    professional: 'I have one cat in my care.',
+  );
+
+  final rewrites = <({String entryId, String sentence})>[];
+
+  /// Fait échouer les reformulations.
+  Failure? rewriteFailure;
 
   /// Place un journal déjà corrigé aujourd'hui.
   void seedCorrectedToday(JournalEntry entry) {
@@ -213,6 +230,20 @@ class FakeJournalRepository implements JournalRepository {
   Future<JournalEntry> entry(String id) async => _entries[id]!;
 
   @override
+  Future<SentenceRewrite> rewrite({
+    required String entryId,
+    required String sentence,
+  }) async {
+    rewrites.add((entryId: entryId, sentence: sentence));
+    final failure = rewriteFailure;
+    if (failure != null) throw failure;
+    if (subscriptions?.activePlan == null) {
+      throw const PremiumRequiredFailure();
+    }
+    return sampleRewrite;
+  }
+
+  @override
   Future<JournalEntry> submit({
     required String text,
     required LearningLanguage language,
@@ -227,6 +258,9 @@ class FakeJournalRepository implements JournalRepository {
     final entry = sampleEntry(
       id: 'entry-${submissions.length}',
       originalText: text,
+      level: subscriptions?.activePlan == null
+          ? CorrectionLevel.basic
+          : CorrectionLevel.advanced,
     );
     seedCorrectedToday(entry);
     vocabulary?.items.insertAll(0, entry.vocabulary);
@@ -377,4 +411,75 @@ class FakeBillingRepository implements BillingRepository {
         expiresAt: FakeSubscriptionRepository.farFuture,
         inTrial: inTrial,
       );
+}
+
+/// Exercices en mémoire, avec les limites du serveur : 3 par jour en gratuit,
+/// 20 en Premium, servis par lots de 3 ou 5.
+class FakeExerciseRepository implements ExerciseRepository {
+  FakeExerciseRepository({this.subscriptions});
+
+  /// Position de la bonne réponse de chaque exercice.
+  static const rightChoice = 1;
+  static const explanation = 'With "I", use "have".';
+
+  /// Source de l'offre de l'utilisateur ; sans elle, l'offre est gratuite.
+  final FakeSubscriptionRepository? subscriptions;
+
+  final answers = <({String exerciseId, int choice})>[];
+
+  /// Nombre de lots demandés au serveur.
+  int batchesServed = 0;
+
+  /// Fait échouer le chargement d'un lot.
+  Failure? loadFailure;
+
+  /// Fait échouer l'envoi d'une réponse.
+  Failure? answerFailure;
+
+  bool get _isPremium => subscriptions?.activePlan != null;
+
+  int get _left => (_isPremium ? 20 : 3) - answers.length;
+
+  @override
+  Future<ExerciseBatch> next({
+    required LearningLanguage language,
+    required String uiLocale,
+    required DateTime day,
+  }) async {
+    final failure = loadFailure;
+    if (failure != null) throw failure;
+    if (_left <= 0) return ExerciseBatch.limitReached(isPremium: _isPremium);
+
+    batchesServed++;
+    return ExerciseBatch.available(
+      category: ErrorCategory.conjugation,
+      isPersonalized: _isPremium,
+      left: _left,
+      exercises: [
+        for (var index = 0; index < min(_left, _isPremium ? 5 : 3); index++)
+          Exercise(
+            id: 'exercise-${answers.length + index}',
+            question: 'I ___ a cat. (${answers.length + index + 1})',
+            options: const ['has', 'have', 'having', 'haves'],
+          ),
+      ],
+    );
+  }
+
+  @override
+  Future<ExerciseFeedback> answer({
+    required String exerciseId,
+    required int choice,
+    required DateTime day,
+  }) async {
+    final failure = answerFailure;
+    if (failure != null) throw failure;
+    answers.add((exerciseId: exerciseId, choice: choice));
+    return ExerciseFeedback(
+      isCorrect: choice == rightChoice,
+      answerIndex: rightChoice,
+      explanation: explanation,
+      left: _left,
+    );
+  }
 }
