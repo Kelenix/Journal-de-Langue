@@ -6,6 +6,7 @@ import '../../../core/utils/uuid.dart';
 import '../../auth/application/auth_providers.dart';
 import '../../billing/application/billing_providers.dart';
 import '../../languages/domain/learning_language.dart';
+import '../../stats/application/stats_providers.dart';
 import '../../vocabulary/application/vocabulary_providers.dart';
 import '../data/secure_journal_draft_store.dart';
 import '../data/supabase_journal_repository.dart';
@@ -123,11 +124,13 @@ class JournalSubmissionController extends Notifier<AsyncValue<void>> {
 
     state = result;
     if (result.hasValue) {
-      // Une correction change le quota du jour, l'historique et le vocabulaire.
+      // Une correction change le quota du jour, l'historique, le vocabulaire
+      // et les statistiques.
       ref
         ..invalidate(journalDayProvider)
         ..invalidate(journalHistoryProvider)
-        ..invalidate(vocabularyProvider);
+        ..invalidate(vocabularyProvider)
+        ..invalidate(statsProvider);
     }
     return result.value;
   }

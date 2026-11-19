@@ -4,6 +4,7 @@ import '../../../core/errors/failure.dart';
 import '../../../core/supabase/supabase_client_provider.dart';
 import '../../../core/utils/clock.dart';
 import '../../auth/application/auth_providers.dart';
+import '../../languages/application/language_providers.dart';
 import '../data/supabase_subscription_repository.dart';
 import '../data/unavailable_billing_repository.dart';
 import '../domain/billing_repository.dart';
@@ -110,8 +111,12 @@ class PaywallController extends Notifier<AsyncValue<void>> {
       if (subscription != null && subscription.isActiveAt(now)) {
         // Tout ce qui dépend de l'offre se recharge. L'offre est relue tout de
         // suite, avant le retour à l'écran précédent (ADR-022).
-        ref.invalidate(subscriptionProvider);
+        ref
+          ..invalidate(subscriptionProvider)
+          // L'offre fixe aussi le nombre de langues utilisables.
+          ..invalidate(activeLanguagesProvider);
         await ref.read(subscriptionProvider.future);
+        await ref.read(activeLanguagesProvider.future);
         return true;
       }
     }

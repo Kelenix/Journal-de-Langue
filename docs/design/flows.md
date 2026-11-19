@@ -53,7 +53,9 @@ Mise en page du brand kit (ADR-019).
   Premium, crédits et vidéo s'y ajouteront (Inc-4, 7, 8).
 - Hors ligne ou panne : la saisie reste possible et conservée ; l'envoi affiche l'erreur
   et précise que rien n'est débité.
-- La série de jours et la dictée (Premium) rejoindront cet écran en Inc-6.
+- La série de jours s'affiche sous le titre dès le premier jour ; Premium ajoute la
+  dictée (micro dans la carte du journal) et, s'il pratique plusieurs langues, une
+  puce pour changer la langue du journal (Inc-6).
 - Pas de publicité sur cet écran pendant la saisie (clavier ouvert ou texte non vide).
 
 ### Correction

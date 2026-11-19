@@ -44,6 +44,13 @@ dependencies:
     sdk: flutter
   flutter_secure_storage: ^11.2.0
   url_launcher: ^6.3.3
+  speech_to_text: ^7.4.0
+  flutter_tts: ^4.2.5
+  pdf: ^3.12.0
+  share_plus: ^13.3.1
+  # Contrainte seulement, pour pdf : image 4.11 appelle une fonction d'archive 4.1,
+  # que pdf 3.12 n'accepte pas. A retirer avec pdf 3.13 (Dart 3.12, ADR-027).
+  image: ">=4.10.0 <4.11.0"
 
 dev_dependencies:
   flutter_test:

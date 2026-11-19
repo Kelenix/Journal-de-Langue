@@ -25,6 +25,8 @@ Failure mapError(Object error, StackTrace stackTrace) {
       code: 'over_email_send_rate_limit' || 'over_request_rate_limit',
     ) =>
       const RateLimitedFailure(),
+    PostgrestException(message: 'language_limit') =>
+      const LanguageLimitFailure(),
     FunctionException(status: _aiUnavailableStatus) =>
       const AiUnavailableFailure(),
     FunctionException(details: {'error': final String code}) =>

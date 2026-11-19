@@ -9,7 +9,9 @@ import '../../../routing/app_routes.dart';
 import '../../../shared/widgets/async_view.dart';
 import '../../auth/application/auth_providers.dart';
 import '../../languages/application/language_providers.dart';
+import '../../languages/domain/learning_language.dart';
 import '../../languages/presentation/language_labels.dart';
+import '../../stats/presentation/streak_badge.dart';
 import '../application/journal_providers.dart';
 import '../domain/journal_entry.dart';
 import 'journal_editor.dart';
@@ -21,7 +23,8 @@ class JournalScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final userId = ref.watch(currentUserIdProvider).value;
-    final language = ref.watch(activeLanguagesProvider).value?.firstOrNull;
+    final languages = ref.watch(activeLanguagesProvider).value ?? const [];
+    final language = languages.firstOrNull;
 
     return Scaffold(
       appBar: AppBar(
@@ -30,7 +33,9 @@ class JournalScreen extends ConsumerWidget {
           if (language != null)
             Padding(
               padding: const EdgeInsets.only(right: AppSpacing.lg),
-              child: Chip(label: Text(languageName(l10n, language))),
+              child: languages.length > 1
+                  ? _LanguageSwitcher(languages: languages)
+                  : Chip(label: Text(languageName(l10n, language))),
             ),
         ],
       ),
@@ -54,6 +59,40 @@ class JournalScreen extends ConsumerWidget {
                         isPremium: day.allowance.plan != null,
                       ),
               ),
+      ),
+    );
+  }
+}
+
+/// Langue du journal, à choisir parmi celles de l'abonné.
+class _LanguageSwitcher extends ConsumerWidget {
+  const _LanguageSwitcher({required this.languages});
+
+  final List<LearningLanguage> languages;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final isSwitching = ref
+        .watch(languageSelectionControllerProvider)
+        .isLoading;
+
+    return PopupMenuButton<LearningLanguage>(
+      tooltip: l10n.journalSwitchLanguage,
+      enabled: !isSwitching,
+      onSelected: (language) => ref
+          .read(languageSelectionControllerProvider.notifier)
+          .select(language),
+      itemBuilder: (context) => [
+        for (final language in languages.skip(1))
+          PopupMenuItem(
+            value: language,
+            child: Text(languageName(l10n, language)),
+          ),
+      ],
+      child: Chip(
+        avatar: const Icon(Icons.swap_horiz),
+        label: Text(languageName(l10n, languages.first)),
       ),
     );
   }
@@ -101,6 +140,7 @@ class _DailyLimitReached extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(l10n.journalCorrectedBody, textAlign: TextAlign.center),
+                  const Center(child: IntrinsicWidth(child: StreakBadge())),
                   const SizedBox(height: AppSpacing.xl),
                   FilledButton(
                     onPressed: () =>

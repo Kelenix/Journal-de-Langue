@@ -56,7 +56,7 @@ depuis `profiles` (la suppression du compte efface tout).
 | Table | select | insert / update / delete par l'app |
 |-------|--------|------------------------------------|
 | `profiles` | sa ligne | aucun |
-| `user_languages` | ses lignes | aucun (RPC `activate_language`) |
+| `user_languages` | ses lignes | aucun (RPC `activate_language`, `deactivate_language`) |
 | `journal_entries`, `correction_items` | ses lignes ; en gratuit, restreint aux 4 derniers jours | aucun |
 | `vocabulary_items` | ses lignes | update de `learned_at` uniquement |
 | `daily_usage`, `subscriptions`, `wallets`, `language_passes`, `exams`, `exercise_attempts` | ses lignes | aucun |
@@ -66,8 +66,15 @@ depuis `profiles` (la suppression du compte efface tout).
 Les écritures passent par des fonctions `security definer` appelées par les Edge Functions
 avec le rôle service : `reserve_correction`, `complete_correction`, `release_correction`,
 `reserve_rewrite`, `save_rewrite`, `pick_exercises`, `add_exercises`,
-`apply_purchase`, `claim_reward`. `activate_language`, `delete_account`, `get_entitlements`, `answer_exercise`
-et `get_stats` sont appelables par l'utilisateur connecté et n'agissent que sur ses données.
+`apply_purchase`, `claim_reward`. `activate_language`, `deactivate_language`,
+`get_languages`, `delete_account`, `get_entitlements`, `answer_exercise` et `get_stats`
+sont appelables par l'utilisateur connecté et n'agissent que sur ses données.
+
+Langues (ADR-025) : `plan_limits` donne `max_languages` (1 en gratuit, 3 en
+hebdomadaire ou mensuel, 4 en annuel). `usable_languages(user)` rend les langues
+actives les plus récemment choisies dans cette limite ; correction et exercices
+exigent une langue utilisable (`is_usable_language`). Statistiques (ADR-026) :
+`get_stats(langue, date)` calcule la série et, en Premium, les détails.
 
 La limite d'historique gratuit est dans la policy `select` (et non dans l'app) : elle
 compare `entry_date` à `history_start_date()`. `get_history_overview()` indique à l'app

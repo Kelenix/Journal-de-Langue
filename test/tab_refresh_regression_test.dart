@@ -116,7 +116,7 @@ void main() {
     await visitEveryTab(tester);
 
     await openTab(tester, Icons.person_outline);
-    await tapOn(tester, find.text(english.profileLanguage));
+    await tapOn(tester, find.text(english.profileLanguages(1)));
     await tapOn(tester, find.text(english.languageGerman));
 
     await openTab(tester, Icons.edit_note_outlined);

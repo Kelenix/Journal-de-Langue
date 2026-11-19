@@ -80,6 +80,16 @@ final class UsageLimitFailure extends Failure {
   const UsageLimitFailure();
 }
 
+/// L'offre ne permet pas d'autre langue active.
+final class LanguageLimitFailure extends Failure {
+  const LanguageLimitFailure();
+}
+
+/// Aucun journal corrigé sur la période choisie pour un export.
+final class NothingToExportFailure extends Failure {
+  const NothingToExportFailure();
+}
+
 /// L'achat est fait mais le serveur n'en a pas encore reçu la confirmation.
 final class PurchasePendingFailure extends Failure {
   const PurchasePendingFailure();

@@ -8,9 +8,9 @@
 - **Phase courante** : 4 — Implémentation
 - **Dernière mise à jour** : 2026-11-19
 - **Santé** : 🟡 attention (build Android impossible sur l'hôte, contourné par Docker)
-- **Prochaine action** : Inc-6 — voix, statistiques, PDF, multi-langues, après feu
-  vert de l'utilisateur. En attente côté utilisateur : comptes stores et RevenueCat
-  (Inc-4b), clé API Anthropic.
+- **Prochaine action** : Inc-7 — achats ponctuels (crédits, langue 30 jours, Pack
+  Examinateur, sans publicité), après feu vert de l'utilisateur. En attente côté
+  utilisateur : comptes stores et RevenueCat (Inc-4b), clé API Anthropic.
   En parallèle, côté utilisateur : fournir une clé API Anthropic pour relire de vraies
   corrections (voir `docs/manual-tasks.md`).
 - **Mode** : PLAN_PUIS_VALIDATION (plan validé le 2026-11-19, valeurs par défaut retenues).
@@ -25,7 +25,7 @@
 | 1 — Définition produit      | ✅ fait | `docs/product/user-stories.md` (24 stories) |
 | 2 — Planification           | ✅ fait | `docs/risks.md`, backlog ci-dessous |
 | 3 — Architecture & design   | ✅ fait | `docs/architecture.md`, `system-design.md`, `data-model.md`, `design/` |
-| 4 — Implémentation          | 🔄 en cours | Inc-0 à Inc-5 livrés : jalon J1 (boucle gratuite complète) atteint |
+| 4 — Implémentation          | 🔄 en cours | Inc-0 à Inc-6 livrés : jalons J1 (boucle gratuite) et J2 (Premium complet) atteints |
 | 5 — Qualité & performance   | ⬜ à faire | QA et revue faites à chaque incrément |
 | 6 — Publication (stores)    | ⬜ à faire | |
 | 7 — Documentation           | ⬜ à faire | README et docs tenus au fil de l'eau |
@@ -37,7 +37,7 @@
 
 | ID | Incrément | Stories | État | Notes |
 |----|-----------|---------|------|-------|
-| Inc-0 | Socle technique, Docker, CI | — | ✅ | CI écrite mais jamais exécutée (pas de dépôt distant) |
+| Inc-0 | Socle technique, Docker, CI | — | ✅ | CI exécutée sur GitHub depuis le premier push |
 | Inc-1 | Compte par e-mail, choix de la langue, suppression de compte | US-01 (e-mail), US-02, US-03 | ✅ | |
 | Inc-1b | Connexion Google et Apple | US-01 (reste) | ⏸️ | attend les identifiants OAuth (ADR-014) |
 | Inc-2 | Journal et correction de base | US-05, 06, 07 | ✅ | chaîne technique vérifiée avec un faux Claude ; qualité des vraies corrections à relire (ADR-018) |
@@ -45,7 +45,7 @@
 | Inc-4 | Abonnements Premium et essai : droits serveur, webhook, écran d'offres | US-10, 11 | ✅ | testé avec un faux store et des notifications simulées (ADR-021) |
 | Inc-4b | Achat réel : SDK RevenueCat (`purchases_flutter`) | US-11 (reste) | ⏸️ | attend comptes Google Play, RevenueCat et produits |
 | Inc-5 | IA Premium : corrections avancées, reformulations, exercices | US-12, 13, 14 | ✅ | testé avec un faux Claude ; qualité réelle à relire avec une clé API (ADR-023, ADR-024) |
-| Inc-6 | Voix, statistiques, PDF, multi-langues | US-04, 15, 16, 17 | ⬜ | |
+| Inc-6 | Voix, statistiques, PDF, multi-langues | US-04, 15, 16, 17 | ✅ | dictée et lecture à essayer sur un vrai téléphone ; « langue 30 jours » avec Inc-7 (ADR-025 à 027) |
 | Inc-7 | Achats ponctuels | US-18 à 21 | ⬜ | |
 | Inc-8 | Publicités | US-22, 23 | ⬜ | attend le compte AdMob |
 | Inc-9 | Qualité, publication, documentation, textes légaux | US-24 | ⬜ | |
@@ -55,14 +55,15 @@
 | Vérification | Résultat |
 |--------------|----------|
 | `flutter analyze` (hôte et conteneur) | 0 problème |
-| `flutter test` (hôte) | 115 tests verts |
-| `flutter test test_integration --concurrency=1` (Supabase local, fonctions de correction, d'achat, de reformulation et d'exercices, faux Claude) | 40 tests verts |
-| `supabase test db` (RLS et fonctions) | 125 tests verts |
+| `flutter test` (hôte) | 137 tests verts |
+| `flutter test test_integration --concurrency=1` (Supabase local, fonctions de correction, d'achat, de reformulation et d'exercices, langues et statistiques, faux Claude) | 44 tests verts |
+| `supabase test db` (RLS et fonctions) | 152 tests verts |
 | `supabase db reset` (migrations rejouées depuis zéro, données de démonstration) | réussi |
 | Build APK de debug | réussi dans Docker ; **échoue sur l'hôte** (JDK) |
 | Parcours sur émulateur Android (APK de debug) | inscription avec code reçu par e-mail local, choix de la langue, session et brouillon conservés après mise à jour de l'app, compteur de phrases, envoi sans clé Claude (message « rien n'est débité »), déconnexion : OK. Non rejoués à la main : suppression de compte, correction réussie (couverts par les tests). |
 | Rendu du brand kit sur émulateur | écran Journal, écran de connexion, icône dans le tiroir d'applications : conformes. Mode sombre et iOS non contrôlés visuellement. |
 | Écrans Inc-3 à Inc-5 sur émulateur (APK construit dans Docker, Supabase local) | conformes : Réviser avec carte Exercices, séance d'exercices corrigée par le serveur (bonne réponse et choix faux marqués d'une icône), Historique limité puis complet avec Premium, écran d'offres depuis une phrase à reformuler en gratuit, trois reformulations en Premium (faux Claude). Données temporaires retirées ensuite. |
+| Écrans Inc-6 sur émulateur (APK Docker, Supabase local, Premium simulé) | conformes : série sur le Journal, écran Progrès gratuit puis Premium, ajout d'une langue et changement par la puce (brouillon gardé par langue), demande du micro à la première dictée et refus expliqué, PDF généré et proposé au partage, aperçu lisible (accents, tableau, pagination). Deux défauts trouvés et corrigés : semaines sans journal absentes du graphique (axe trompeur), langue des journaux comptés non précisée. Dictée acceptée et lecture à voix haute : non essayées (pas de micro). Données de test retirées. |
 
 
 ## Reste à faire sur les incréments livrés
@@ -70,7 +71,6 @@
 - Liens vers les textes légaux sur l'écran d'inscription : avec les textes, en Inc-9.
 - Achat réel impossible tant que l'app n'est pas reliée à RevenueCat (Inc-4b) : l'écran
   d'offres affiche « abonnements pas encore disponibles ».
-- Multi-langues Premium (3 ou 4 langues) : avec Inc-6, comme prévu au plan.
 - Historique et vocabulaire chargés en une fois : la pagination viendra avec
   l'historique complet de Premium (Inc-4).
 - Message de limite du jour : texte neutre pour l'instant (« reviens demain ») ; la
@@ -80,15 +80,21 @@
   exécutées (pas de clé API). La qualité des exercices et des corrections avancées
   reste à relire.
 - Exercices : 3 exercices de plus par vidéo récompensée (US-14) avec Inc-8 ; les
-  résultats alimenteront les statistiques en Inc-6.
+  résultats d'exercices n'entrent pas dans les statistiques (non demandé par US-16).
+- Dictée et lecture à voix haute : vérifiées par des tests avec un service vocal
+  simulé ; jamais essayées sur un téléphone (voir `docs/manual-tasks.md`).
+- Langues : un abonnement qui expire pendant que l'app est ouverte n'en réduit le
+  nombre qu'au prochain démarrage ; le serveur, lui, applique la limite tout de suite.
 - Reformulations : une phrase de plus de 500 caractères est refusée par le serveur
   avec un message générique.
-- CI GitHub Actions : à exécuter une première fois après création du dépôt distant.
+- CI GitHub Actions : verte sur le dernier commit poussé (analyse, tests, base) ; rouge
+  sur le commit intermédiaire `f046a68`, qui contenait le début d'Inc-5 sans sa
+  doublure de test. Le build Android n'est pas dans la CI (Inc-9).
 - Icône iOS générée mais jamais vue sur un appareil ; visuels des stores à produire depuis
   `design/app_icon_1024.png` (Inc-9).
 - Mode sombre dérivé du brand kit : à faire valider.
-- Inc-0 à Inc-4 sont commités par l'utilisateur ; Inc-5 l'est en partie (base et
-  fonctions), le reste attend son commit.
+- Inc-0 à Inc-5 sont commités et poussés sur GitHub par l'utilisateur ; Inc-6 attend
+  son commit.
 
 ## Décisions ouvertes / questions à l'utilisateur
 
@@ -115,6 +121,12 @@
 
 ## Journal de session (résumé court, le plus récent en haut)
 
+- 2026-11-19 — Inc-6 livré : plusieurs langues selon l'offre (3 ou 4 en Premium,
+  langue du journal au choix, rien d'effacé à la fin d'un abonnement), série de
+  jours sur le Journal et écran Progrès (détails en Premium), dictée et lecture à
+  voix haute par les services du système, export PDF des révisions partagé par le
+  système. Permission Internet ajoutée au manifeste principal (absente hors debug).
+  Clé API retirée de l'historique Git avant le premier push. ADR-025 à 027.
 - 2026-11-19 — Inc-5 livré : corrections avancées pour les abonnés (Claude Sonnet 5.5,
   fautes classées par catégorie), reformulation d'une phrase en trois registres
   depuis l'écran de correction (offres présentées sans abonnement), exercices à

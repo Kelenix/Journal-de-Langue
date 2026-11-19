@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Supabase et les fonctions de l'app ; déclarée jusqu'ici seulement en debug. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Dictée du journal (Premium), demandée à la première dictée. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
         android:label="Journal de Langue"
         android:allowBackup="false"
@@ -41,6 +45,13 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Reconnaissance et synthèse vocales du système (Android 11+). -->
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE"/>
         </intent>
     </queries>
 </manifest>

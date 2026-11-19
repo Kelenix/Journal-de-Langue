@@ -11,7 +11,10 @@ final languageRepositoryProvider = Provider<LanguageRepository>(
   (ref) => SupabaseLanguageRepository(ref.watch(supabaseClientProvider)),
 );
 
-/// Langues actives de l'utilisateur connecté ; vide s'il n'est pas connecté.
+/// Langues de l'utilisateur connecté, la langue en cours d'abord ; vide s'il
+/// n'est pas connecté. L'offre fixe leur nombre : relues après un achat
+/// (`PaywallController`) ou au démarrage, pas à chaque changement d'offre, pour
+/// ne pas renvoyer la navigation vers l'écran de démarrage (`sessionGate`).
 class ActiveLanguagesNotifier extends AsyncNotifier<List<LearningLanguage>> {
   @override
   Future<List<LearningLanguage>> build() async {
@@ -22,6 +25,16 @@ class ActiveLanguagesNotifier extends AsyncNotifier<List<LearningLanguage>> {
 
   Future<void> activate(LearningLanguage language) async {
     await ref.read(languageRepositoryProvider).activate(language);
+    await _reload();
+  }
+
+  Future<void> deactivate(LearningLanguage language) async {
+    await ref.read(languageRepositoryProvider).deactivate(language);
+    await _reload();
+  }
+
+  /// Rechargé tout de suite : d'autres providers en dépendent (ADR-022).
+  Future<void> _reload() async {
     ref.invalidateSelf();
     await future;
   }
@@ -37,6 +50,10 @@ final activeLanguagesProvider =
 class LanguageSelectionController extends ActionController {
   Future<bool> select(LearningLanguage language) =>
       run(() => ref.read(activeLanguagesProvider.notifier).activate(language));
+
+  Future<bool> remove(LearningLanguage language) => run(
+    () => ref.read(activeLanguagesProvider.notifier).deactivate(language),
+  );
 }
 
 final languageSelectionControllerProvider =

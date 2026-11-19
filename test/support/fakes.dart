@@ -13,6 +13,9 @@ import 'package:journal_de_langue/features/journal/domain/journal_entry.dart';
 import 'package:journal_de_langue/features/journal/domain/journal_repository.dart';
 import 'package:journal_de_langue/features/languages/domain/language_repository.dart';
 import 'package:journal_de_langue/features/languages/domain/learning_language.dart';
+import 'package:journal_de_langue/features/stats/domain/learning_stats.dart';
+import 'package:journal_de_langue/features/stats/domain/stats_repository.dart';
+import 'package:journal_de_langue/features/voice/domain/voice_service.dart';
 import 'package:journal_de_langue/features/vocabulary/domain/vocabulary_item.dart';
 import 'package:journal_de_langue/features/vocabulary/domain/vocabulary_repository.dart';
 
@@ -88,26 +91,53 @@ class FakeAuthRepository implements AuthRepository {
   Future<void> deleteAccount() => _record('deleteAccount', signs: true);
 }
 
-/// Langues en mémoire, avec la règle gratuite : une seule langue active.
+/// Langues en mémoire, la langue en cours d'abord, avec les règles du
+/// serveur : une langue en gratuit, 3 en Premium mensuel ou hebdomadaire, 4 en
+/// annuel.
 class FakeLanguageRepository implements LanguageRepository {
-  FakeLanguageRepository([List<LearningLanguage> active = const []])
-    : _active = [...active];
+  FakeLanguageRepository([
+    List<LearningLanguage> active = const [],
+    this.subscriptions,
+  ]) : _active = [...active];
 
-  List<LearningLanguage> _active;
+  /// Source de l'offre de l'utilisateur ; sans elle, l'offre est gratuite.
+  final FakeSubscriptionRepository? subscriptions;
+
+  final List<LearningLanguage> _active;
   Failure? failure;
+
+  int get _maxLanguages => switch (subscriptions?.activePlan) {
+    null => 1,
+    SubscriptionPlan.annual => 4,
+    SubscriptionPlan.monthly || SubscriptionPlan.weekly => 3,
+  };
 
   @override
   Future<List<LearningLanguage>> activeLanguages() async {
     final failure = this.failure;
     if (failure != null) throw failure;
-    return List.unmodifiable(_active);
+    return List.unmodifiable(_active.take(_maxLanguages));
   }
 
   @override
   Future<void> activate(LearningLanguage language) async {
     final failure = this.failure;
     if (failure != null) throw failure;
-    _active = [language];
+    if (_maxLanguages == 1) {
+      _active.clear();
+    } else if (!_active.contains(language) && _active.length >= _maxLanguages) {
+      throw const LanguageLimitFailure();
+    }
+    _active
+      ..remove(language)
+      ..insert(0, language);
+  }
+
+  @override
+  Future<void> deactivate(LearningLanguage language) async {
+    final failure = this.failure;
+    if (failure != null) throw failure;
+    _active.remove(language);
   }
 }
 
@@ -482,4 +512,126 @@ class FakeExerciseRepository implements ExerciseRepository {
       left: _left,
     );
   }
+}
+
+/// Statistiques en mémoire, déduites des journaux corrigés : série comptée
+/// jusqu'à aujourd'hui ou hier, détails réservés à Premium.
+class FakeStatsRepository implements StatsRepository {
+  FakeStatsRepository({required this.journal, this.subscriptions});
+
+  final FakeJournalRepository journal;
+
+  /// Source de l'offre de l'utilisateur ; sans elle, l'offre est gratuite.
+  final FakeSubscriptionRepository? subscriptions;
+
+  /// Fait échouer le chargement.
+  Failure? failure;
+
+  @override
+  Future<LearningStats> get({
+    required LearningLanguage language,
+    required DateTime day,
+  }) async {
+    final failure = this.failure;
+    if (failure != null) throw failure;
+
+    final entries = await journal.recentEntries();
+    final days = {
+      for (final entry in entries)
+        DateTime(
+          entry.entryDate.year,
+          entry.entryDate.month,
+          entry.entryDate.day,
+        ),
+    };
+    final today = DateTime(day.year, day.month, day.day);
+    var cursor = days.contains(today)
+        ? today
+        : today.subtract(const Duration(days: 1));
+    var streak = 0;
+    while (days.contains(cursor)) {
+      streak++;
+      cursor = cursor.subtract(const Duration(days: 1));
+    }
+
+    final inLanguage = entries.where((entry) => entry.language == language);
+    final isPremium = subscriptions?.activePlan != null;
+    if (!isPremium) {
+      return LearningStats(
+        isPremium: false,
+        streakDays: streak,
+        journals: inLanguage.length,
+      );
+    }
+
+    final counts = <ErrorCategory, int>{};
+    for (final item in inLanguage.expand((entry) => entry.items)) {
+      counts[item.category] = (counts[item.category] ?? 0) + 1;
+    }
+    final words = inLanguage.expand((entry) => entry.vocabulary).toList();
+    return LearningStats(
+      isPremium: true,
+      streakDays: streak,
+      journals: inLanguage.length,
+      wordsLearned: words.where((word) => word.learnedAt != null).length,
+      wordsTotal: words.length,
+      mistakesByCategory: [
+        for (final MapEntry(:key, :value) in counts.entries)
+          CategoryCount(category: key, count: value),
+      ]..sort((a, b) => b.count.compareTo(a.count)),
+      weeklyMistakeRate: [
+        if (inLanguage.isNotEmpty)
+          WeeklyMistakeRate(
+            weekStart: DateTime(2026, 11, 16),
+            mistakesPerSentence: 0.5,
+          ),
+      ],
+    );
+  }
+}
+
+/// Services vocaux simulés : la dictée « entend » [dictatedText].
+class FakeVoiceService implements VoiceService {
+  /// Issue des demandes de dictée.
+  DictationStart dictation = DictationStart.started;
+
+  /// Ce que l'utilisateur dit.
+  String dictatedText = 'I has a dog.';
+
+  /// Langues que l'appareil sait lire.
+  Set<LearningLanguage> speakable = LearningLanguage.values.toSet();
+
+  final spoken = <(String, LearningLanguage)>[];
+  void Function()? _onDone;
+
+  @override
+  Future<DictationStart> startDictation({
+    required LearningLanguage language,
+    required void Function(String text) onText,
+    required void Function() onDone,
+  }) async {
+    if (dictation != DictationStart.started) return dictation;
+    _onDone = onDone;
+    // Texte partiel puis complet, comme la reconnaissance du système.
+    onText(dictatedText.split(' ').first);
+    onText(dictatedText);
+    return dictation;
+  }
+
+  @override
+  Future<void> stopDictation() async {
+    _onDone?.call();
+    _onDone = null;
+  }
+
+  @override
+  Future<bool> canSpeak(LearningLanguage language) async =>
+      speakable.contains(language);
+
+  @override
+  Future<void> speak(String text, LearningLanguage language) async =>
+      spoken.add((text, language));
+
+  @override
+  Future<void> stopSpeaking() async {}
 }

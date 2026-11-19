@@ -11,14 +11,10 @@ class SupabaseLanguageRepository implements LanguageRepository {
 
   @override
   Future<List<LearningLanguage>> activeLanguages() => guardFailures(() async {
-    final rows = await _client
-        .from('user_languages')
-        .select('language')
-        .eq('is_active', true)
-        .order('activated_at', ascending: true);
+    // La limite de l'offre est appliquée par le serveur.
+    final codes = await _client.rpc<List<dynamic>>('get_languages');
     return [
-      for (final row in rows)
-        LearningLanguage.fromCode(row['language'] as String),
+      for (final code in codes) LearningLanguage.fromCode(code as String),
     ];
   });
 
@@ -26,6 +22,14 @@ class SupabaseLanguageRepository implements LanguageRepository {
   Future<void> activate(LearningLanguage language) => guardFailures(
     () => _client.rpc<void>(
       'activate_language',
+      params: {'p_language': language.code},
+    ),
+  );
+
+  @override
+  Future<void> deactivate(LearningLanguage language) => guardFailures(
+    () => _client.rpc<void>(
+      'deactivate_language',
       params: {'p_language': language.code},
     ),
   );

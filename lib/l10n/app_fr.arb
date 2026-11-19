@@ -59,7 +59,6 @@
   "languageSpanish": "Espagnol",
   "languageGerman": "Allemand",
   "languageFrench": "Français",
-  "profileLanguage": "Langue apprise",
   "profileChangeLanguageNote": "Avec l'offre gratuite, tu pratiques une langue à la fois. Ton historique est conservé.",
   "profileSignOut": "Se déconnecter",
   "profileDeleteAccount": "Supprimer mon compte",
@@ -328,5 +327,121 @@
   "errorPremiumRequired": "Cette fonction est réservée aux abonnés.",
   "errorUsageLimit": "Tu as atteint la limite du jour. À demain !",
   "paywallBenefitAdvanced": "Corrections avancées et reformulations",
-  "paywallBenefitExercises": "Exercices sur tes propres erreurs"
+  "paywallBenefitExercises": "Exercices sur tes propres erreurs",
+  "profileLanguages": "{count, plural, =1{Langue apprise} other{Langues apprises}}",
+  "@profileLanguages": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileLanguagesPremiumNote": "Ajoute les langues que tu pratiques. Ton journal s'écrit dans la langue en cours ; chaque langue garde ses journaux et son vocabulaire.",
+  "languageCurrent": "Langue du journal",
+  "languageMakeCurrent": "Écrire dans cette langue",
+  "languageAdd": "Ajouter",
+  "languageRemove": "Retirer cette langue",
+  "languagesPremiumHint": "Plusieurs langues avec Premium",
+  "journalSwitchLanguage": "Changer de langue",
+  "errorLanguageLimit": "Ton offre ne permet pas d'autre langue. Retires-en une pour en ajouter une autre.",
+  "paywallBenefitLanguages": "Plusieurs langues, dictée et statistiques",
+  "journalStreak": "{count, plural, =1{1 jour de suite} other{{count} jours de suite}}",
+  "@journalStreak": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "progressStreakLabel": "Série en cours",
+  "progressStreakUnit": "{count, plural, =1{jour} other{jours}}",
+  "@progressStreakUnit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "progressStreakStart": "Écris un journal aujourd'hui pour lancer ta série.",
+  "progressStreakKeep": "Écris chaque jour pour la prolonger.",
+  "progressJournals": "Journaux en {language}",
+  "@progressJournals": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "progressWordsLearned": "Mots appris",
+  "progressWordsOf": "sur {total}",
+  "@progressWordsOf": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "progressMistakesTitle": "Fautes par type",
+  "progressMistakesEmpty": "Aucune faute relevée pour l'instant.",
+  "progressRateTitle": "Fautes par phrase",
+  "progressRateSubtitle": "Semaine par semaine, sur les 8 dernières semaines",
+  "progressRateWeek": "Semaine du {date} : {rate} par phrase",
+  "@progressRateWeek": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "progressRateDetails": "Voir le détail",
+  "progressRateEmpty": "Les semaines apparaîtront avec tes journaux.",
+  "progressPremiumTitle": "Statistiques détaillées",
+  "progressPremiumBody": "Mots appris, fautes les plus fréquentes et progrès semaine après semaine, avec Premium.",
+  "voiceDictate": "Dicter",
+  "voiceStopDictation": "Arrêter la dictée",
+  "voicePermissionDenied": "Sans accès au micro, la dictée n'est pas possible. Tu peux l'autoriser dans les réglages du téléphone, ou écrire au clavier.",
+  "voiceDictationUnavailable": "Ton téléphone ne propose pas la dictée dans cette langue.",
+  "voiceListen": "Écouter la version corrigée",
+  "voiceStopListening": "Arrêter la lecture",
+  "exportTitle": "Exporter mes révisions en PDF",
+  "exportChoosePeriod": "Quelle période exporter ?",
+  "exportLastWeek": "Les 7 derniers jours",
+  "exportLastMonth": "Les 30 derniers jours",
+  "exportAll": "Tout l'historique",
+  "exportNothing": "Aucun journal corrigé sur cette période.",
+  "exportPdfTitle": "Mes révisions — {language}",
+  "@exportPdfTitle": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "exportPdfPeriod": "Du {start} au {end}",
+  "@exportPdfPeriod": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "exportPdfGenerated": "Créé le {date} avec Journal de Langue.",
+  "@exportPdfGenerated": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "exportPdfNoWords": "Aucun mot à réviser sur cette période.",
+  "exportPdfTerm": "Mot ou expression",
+  "exportPdfTranslation": "Traduction",
+  "exportPdfExample": "Exemple",
+  "exportPdfCorrections": "Mes journaux corrigés"
 }

@@ -24,7 +24,7 @@ jamais d'exception Supabase.
 | Repository | Méthodes | Source |
 |------------|----------|--------|
 | `AuthRepository` | `watchUserId`, `signUp`, `confirmSignUp`, `resendSignUpCode`, `signIn`, `requestPasswordReset`, `resetPassword`, `signOut`, `deleteAccount` (Google / Apple en Inc-1b) | Auth + RPC `delete_account` |
-| `LanguageRepository` | `activeLanguages`, `activate` | Postgres + RPC `activate_language` |
+| `LanguageRepository` | `activeLanguages` (langue en cours d'abord), `activate`, `deactivate` | RPC `get_languages`, `activate_language`, `deactivate_language` |
 | `EntitlementsRepository` | `watch()` → `Entitlements` (offre, limites, crédits, restant du jour) | RPC `get_entitlements` |
 | `JournalRepository` | `allowance(day)`, `entryOfDay(day)`, `entry(id)`, `submit(text, language, uiLocale, day, idempotencyKey)`, `rewrite(entryId, sentence)` | RPC `get_entitlements`, Postgres, EF `correct-entry`, EF `rewrite-sentence` |
 | `JournalDraftStore` | `load`, `save`, `clearAll` | stockage sécurisé de l'appareil |
@@ -32,7 +32,9 @@ jamais d'exception Supabase.
 | `VocabularyRepository` | `today()`, `list(page)`, `markLearned(id)` | Postgres |
 | `RewriteRepository` | `rewrite(entryId, sentenceIndex)` | EF `rewrite-sentence` |
 | `ExerciseRepository` | `next(language, uiLocale, day)`, `answer(exerciseId, choice, day)` | EF `next-exercises`, RPC `answer_exercise` |
-| `StatsRepository` | `get(language)` | RPC `get_stats` |
+| `StatsRepository` | `get(language, day)` | RPC `get_stats` |
+| `VoiceService` | `startDictation`, `stopDictation`, `canSpeak`, `speak`, `stopSpeaking` | reconnaissance et synthèse vocales du système |
+| Export (`ExportController`) | `export(period)` : PDF créé sur l'appareil (`buildReviewPdf`), remis par la feuille de partage | `JournalRepository.recentEntries` |
 | `BillingRepository` | `offerings()`, `purchase(package)`, `restore()` | RevenueCat SDK |
 | `RewardRepository` | `claim(kind, adToken)` | EF `claim-reward` |
 | `ExamRepository` | `start()`, `submit(examId, text)` | EF `exam` |

@@ -14,9 +14,9 @@ import '../../billing/domain/subscription.dart';
 import '../../billing/presentation/offer_labels.dart';
 import '../../journal/application/journal_providers.dart';
 import '../../languages/application/language_providers.dart';
-import '../../languages/domain/learning_language.dart';
 import '../../languages/presentation/language_choice_list.dart';
 import '../../languages/presentation/language_labels.dart';
+import '../../languages/presentation/language_manager.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -25,10 +25,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final activeLanguage = ref
-        .watch(activeLanguagesProvider)
-        .value
-        ?.firstOrNull;
+    final languages = ref.watch(activeLanguagesProvider).value ?? const [];
     final accountAction = ref.watch(accountControllerProvider);
 
     ref.listen(accountControllerProvider, (_, next) {
@@ -46,12 +43,17 @@ class ProfileScreen extends ConsumerWidget {
           children: [
             ListTile(
               leading: const Icon(Icons.translate),
-              title: Text(l10n.profileLanguage),
-              subtitle: activeLanguage == null
+              title: Text(l10n.profileLanguages(languages.length)),
+              subtitle: languages.isEmpty
                   ? null
-                  : Text(languageName(l10n, activeLanguage)),
+                  : Text(
+                      [
+                        for (final language in languages)
+                          languageName(l10n, language),
+                      ].join(', '),
+                    ),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => _showLanguagePicker(context, activeLanguage),
+              onTap: () => _showLanguagePicker(context),
             ),
             const _PlanSection(),
             const Divider(),
@@ -87,35 +89,20 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _showLanguagePicker(
-    BuildContext context,
-    LearningLanguage? activeLanguage,
-  ) {
-    final l10n = AppLocalizations.of(context);
+  Future<void> _showLanguagePicker(BuildContext context) {
     return showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      builder: (sheetContext) => SafeArea(
+      builder: (sheetContext) => const SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
+          padding: EdgeInsets.fromLTRB(
             AppSpacing.xl,
             0,
             AppSpacing.xl,
             AppSpacing.xl,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(l10n.profileChangeLanguageNote),
-              const SizedBox(height: AppSpacing.lg),
-              LanguageChoiceList(
-                selected: activeLanguage,
-                onActivated: () => Navigator.of(sheetContext).pop(),
-              ),
-            ],
-          ),
+          child: _LanguageSheet(),
         ),
       ),
     );
@@ -251,5 +238,54 @@ class _PlanSection extends ConsumerWidget {
         ? l10n.profilePlanTrialUntil(date)
         : l10n.profilePlanUntil(date);
     return '$plan\n$deadline';
+  }
+}
+
+/// Gratuit : une langue à la fois, choisie dans la liste. Premium : plusieurs
+/// langues (US-04).
+class _LanguageSheet extends ConsumerWidget {
+  const _LanguageSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final isPremium = watchActiveSubscription(ref) != null;
+
+    if (isPremium) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l10n.profileLanguagesPremiumNote),
+          const SizedBox(height: AppSpacing.lg),
+          const LanguageManager(),
+        ],
+      );
+    }
+
+    final current = ref.watch(activeLanguagesProvider).value?.firstOrNull;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(l10n.profileChangeLanguageNote),
+        const SizedBox(height: AppSpacing.lg),
+        LanguageChoiceList(
+          selected: current,
+          onActivated: () => Navigator.of(context).pop(),
+        ),
+        // Jamais d'offre payante avant une première correction (INTAKE §6).
+        if (watchHasCorrectedJournal(ref)) ...[
+          const SizedBox(height: AppSpacing.md),
+          OutlinedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              context.push(AppRoutes.paywall);
+            },
+            child: Text(l10n.languagesPremiumHint),
+          ),
+        ],
+      ],
+    );
   }
 }

@@ -80,6 +80,7 @@ class _OffersState extends ConsumerState<_Offers> {
             l10n.paywallBenefitLonger,
             l10n.paywallBenefitAdvanced,
             l10n.paywallBenefitExercises,
+            l10n.paywallBenefitLanguages,
             l10n.paywallBenefitHistory,
           ])
             _Benefit(benefit),

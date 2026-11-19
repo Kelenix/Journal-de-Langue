@@ -140,7 +140,7 @@ void main() {
     testWidgets('changer de langue remplace la langue active', (tester) async {
       await openProfile(tester);
 
-      await tapText(tester, english.profileLanguage);
+      await tapText(tester, english.profileLanguages(1));
       await tapText(tester, english.languageFrench);
 
       expect(find.text(english.profileChangeLanguageNote), findsNothing);

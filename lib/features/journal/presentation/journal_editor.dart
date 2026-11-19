@@ -12,6 +12,8 @@ import '../../../shared/presentation/failure_message.dart';
 import '../../../shared/widgets/error_message.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../languages/domain/learning_language.dart';
+import '../../stats/presentation/streak_badge.dart';
+import '../../voice/presentation/voice_buttons.dart';
 import '../application/journal_providers.dart';
 import '../domain/journal_draft_store.dart';
 import '../domain/journal_entry.dart';
@@ -114,6 +116,7 @@ class _JournalEditorState extends ConsumerState<JournalEditor> {
             color: theme.colorScheme.primary,
           ),
         ),
+        const StreakBadge(),
         const SizedBox(height: AppSpacing.sm),
         Text(
           l10n.journalIntro,
@@ -129,7 +132,24 @@ class _JournalEditorState extends ConsumerState<JournalEditor> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(l10n.journalCardTitle, style: theme.textTheme.titleMedium),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.journalCardTitle,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                    ),
+                    // Dictée réservée à Premium (US-15).
+                    if (widget.allowance.plan != null)
+                      DictationButton(
+                        controller: _text,
+                        language: widget.language,
+                        maxCharacters: widget.allowance.maxCharacters,
+                        enabled: !submission.isLoading,
+                      ),
+                  ],
+                ),
                 const SizedBox(height: AppSpacing.md),
                 TextField(
                   controller: _text,

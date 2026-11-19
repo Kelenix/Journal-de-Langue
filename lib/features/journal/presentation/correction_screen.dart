@@ -6,6 +6,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/widgets/async_view.dart';
+import '../../billing/application/billing_providers.dart';
+import '../../voice/presentation/voice_buttons.dart';
 import '../application/journal_providers.dart';
 import '../domain/journal_entry.dart';
 import 'category_labels.dart';
@@ -34,17 +36,18 @@ class CorrectionScreen extends ConsumerWidget {
   }
 }
 
-class _CorrectionContent extends StatelessWidget {
+class _CorrectionContent extends ConsumerWidget {
   const _CorrectionContent({required this.entry});
 
   final JournalEntry entry;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final colors = theme.extension<AppColors>()!;
     final items = entry.items;
+    final isPremium = watchActiveSubscription(ref) != null;
     final isAdvanced = entry.level == CorrectionLevel.advanced;
 
     return ListView(
@@ -69,7 +72,14 @@ class _CorrectionContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.xl),
-        _SectionTitle(l10n.correctionCorrectedVersion),
+        Row(
+          children: [
+            Expanded(child: _SectionTitle(l10n.correctionCorrectedVersion)),
+            // Lecture à voix haute réservée à Premium (US-15).
+            if (isPremium)
+              ListenButton(text: entry.correctedText, language: entry.language),
+          ],
+        ),
         HighlightedText(
           text: entry.correctedText,
           fragments: [for (final item in items) item.corrected],

@@ -33,6 +33,13 @@
 
 - [ ] Fixer une limite de dépense mensuelle dans la console Anthropic.
 
+## Voix et export (Inc-6, livré)
+
+- [ ] Essayer la dictée et la lecture à voix haute sur un vrai téléphone, dans les 4
+      langues : l'émulateur n'a pas de micro et ses voix varient.
+- [ ] Dans les fiches des stores (Inc-9), déclarer l'usage du micro : dictée du
+      journal, traitée sur l'appareil, rien n'est enregistré ni envoyé.
+
 ## Pour Inc-1b (connexion Google et Apple)
 
 - [ ] Créer les identifiants OAuth Google (Google Cloud Console) et les saisir dans

@@ -7,8 +7,11 @@ import 'package:journal_de_langue/core/utils/external_links.dart';
 import 'package:journal_de_langue/features/auth/application/auth_providers.dart';
 import 'package:journal_de_langue/features/billing/application/billing_providers.dart';
 import 'package:journal_de_langue/features/exercises/application/exercise_providers.dart';
+import 'package:journal_de_langue/features/export/application/export_providers.dart';
 import 'package:journal_de_langue/features/journal/application/journal_providers.dart';
 import 'package:journal_de_langue/features/languages/application/language_providers.dart';
+import 'package:journal_de_langue/features/stats/application/stats_providers.dart';
+import 'package:journal_de_langue/features/voice/application/voice_providers.dart';
 import 'package:journal_de_langue/features/vocabulary/application/vocabulary_providers.dart';
 import 'package:journal_de_langue/l10n/app_localizations.dart';
 
@@ -44,6 +47,9 @@ Future<void> pumpApp(
   FakeSubscriptionRepository? subscriptions,
   FakeBillingRepository? billing,
   FakeExerciseRepository? exercises,
+  FakeStatsRepository? stats,
+  FakeVoiceService? voice,
+  List<({String fileName, int size})>? sharedPdfs,
   List<Uri>? openedUrls,
 }) async {
   tester.view
@@ -53,15 +59,22 @@ Future<void> pumpApp(
 
   final vocabularyRepository = vocabulary ?? FakeVocabularyRepository();
   final subscriptionRepository = subscriptions ?? FakeSubscriptionRepository();
+  final journalRepository =
+      journal ??
+      FakeJournalRepository(
+        vocabulary: vocabularyRepository,
+        subscriptions: subscriptionRepository,
+      );
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         authRepositoryProvider.overrideWithValue(auth),
         languageRepositoryProvider.overrideWithValue(languages),
-        journalRepositoryProvider.overrideWithValue(
-          journal ??
-              FakeJournalRepository(
-                vocabulary: vocabularyRepository,
+        journalRepositoryProvider.overrideWithValue(journalRepository),
+        statsRepositoryProvider.overrideWithValue(
+          stats ??
+              FakeStatsRepository(
+                journal: journalRepository,
                 subscriptions: subscriptionRepository,
               ),
         ),
@@ -74,6 +87,11 @@ Future<void> pumpApp(
         exerciseRepositoryProvider.overrideWithValue(
           exercises ??
               FakeExerciseRepository(subscriptions: subscriptionRepository),
+        ),
+        voiceServiceProvider.overrideWithValue(voice ?? FakeVoiceService()),
+        pdfSharerProvider.overrideWithValue(
+          (bytes, fileName) async =>
+              sharedPdfs?.add((fileName: fileName, size: bytes.length)),
         ),
         urlOpenerProvider.overrideWithValue((uri) async {
           openedUrls?.add(uri);

@@ -5,6 +5,81 @@
 
 ---
 
+## ADR-027 — Voix et export PDF : paquets, permissions, contrainte de version
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôles : flutter-engineer, security-engineer)
+- **Contexte** : ADR-005 retient la voix et le PDF sur l'appareil. Il faut des paquets,
+  des permissions et une façon de remettre le PDF à l'utilisateur.
+- **Décision** : `speech_to_text` (reconnaissance du système) et `flutter_tts`
+  (synthèse du système) derrière une interface `VoiceService` ; `pdf` pour créer le
+  document avec les polices de l'app embarquées, `share_plus` pour le remettre par la
+  feuille de partage du système (enregistrer, envoyer, imprimer), sans écrire de
+  fichier nous-mêmes. Permissions Android : `RECORD_AUDIO`, demandée à la première
+  dictée seulement ; les permissions Bluetooth suggérées par le paquet ne sont pas
+  déclarées (inutiles sans casque Bluetooth, permissions minimales). iOS : raisons du
+  micro et de la reconnaissance vocale dans `Info.plist`. Le paquet `image`, dépendance
+  de `pdf`, est contraint sous 4.11 : la 4.11 appelle une fonction d'`archive` 4.1 que
+  `pdf` 3.12 refuse ; `pdf` 3.13 lèvera la contrainte mais demande Dart 3.12.
+- **Constat lié** : la permission Internet n'était déclarée que pour les versions debug
+  et profile ; une version publiée n'aurait pas joint Supabase. Elle est maintenant
+  dans le manifeste principal.
+- **Alternatives écartées** : services vocaux cloud (coût par usage, ADR-005) ;
+  `printing` pour l'export (moteur d'impression natif plus lourd, inutile pour un
+  partage) ; `dependency_overrides` (masque les conflits au lieu de les borner).
+- **Conséquences** : qualité de la dictée et des voix variable selon l'appareil ; la
+  dictée est masquée si l'appareil ne reconnaît pas la langue. Dictée et lecture ne
+  sont pas testables sur un émulateur sans micro : à vérifier sur un téléphone.
+- **Impact** : technique (réversible).
+
+## ADR-026 — Statistiques calculées en base, série visible par tous
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôles : backend-engineer, product-owner)
+- **Contexte** : US-16 réserve les statistiques à Premium mais rend la série visible en
+  gratuit. L'historique gratuit est limité à 4 jours par la RLS : l'app ne peut pas
+  compter seule une série plus longue.
+- **Décision** : une fonction `get_stats(langue, date)` calcule en base : série (jours
+  consécutifs avec un journal corrigé, toutes langues confondues, jusqu'à aujourd'hui
+  ou hier, pour ne pas la perdre avant la fin de la journée), nombre de journaux de la
+  langue, et pour Premium seulement : mots appris, fautes par type, fautes par phrase
+  semaine par semaine sur 8 semaines. Une date d'appareil invraisemblable est remplacée
+  par celle du serveur. L'écran présente la série en chiffre principal, les fautes par
+  type en barres classées et les 8 dernières semaines en colonnes, une par semaine,
+  vides comprises, pour que l'axe du temps reste régulier ; chaque valeur est donnée
+  au toucher et dans une liste « Voir le détail ».
+- **Alternatives écartées** : calcul dans l'app (impossible au-delà de 4 jours en
+  gratuit) ; table de compteurs tenue à jour (plus de code, risque d'écart).
+- **Conséquences** : un appel léger par ouverture de l'écran Progrès ou du Journal ; la
+  série reste juste même si l'utilisateur change de langue.
+- **Impact** : fonctionnel (réversible).
+
+## ADR-025 — Plusieurs langues : langues « utilisables » selon l'offre
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôles : database-architect, product-owner)
+- **Contexte** : INTAKE §11 : une langue en gratuit, 3 en Premium hebdomadaire ou
+  mensuel, 4 en annuel. À la fin d'un abonnement, rien ne doit être perdu, mais les
+  langues en trop ne doivent plus servir.
+- **Décision** : la limite `max_languages` s'ajoute aux limites de l'offre. Les langues
+  utilisables sont les langues actives les plus récemment choisies, dans cette limite ;
+  la plus récente est la langue du journal. Choisir une langue déjà active en fait la
+  langue en cours, sans rien retirer. En gratuit, choisir une langue remplace la
+  précédente, comme avant. Correction et exercices exigent une langue utilisable (la
+  fonction d'exercices ne vérifiait pas la langue : corrigé). Les langues sont relues
+  après un achat, pas à chaque changement d'offre, pour ne pas renvoyer la navigation
+  vers l'écran de démarrage pendant le rechargement.
+- **Alternatives écartées** : désactiver les langues en trop à l'expiration (aucun
+  événement fiable à l'instant de l'expiration, et perte de la liste au réabonnement) ;
+  langue en cours gardée sur l'appareil (différente d'un appareil à l'autre).
+- **Conséquences** : un ancien abonné garde ses journaux et son vocabulaire dans toutes
+  ses langues, et pratique la dernière choisie. Les achats « langue 30 jours » (Inc-7)
+  s'ajouteront à cette limite.
+- **Impact** : fonctionnel (réversible).
+
 ## ADR-024 — Exercices : réserve partagée, corrigés par le serveur
 
 - **Date** : 2026-11-19

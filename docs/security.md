@@ -10,7 +10,7 @@
 | Secrets | L'app ne contient que l'URL Supabase et la clé publique, injectées à la compilation ; aucune clé de service | `env/example.json`, revue |
 | Accès aux données | RLS activée sur `profiles` et `user_languages` ; lecture de ses propres lignes uniquement ; aucune écriture directe ; visiteur non connecté sans aucun droit | `supabase test db` |
 | Écritures | Uniquement par fonctions `security definer` à `search_path` vide, basées sur `auth.uid()` : `activate_language`, `delete_account` | `supabase test db`, tests d'intégration |
-| Limite d'offre | « Une langue active en gratuit » appliquée dans `activate_language`, pas dans l'app | `supabase test db` |
+| Limite d'offre | Nombre de langues selon l'offre appliqué dans `activate_language` ; seules les langues utilisables sont corrigées ou servent aux exercices ; détails des statistiques réservés à Premium dans `get_stats` | `supabase test db` |
 | Inscription | E-mail confirmé par code à 6 chiffres (15 min) avant toute connexion ; mot de passe de 8 caractères minimum, vérifié aussi côté serveur | Tests d'intégration |
 | Énumération de comptes | Message unique « e-mail ou mot de passe incorrect » ; la demande de réinitialisation répond de la même façon qu'un compte existe ou non | Tests d'écran |
 | Suppression de compte | Double confirmation ; suppression de l'utilisateur et, par cascade, de toutes ses données | Tests d'intégration et SQL |
@@ -33,7 +33,14 @@
 
 ## Permissions demandées
 
-Internet uniquement.
+- Internet : Supabase et les fonctions de l'app. Déclarée dans le manifeste
+  principal depuis Inc-6 (elle ne l'était qu'en debug, ADR-027).
+- Micro (Android `RECORD_AUDIO`, iOS micro et reconnaissance vocale) : dictée du
+  journal en Premium, demandée à la première dictée seulement ; un refus laisse
+  l'app utilisable au clavier. La voix est traitée par le système de
+  l'appareil, jamais envoyée à nos serveurs.
+- Aucune autre : le PDF passe par la feuille de partage du système, sans accès
+  au stockage.
 
 ## Points résiduels
 

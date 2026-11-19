@@ -9,6 +9,9 @@ import '../../../routing/app_routes.dart';
 import '../../../shared/presentation/failure_message.dart';
 import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../billing/application/billing_providers.dart';
+import '../../export/application/export_providers.dart';
+import '../../export/domain/export_period.dart';
 import '../application/vocabulary_providers.dart';
 import '../domain/vocabulary_item.dart';
 
@@ -21,7 +24,10 @@ class ReviewScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.tabReview)),
+      appBar: AppBar(
+        title: Text(l10n.tabReview),
+        actions: const [_ExportAction()],
+      ),
       body: SafeArea(
         child: AsyncView(
           value: ref.watch(vocabularyProvider),
@@ -143,6 +149,80 @@ class _VocabularyCard extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Exporte les révisions en PDF (US-17, Premium).
+class _ExportAction extends ConsumerWidget {
+  const _ExportAction();
+
+  static const _progressSize = 20.0;
+
+  Future<void> _export(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+    final period = await showModalBottomSheet<ExportPeriod>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Text(
+                l10n.exportChoosePeriod,
+                style: Theme.of(sheetContext).textTheme.titleMedium,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            for (final (period, label) in [
+              (ExportPeriod.lastWeek, l10n.exportLastWeek),
+              (ExportPeriod.lastMonth, l10n.exportLastMonth),
+              (ExportPeriod.allTime, l10n.exportAll),
+            ])
+              ListTile(
+                title: Text(label),
+                onTap: () => Navigator.of(sheetContext).pop(period),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (period == null || !context.mounted) return;
+    await ref.read(exportControllerProvider.notifier).export(period, l10n);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (watchActiveSubscription(ref) == null) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context);
+
+    ref.listen(exportControllerProvider, (_, next) {
+      final error = next.error;
+      if (error == null) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(failureMessage(l10n, error))));
+    });
+
+    if (ref.watch(exportControllerProvider).isLoading) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        child: SizedBox.square(
+          dimension: _progressSize,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            semanticsLabel: l10n.exportTitle,
+          ),
+        ),
+      );
+    }
+    return IconButton(
+      tooltip: l10n.exportTitle,
+      icon: const Icon(Icons.picture_as_pdf_outlined),
+      onPressed: () => _export(context, ref),
     );
   }
 }
