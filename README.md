@@ -99,6 +99,12 @@ pour retrouver la configuration normale des fonctions.
 
 Les e-mails envoyés en local sont visibles sur http://127.0.0.1:55324.
 
+## Simuler un abonnement en local
+
+Sans store, un abonnement se simule en envoyant une notification à la fonction
+`revenuecat-webhook` : voir `test_integration/subscription_backend_test.dart`, qui le fait
+pour chaque cas (essai, renouvellement, expiration, remboursement).
+
 ## Ports locaux
 
 Ce projet utilise la plage **5532x** (API 55321, base 55322, Studio 55323, e-mails 55324)

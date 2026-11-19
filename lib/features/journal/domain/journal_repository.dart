@@ -17,6 +17,13 @@ abstract interface class JournalRepository {
 
   Future<HistoryOverview> historyOverview();
 
+  /// Reformule [sentence], tirée de la version corrigée du journal [entryId]
+  /// (Premium).
+  Future<SentenceRewrite> rewrite({
+    required String entryId,
+    required String sentence,
+  });
+
   /// Fait corriger [text]. Rejouer le même [idempotencyKey] après une coupure
   /// rend la correction déjà faite sans consommer une seconde fois le quota.
   Future<JournalEntry> submit({

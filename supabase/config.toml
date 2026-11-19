@@ -428,3 +428,14 @@ enabled = true
 # valable quel que soit le type de clé de signature du projet.
 [functions.correct-entry]
 verify_jwt = false
+
+# RevenueCat s'authentifie par un secret partagé, pas par un jeton d'utilisateur.
+[functions.revenuecat-webhook]
+verify_jwt = false
+
+# Comme correct-entry : le jeton de l'utilisateur est vérifié dans la fonction.
+[functions.rewrite-sentence]
+verify_jwt = false
+
+[functions.next-exercises]
+verify_jwt = false

@@ -45,8 +45,10 @@ Failure mapError(Object error, StackTrace stackTrace) {
 
 const _aiUnavailableStatus = 503;
 
-/// Refus renvoyé par la fonction `correct-entry`, d'après son champ `error`.
+/// Refus renvoyé par une Edge Function, d'après son champ `error`.
 Failure _correctionDenial(String code) {
+  if (code == 'premium_required') return const PremiumRequiredFailure();
+  if (code == 'rewrite_limit') return const UsageLimitFailure();
   for (final reason in CorrectionDenial.values) {
     if (reason.code == code) return CorrectionDeniedFailure(reason);
   }

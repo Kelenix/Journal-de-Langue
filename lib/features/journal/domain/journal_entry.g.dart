@@ -39,6 +39,9 @@ _JournalEntry _$JournalEntryFromJson(Map<String, dynamic> json) =>
       entryDate: DateTime.parse(json['entry_date'] as String),
       originalText: json['original_text'] as String,
       correctedText: json['corrected_text'] as String,
+      level:
+          $enumDecodeNullable(_$CorrectionLevelEnumMap, json['level']) ??
+          CorrectionLevel.basic,
       items: (json['correction_items'] as List<dynamic>)
           .map((e) => CorrectionItem.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -56,6 +59,7 @@ Map<String, dynamic> _$JournalEntryToJson(_JournalEntry instance) =>
       'entry_date': instance.entryDate.toIso8601String(),
       'original_text': instance.originalText,
       'corrected_text': instance.correctedText,
+      'level': _$CorrectionLevelEnumMap[instance.level]!,
       'correction_items': instance.items,
       'vocabulary_items': instance.vocabulary,
     };
@@ -67,11 +71,31 @@ const _$LearningLanguageEnumMap = {
   LearningLanguage.french: 'fr',
 };
 
+const _$CorrectionLevelEnumMap = {
+  CorrectionLevel.basic: 'basic',
+  CorrectionLevel.advanced: 'advanced',
+};
+
+_SentenceRewrite _$SentenceRewriteFromJson(Map<String, dynamic> json) =>
+    _SentenceRewrite(
+      polite: json['polite'] as String,
+      casual: json['casual'] as String,
+      professional: json['professional'] as String,
+    );
+
+Map<String, dynamic> _$SentenceRewriteToJson(_SentenceRewrite instance) =>
+    <String, dynamic>{
+      'polite': instance.polite,
+      'casual': instance.casual,
+      'professional': instance.professional,
+    };
+
 _JournalAllowance _$JournalAllowanceFromJson(Map<String, dynamic> json) =>
     _JournalAllowance(
       maxSentences: (json['max_sentences'] as num).toInt(),
       maxCharacters: (json['max_characters'] as num).toInt(),
       correctionsLeft: (json['corrections_left'] as num).toInt(),
+      plan: $enumDecodeNullable(_$SubscriptionPlanEnumMap, json['plan']),
     );
 
 Map<String, dynamic> _$JournalAllowanceToJson(_JournalAllowance instance) =>
@@ -79,11 +103,18 @@ Map<String, dynamic> _$JournalAllowanceToJson(_JournalAllowance instance) =>
       'max_sentences': instance.maxSentences,
       'max_characters': instance.maxCharacters,
       'corrections_left': instance.correctionsLeft,
+      'plan': _$SubscriptionPlanEnumMap[instance.plan],
     };
+
+const _$SubscriptionPlanEnumMap = {
+  SubscriptionPlan.weekly: 'weekly',
+  SubscriptionPlan.monthly: 'monthly',
+  SubscriptionPlan.annual: 'annual',
+};
 
 _HistoryOverview _$HistoryOverviewFromJson(Map<String, dynamic> json) =>
     _HistoryOverview(
-      historyDays: (json['history_days'] as num).toInt(),
+      historyDays: (json['history_days'] as num?)?.toInt(),
       lockedEntries: (json['locked_entries'] as num).toInt(),
     );
 

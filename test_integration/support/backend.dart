@@ -85,3 +85,50 @@ Future<Map<String, dynamic>> _mailbox(
     httpClient.close();
   }
 }
+
+/// Secret défini dans supabase/functions/.env.test.
+const _webhookSecret = 'secret-de-test-du-webhook';
+
+/// Envoie [body] à la fonction `revenuecat-webhook`, comme le ferait RevenueCat.
+Future<({int status, Object? body})> postWebhook(
+  Map<String, Object?> body, {
+  String? secret = _webhookSecret,
+}) async {
+  final httpClient = HttpClient();
+  try {
+    final request = await httpClient.postUrl(
+      Uri.parse('http://$_host:55321/functions/v1/revenuecat-webhook'),
+    );
+    request.headers.contentType = ContentType.json;
+    if (secret != null) request.headers.set('Authorization', secret);
+    request.write(jsonEncode(body));
+    final response = await request.close();
+    final text = await response.transform(utf8.decoder).join();
+    return (status: response.statusCode, body: jsonDecode(text) as Object?);
+  } finally {
+    httpClient.close();
+  }
+}
+
+/// Donne un abonnement Premium mensuel à l'utilisateur connecté sur [client].
+Future<void> activatePremium(SupabaseClient client) async {
+  final userId = client.auth.currentUser!.id;
+  final now = DateTime.now();
+  final response = await postWebhook({
+    'api_version': '1.0',
+    'event': {
+      'id': 'test-${now.microsecondsSinceEpoch}',
+      'type': 'INITIAL_PURCHASE',
+      'app_user_id': userId,
+      'product_id': 'premium_monthly',
+      'period_type': 'NORMAL',
+      'event_timestamp_ms': now.millisecondsSinceEpoch,
+      'expiration_at_ms': now
+          .add(const Duration(days: 30))
+          .millisecondsSinceEpoch,
+    },
+  });
+  if (response.status != HttpStatus.ok) {
+    fail('Abonnement de test non appliqué : ${response.body}');
+  }
+}

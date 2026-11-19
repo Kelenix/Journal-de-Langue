@@ -8,9 +8,9 @@
 - **Phase courante** : 4 — Implémentation
 - **Dernière mise à jour** : 2026-11-19
 - **Santé** : 🟡 attention (build Android impossible sur l'hôte, contourné par Docker)
-- **Prochaine action** : Inc-4 — abonnements Premium et essai. Bloqué pour un achat
-  réel tant que les comptes Google Play et RevenueCat n'existent pas ; la partie
-  indépendante des stores (droits côté serveur, écran d'offres) peut avancer.
+- **Prochaine action** : Inc-5 — IA Premium (corrections avancées, reformulations,
+  exercices), après feu vert de l'utilisateur. En attente côté utilisateur : comptes
+  stores et RevenueCat (Inc-4b), clé API Anthropic.
   En parallèle, côté utilisateur : fournir une clé API Anthropic pour relire de vraies
   corrections (voir `docs/manual-tasks.md`).
 - **Mode** : PLAN_PUIS_VALIDATION (plan validé le 2026-11-19, valeurs par défaut retenues).
@@ -25,7 +25,7 @@
 | 1 — Définition produit      | ✅ fait | `docs/product/user-stories.md` (24 stories) |
 | 2 — Planification           | ✅ fait | `docs/risks.md`, backlog ci-dessous |
 | 3 — Architecture & design   | ✅ fait | `docs/architecture.md`, `system-design.md`, `data-model.md`, `design/` |
-| 4 — Implémentation          | 🔄 en cours | Inc-0 à Inc-3 livrés : jalon J1 (boucle gratuite complète) |
+| 4 — Implémentation          | 🔄 en cours | Inc-0 à Inc-4 livrés : jalon J1 (boucle gratuite complète) atteint |
 | 5 — Qualité & performance   | ⬜ à faire | QA et revue faites à chaque incrément |
 | 6 — Publication (stores)    | ⬜ à faire | |
 | 7 — Documentation           | ⬜ à faire | README et docs tenus au fil de l'eau |
@@ -42,7 +42,8 @@
 | Inc-1b | Connexion Google et Apple | US-01 (reste) | ⏸️ | attend les identifiants OAuth (ADR-014) |
 | Inc-2 | Journal et correction de base | US-05, 06, 07 | ✅ | chaîne technique vérifiée avec un faux Claude ; qualité des vraies corrections à relire (ADR-018) |
 | Inc-3 | Vocabulaire et historique | US-08, 09 | ✅ | historique complet et filtre par langue avec Premium (Inc-4) |
-| Inc-4 | Abonnements Premium et essai | US-04, 10, 11 | ⬜ | attend comptes stores et RevenueCat |
+| Inc-4 | Abonnements Premium et essai : droits serveur, webhook, écran d'offres | US-10, 11 | ✅ | testé avec un faux store et des notifications simulées (ADR-021) |
+| Inc-4b | Achat réel : SDK RevenueCat (`purchases_flutter`) | US-11 (reste) | ⏸️ | attend comptes Google Play, RevenueCat et produits |
 | Inc-5 | IA Premium | US-12, 13, 14 | ⬜ | |
 | Inc-6 | Voix, statistiques, PDF, multi-langues | US-04, 15, 16, 17 | ⬜ | |
 | Inc-7 | Achats ponctuels | US-18 à 21 | ⬜ | |
@@ -54,9 +55,9 @@
 | Vérification | Résultat |
 |--------------|----------|
 | `flutter analyze` (hôte et conteneur) | 0 problème |
-| `flutter test` (hôte et conteneur) | 79 tests verts |
-| `flutter test test_integration --concurrency=1` (Supabase local, fonction de correction, faux Claude) | 21 tests verts |
-| `supabase test db` (RLS et fonctions) | 68 tests verts |
+| `flutter test` (hôte) | 101 tests verts |
+| `flutter test test_integration --concurrency=1` (Supabase local, fonctions de correction et d'achat, faux Claude) | 30 tests verts |
+| `supabase test db` (RLS et fonctions) | 95 tests verts |
 | `supabase db reset` (migrations rejouées depuis zéro, données de démonstration) | réussi |
 | Build APK de debug | réussi dans Docker ; **échoue sur l'hôte** (JDK) |
 | Parcours sur émulateur Android (APK de debug) | inscription avec code reçu par e-mail local, choix de la langue, session et brouillon conservés après mise à jour de l'app, compteur de phrases, envoi sans clé Claude (message « rien n'est débité »), déconnexion : OK. Non rejoués à la main : suppression de compte, correction réussie (couverts par les tests). |
@@ -68,8 +69,9 @@ Un compte de test `emu-…@example.test` existe dans la base locale ; l'émulate
 ## Reste à faire sur les incréments livrés
 
 - Liens vers les textes légaux sur l'écran d'inscription : avec les textes, en Inc-9.
-- Journaux plus anciens que 4 jours : signalés comme conservés, sans proposition
-  d'achat tant que Premium n'existe pas (Inc-4).
+- Achat réel impossible tant que l'app n'est pas reliée à RevenueCat (Inc-4b) : l'écran
+  d'offres affiche « abonnements pas encore disponibles ».
+- Multi-langues Premium (3 ou 4 langues) : avec Inc-6, comme prévu au plan.
 - Historique et vocabulaire chargés en une fois : la pagination viendra avec
   l'historique complet de Premium (Inc-4).
 - Message de limite du jour : texte neutre pour l'instant (« reviens demain ») ; la
@@ -107,6 +109,11 @@ Un compte de test `emu-…@example.test` existe dans la base locale ; l'émulate
 
 ## Journal de session (résumé court, le plus récent en haut)
 
+- 2026-11-19 — Inc-4 livré : abonnements et limites par offre en base, fonction
+  `revenuecat-webhook`, écran d'offres (annuel mis en avant, essai, conditions),
+  proposition Premium à la limite du jour, dans l'historique et le profil, jamais avant
+  la première correction. Défaut Riverpod trouvé et contourné (ADR-022). Build Docker :
+  le NDK était retéléchargé à chaque fois, désormais conservé (volume `android_sdk`).
 - 2026-11-19 — Inc-3 livré : Claude propose jusqu'à 5 mots par correction (limite de 5
   par jour et dédoublonnage en base), écran Réviser avec mots appris, écran Historique
   limité aux 4 derniers jours par la RLS, journaux anciens conservés. Données de

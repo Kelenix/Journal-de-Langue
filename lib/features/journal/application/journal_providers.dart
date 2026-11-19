@@ -4,6 +4,7 @@ import '../../../core/supabase/supabase_client_provider.dart';
 import '../../../core/utils/clock.dart';
 import '../../../core/utils/uuid.dart';
 import '../../auth/application/auth_providers.dart';
+import '../../billing/application/billing_providers.dart';
 import '../../languages/domain/learning_language.dart';
 import '../../vocabulary/application/vocabulary_providers.dart';
 import '../data/secure_journal_draft_store.dart';
@@ -25,8 +26,9 @@ typedef JournalDay = ({JournalAllowance allowance, JournalEntry? entry});
 
 final journalDayProvider = FutureProvider.autoDispose<JournalDay>(
   (ref) async {
-    // Recalculé quand l'utilisateur change.
+    // Recalculé quand l'utilisateur ou son offre change.
     await ref.watch(currentUserIdProvider.future);
+    await ref.watch(subscriptionProvider.future);
     final repository = ref.watch(journalRepositoryProvider);
     final today = ref.watch(clockProvider)();
     // L'un après l'autre : attendus ensemble, une erreur serait enveloppée et
@@ -48,13 +50,23 @@ typedef JournalHistory = ({
 final journalHistoryProvider = FutureProvider.autoDispose<JournalHistory>((
   ref,
 ) async {
-  // Recalculé quand l'utilisateur change.
+  // Recalculé quand l'utilisateur ou son offre change.
   await ref.watch(currentUserIdProvider.future);
+  await ref.watch(subscriptionProvider.future);
   final repository = ref.watch(journalRepositoryProvider);
   final entries = await repository.recentEntries();
   final overview = await repository.historyOverview();
   return (entries: entries, overview: overview);
 }, retry: (retryCount, error) => null);
+
+/// Vrai dès que l'utilisateur a fait corriger un journal : les offres payantes
+/// ne lui sont jamais proposées avant (INTAKE §6). Une fonction et non un
+/// provider, pour la même raison que `watchActiveSubscription` (ADR-022).
+bool watchHasCorrectedJournal(WidgetRef ref) {
+  final history = ref.watch(journalHistoryProvider).value;
+  return history != null &&
+      (history.entries.isNotEmpty || history.overview.lockedEntries > 0);
+}
 
 final journalEntryProvider = FutureProvider.autoDispose
     .family<JournalEntry, String>(

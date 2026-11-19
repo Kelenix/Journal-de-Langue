@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../billing/domain/subscription.dart';
 import '../../languages/domain/learning_language.dart';
 import '../../vocabulary/domain/vocabulary_item.dart';
 
@@ -16,6 +17,10 @@ enum ErrorCategory {
   phrasing,
   punctuation,
 }
+
+/// Profondeur de la correction : avancée pour les abonnés Premium (registre,
+/// formulation naturelle, explications détaillées).
+enum CorrectionLevel { basic, advanced }
 
 /// Une faute relevée dans un journal.
 @freezed
@@ -42,6 +47,7 @@ abstract class JournalEntry with _$JournalEntry {
     required DateTime entryDate,
     required String originalText,
     required String correctedText,
+    @Default(CorrectionLevel.basic) CorrectionLevel level,
     @JsonKey(name: 'correction_items') required List<CorrectionItem> items,
 
     /// Mots à réviser tirés de ce journal.
@@ -54,6 +60,19 @@ abstract class JournalEntry with _$JournalEntry {
       _$JournalEntryFromJson(json);
 }
 
+/// Une phrase reformulée en trois registres (Premium).
+@freezed
+abstract class SentenceRewrite with _$SentenceRewrite {
+  const factory SentenceRewrite({
+    required String polite,
+    required String casual,
+    required String professional,
+  }) = _SentenceRewrite;
+
+  factory SentenceRewrite.fromJson(Map<String, dynamic> json) =>
+      _$SentenceRewriteFromJson(json);
+}
+
 /// Ce que l'offre de l'utilisateur lui permet aujourd'hui.
 @freezed
 abstract class JournalAllowance with _$JournalAllowance {
@@ -62,6 +81,9 @@ abstract class JournalAllowance with _$JournalAllowance {
     required int maxSentences,
     required int maxCharacters,
     required int correctionsLeft,
+
+    /// Offre Premium en cours ; `null` avec l'offre gratuite.
+    SubscriptionPlan? plan,
   }) = _JournalAllowance;
 
   factory JournalAllowance.fromJson(Map<String, dynamic> json) =>
@@ -73,8 +95,9 @@ abstract class JournalAllowance with _$JournalAllowance {
 abstract class HistoryOverview with _$HistoryOverview {
   @JsonSerializable(fieldRename: FieldRename.snake)
   const factory HistoryOverview({
-    /// Nombre de jours d'historique lisibles.
-    required int historyDays,
+    /// Nombre de jours d'historique lisibles ; `null` si l'offre donne accès à
+    /// tout l'historique.
+    required int? historyDays,
 
     /// Journaux plus anciens, conservés mais non lisibles avec cette offre.
     required int lockedEntries,

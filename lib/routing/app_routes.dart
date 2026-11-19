@@ -14,6 +14,8 @@ abstract final class AppRoutes {
   static const forgotPassword = '/forgot-password';
   static const onboarding = '/onboarding';
 
+  static const paywall = '/paywall';
+
   static const correctionEntryId = 'entryId';
   static const correction = '/correction/:$correctionEntryId';
 

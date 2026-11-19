@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,6 +6,7 @@ import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/auth/presentation/verify_email_screen.dart';
+import '../features/billing/presentation/paywall_screen.dart';
 import '../features/history/presentation/history_screen.dart';
 import '../features/home/presentation/home_shell.dart';
 import '../features/home/presentation/startup_screen.dart';
@@ -47,6 +48,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => CorrectionScreen(
           entryId: state.pathParameters[AppRoutes.correctionEntryId]!,
         ),
+      ),
+      GoRoute(
+        path: AppRoutes.paywall,
+        pageBuilder: (context, state) =>
+            const MaterialPage(fullscreenDialog: true, child: PaywallScreen()),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

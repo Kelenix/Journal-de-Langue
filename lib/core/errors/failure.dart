@@ -60,6 +60,36 @@ final class AiUnavailableFailure extends Failure {
   const AiUnavailableFailure();
 }
 
+/// Les achats ne sont pas disponibles sur cet appareil ou dans cette version.
+final class BillingUnavailableFailure extends Failure {
+  const BillingUnavailableFailure();
+}
+
+/// Le store a refusé ou n'a pas pu finaliser l'achat. Rien n'a été débité.
+final class PurchaseFailure extends Failure {
+  const PurchaseFailure();
+}
+
+/// La fonction demandée fait partie de l'offre Premium.
+final class PremiumRequiredFailure extends Failure {
+  const PremiumRequiredFailure();
+}
+
+/// La limite quotidienne de l'offre est atteinte pour cette fonction.
+final class UsageLimitFailure extends Failure {
+  const UsageLimitFailure();
+}
+
+/// L'achat est fait mais le serveur n'en a pas encore reçu la confirmation.
+final class PurchasePendingFailure extends Failure {
+  const PurchasePendingFailure();
+}
+
+/// Aucun abonnement en cours à rattacher à ce compte.
+final class NothingToRestoreFailure extends Failure {
+  const NothingToRestoreFailure();
+}
+
 final class UnexpectedFailure extends Failure {
   const UnexpectedFailure();
 }

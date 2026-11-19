@@ -96,15 +96,19 @@ void main() {
     },
   );
 
-  testWidgets('aucune offre payante n\'apparaît avant ou après la correction', (
-    tester,
-  ) async {
+  testWidgets('aucune offre payante n\'apparaît avant la première correction ; '
+      'elle est proposée une fois la limite du jour atteinte', (tester) async {
     await pumpJournal(tester);
+    expect(find.textContaining('Premium'), findsNothing);
+
     await write(tester, 'I has a cat.');
     await tapSubmit(tester);
+    expect(find.textContaining('Premium'), findsNothing);
+
     await tapText(tester, english.correctionDone);
 
-    expect(find.textContaining('Premium'), findsNothing);
+    expect(find.text(english.journalDailyLimitReached), findsOneWidget);
+    expect(find.text(english.paywallDiscover), findsOneWidget);
   });
 
   testWidgets('une panne de correction garde le texte et dit que rien n\'est '

@@ -97,7 +97,7 @@
   },
   "journalSubmit": "Corriger",
   "journalSubmitting": "Claude lit ton journal…",
-  "journalDailyLimitReached": "Tu as utilisé ta correction gratuite du jour. Reviens demain pour continuer ta série.",
+  "journalDailyLimitReached": "Tu as utilisé ta correction gratuite du jour. Continue ta série avec Premium.",
   "journalViewCorrection": "Voir la correction",
   "correctionTitle": "Correction",
   "correctionYourVersion": "Ta version",
@@ -172,5 +172,109 @@
         "type": "int"
       }
     }
-  }
+  },
+  "journalPremiumLimitReached": "Tu as atteint la limite de corrections du jour. À demain !",
+  "paywallDiscover": "Découvrir Premium",
+  "paywallTitle": "Continue ta série avec Premium",
+  "paywallBenefitUnlimited": "Journaux illimités",
+  "paywallBenefitLonger": "Des journaux plus longs",
+  "paywallBenefitHistory": "Tout ton historique",
+  "paywallBestValue": "Le plus avantageux",
+  "planWeekly": "Hebdomadaire",
+  "planMonthly": "Mensuel",
+  "planAnnual": "Annuel",
+  "pricePerWeek": "{price} par semaine",
+  "@pricePerWeek": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "pricePerMonth": "{price} par mois",
+  "@pricePerMonth": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "pricePerYear": "{price} par an",
+  "@pricePerYear": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "paywallAnnualEquivalent": "soit {price} par mois",
+  "@paywallAnnualEquivalent": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "paywallStartTrial": "Essayer {days} jours gratuits",
+  "@paywallStartTrial": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "paywallSubscribe": "S'abonner",
+  "paywallTermsTrial": "{days} jours gratuits, puis {price}. L'abonnement se renouvelle automatiquement jusqu'à son annulation. Tu peux l'annuler à tout moment dans les réglages de ton store.",
+  "@paywallTermsTrial": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "paywallTerms": "{price}. L'abonnement se renouvelle automatiquement jusqu'à son annulation. Tu peux l'annuler à tout moment dans les réglages de ton store.",
+  "@paywallTerms": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "paywallRestore": "Restaurer mes achats",
+  "paywallWelcome": "Bienvenue dans Premium !",
+  "historyUnlock": "Voir tout mon historique avec Premium",
+  "profilePlan": "Mon offre",
+  "profilePlanFree": "Gratuite",
+  "profilePlanPremium": "Premium ({plan})",
+  "@profilePlanPremium": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "profilePlanTrialUntil": "Essai gratuit jusqu'au {date}",
+  "@profilePlanTrialUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "profilePlanUntil": "Prochaine échéance : {date}",
+  "@profilePlanUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "profileManageSubscription": "Gérer mon abonnement",
+  "errorBillingUnavailable": "Les abonnements ne sont pas encore disponibles dans cette version.",
+  "errorPurchaseFailed": "L'achat n'a pas abouti. Rien n'a été débité.",
+  "errorPurchasePending": "Ton achat est enregistré. Premium sera actif dans quelques instants.",
+  "errorNothingToRestore": "Aucun achat à restaurer sur ce compte."
 }

@@ -49,7 +49,10 @@ class JournalScreen extends ConsumerWidget {
                         language: language,
                         allowance: day.allowance,
                       )
-                    : _DailyLimitReached(entry: day.entry),
+                    : _DailyLimitReached(
+                        entry: day.entry,
+                        isPremium: day.allowance.plan != null,
+                      ),
               ),
       ),
     );
@@ -58,11 +61,12 @@ class JournalScreen extends ConsumerWidget {
 
 /// La correction du jour est utilisée : accès à la correction et rappel.
 class _DailyLimitReached extends StatelessWidget {
-  const _DailyLimitReached({required this.entry});
+  const _DailyLimitReached({required this.entry, required this.isPremium});
 
   static const _badgeRadius = 28.0;
 
   final JournalEntry? entry;
+  final bool isPremium;
 
   @override
   Widget build(BuildContext context) {
@@ -109,12 +113,23 @@ class _DailyLimitReached extends StatelessWidget {
           ),
         const SizedBox(height: AppSpacing.lg),
         Text(
-          l10n.journalDailyLimitReached,
+          isPremium
+              ? l10n.journalPremiumLimitReached
+              : l10n.journalDailyLimitReached,
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+        // L'offre payante n'est proposée qu'ici, une fois la correction
+        // gratuite du jour utilisée (INTAKE §6).
+        if (!isPremium) ...[
+          const SizedBox(height: AppSpacing.lg),
+          OutlinedButton(
+            onPressed: () => context.push(AppRoutes.paywall),
+            child: Text(l10n.paywallDiscover),
+          ),
+        ],
       ],
     );
   }

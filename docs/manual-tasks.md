@@ -49,14 +49,28 @@
       comme dans `supabase/config.toml`.
 - [ ] Appliquer les migrations : `supabase link` puis `supabase db push`.
 
-## Avant Inc-4 (achats)
+## Pour Inc-4b (achat réel)
 
 - [ ] Compte **Google Play Console** (25 $ une fois).
 - [ ] Compte **Apple Developer** (99 $ par an), requis pour iOS et la connexion Apple.
-- [ ] Compte **RevenueCat** (si Q1 = RevenueCat) relié aux deux stores.
-- [ ] Créer les produits dans les stores, avec les prix retenus en Q4 :
-      3 abonnements (hebdo, mensuel, annuel, essai de 3 jours), packs de 10 et 50
-      corrections, accès langue 30 jours, Pack Examinateur, suppression des publicités.
+- [ ] Compte **RevenueCat** relié aux deux stores.
+- [ ] Créer les 3 abonnements dans les stores avec **exactement** ces identifiants,
+      attendus par le serveur : `premium_weekly` (2,99 €), `premium_monthly` (4,99 €),
+      `premium_annual` (29,99 €), chacun avec un essai gratuit de 3 jours. Sur Google
+      Play, l'identifiant est celui de l'abonnement ; l'offre de base peut porter
+      n'importe quel nom.
+- [ ] Dans RevenueCat : créer le droit (entitlement) `premium`, une offre (offering)
+      contenant les 3 produits, puis me communiquer les clés publiques SDK Android et iOS.
+- [ ] Dans RevenueCat, Integrations > Webhooks : URL
+      `https://<projet>.supabase.co/functions/v1/revenuecat-webhook` et, dans
+      « Authorization header », une longue chaîne aléatoire. Enregistrer la même valeur
+      côté serveur, sans la coller dans le chat :
+
+      supabase secrets set REVENUECAT_WEBHOOK_AUTHORIZATION=<la chaîne>
+      supabase functions deploy revenuecat-webhook
+
+- [ ] Plus tard (Inc-7) : packs de 10 et 50 corrections, accès langue 30 jours, Pack
+      Examinateur, suppression des publicités.
 - [ ] Renseigner les informations fiscales et bancaires dans chaque store.
 
 ## Avant Inc-8 (publicités)

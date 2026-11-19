@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:journal_de_langue/app.dart';
 import 'package:journal_de_langue/core/utils/clock.dart';
+import 'package:journal_de_langue/core/utils/external_links.dart';
 import 'package:journal_de_langue/features/auth/application/auth_providers.dart';
+import 'package:journal_de_langue/features/billing/application/billing_providers.dart';
 import 'package:journal_de_langue/features/journal/application/journal_providers.dart';
 import 'package:journal_de_langue/features/languages/application/language_providers.dart';
 import 'package:journal_de_langue/features/vocabulary/application/vocabulary_providers.dart';
@@ -38,6 +40,9 @@ Future<void> pumpApp(
   FakeJournalRepository? journal,
   FakeVocabularyRepository? vocabulary,
   InMemoryJournalDraftStore? drafts,
+  FakeSubscriptionRepository? subscriptions,
+  FakeBillingRepository? billing,
+  List<Uri>? openedUrls,
 }) async {
   tester.view
     ..physicalSize = _phonePhysicalSize
@@ -45,14 +50,29 @@ Future<void> pumpApp(
   addTearDown(tester.view.reset);
 
   final vocabularyRepository = vocabulary ?? FakeVocabularyRepository();
+  final subscriptionRepository = subscriptions ?? FakeSubscriptionRepository();
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         authRepositoryProvider.overrideWithValue(auth),
         languageRepositoryProvider.overrideWithValue(languages),
         journalRepositoryProvider.overrideWithValue(
-          journal ?? FakeJournalRepository(vocabulary: vocabularyRepository),
+          journal ??
+              FakeJournalRepository(
+                vocabulary: vocabularyRepository,
+                subscriptions: subscriptionRepository,
+              ),
         ),
+        subscriptionRepositoryProvider.overrideWithValue(
+          subscriptionRepository,
+        ),
+        billingRepositoryProvider.overrideWithValue(
+          billing ?? FakeBillingRepository(subscriptionRepository),
+        ),
+        urlOpenerProvider.overrideWithValue((uri) async {
+          openedUrls?.add(uri);
+          return true;
+        }),
         vocabularyRepositoryProvider.overrideWithValue(vocabularyRepository),
         journalDraftStoreProvider.overrideWithValue(
           drafts ?? InMemoryJournalDraftStore(),

@@ -5,6 +5,57 @@
 
 ---
 
+## ADR-022 — Pas de provider dérivé d'un provider rechargé à la demande
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôle : state-management-engineer)
+- **Contexte** : Riverpod 3 met en pause les abonnements des écrans masqués (onglet
+  inactif, écran recouvert) et les reprend pendant la reconstruction. Avec
+  flutter_riverpod 3.3.2, si un provider invalidé entre-temps est observé par un autre
+  provider, cette reprise lève « setState() called during build » en mode debug. La
+  version 3.5.0 n'est pas installable avec Flutter 3.41.7.
+- **Décision** : (1) Un provider observé par d'autres est relu **tout de suite** après
+  son invalidation (`await ref.read(provider.future)`), jamais laissé « à recalculer ».
+  (2) Les valeurs dérivées d'un provider rechargé à la demande sont des fonctions
+  appelées par les écrans (`watchActiveSubscription`, `watchHasCorrectedJournal`), pas
+  des providers.
+- **Alternatives écartées** : Monter de version (impossible aujourd'hui) ; désactiver
+  la mise en pause (perte d'économie d'énergie et comportement non standard).
+- **Conséquences** : Règle à respecter dans les incréments suivants ; couverte par
+  `test/tab_refresh_regression_test.dart`. À revoir quand Flutter permettra Riverpod 3.5.
+- **Impact** : technique (réversible).
+
+## ADR-021 — Abonnements : droits côté serveur maintenant, SDK RevenueCat ensuite (Inc-4b)
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté (périmètre annoncé à l'utilisateur avant de commencer)
+- **Décideur** : Claude (rôles : backend-engineer, flutter-engineer)
+- **Contexte** : Un achat réel exige les comptes Google Play et RevenueCat, qui
+  n'existent pas encore. Le SDK RevenueCat ne peut pas être vérifié sans eux.
+- **Décision** : Inc-4 livre tout ce qui ne dépend pas des comptes :
+  - table `subscriptions`, limites selon l'offre appliquées en base, fonction
+    `revenuecat-webhook` (secret partagé, notification rejouée ou en retard gérée,
+    remboursement, expiration), testés avec des notifications au format documenté par
+    RevenueCat ;
+  - écran d'offres, points d'entrée, profil, derrière l'interface `BillingRepository`,
+    testés avec un faux store.
+  L'adaptateur `purchases_flutter` est l'incrément **Inc-4b**, à faire quand les comptes
+  et les produits existent. D'ici là l'app utilise `UnavailableBillingRepository` : l'écran
+  d'offres affiche « les abonnements ne sont pas encore disponibles ».
+- **Identifiants de produits** attendus par le serveur : `premium_weekly`,
+  `premium_monthly`, `premium_annual`.
+- **Limites Premium** (hypothèse H4) : 40 phrases et 6000 caractères par journal,
+  30 corrections par jour, vocabulaire et historique sans limite.
+- **Écran d'offres** : il ne cite que les avantages déjà livrés (journaux illimités, plus
+  longs, historique complet). Corrections avancées, reformulations, exercices, voix,
+  statistiques, PDF et multi-langues s'y ajouteront avec leurs incréments.
+- **Points ouverts** : « Journaux illimités » est le terme de l'INTAKE alors qu'un
+  plafond de 30 par jour existe : à mentionner dans les conditions d'utilisation (Inc-9).
+  Les transferts d'achat entre comptes (notification `TRANSFER`) ne sont pas traités.
+  Les liens vers les textes légaux sur l'écran d'offres arrivent avec ces textes (Inc-9).
+- **Impact** : métier, financier, technique.
+
 ## ADR-020 — Vocabulaire et historique (Inc-3)
 
 - **Date** : 2026-11-19

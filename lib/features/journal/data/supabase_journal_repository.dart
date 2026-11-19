@@ -12,7 +12,7 @@ class SupabaseJournalRepository implements JournalRepository {
   const SupabaseJournalRepository(this._client);
 
   static const _entryColumns =
-      'id, language, entry_date, original_text, corrected_text, '
+      'id, language, entry_date, original_text, corrected_text, level, '
       'correction_items(position, original, corrected, category, explanation), '
       'vocabulary_items(id, term, translation, example, learned_at)';
 
@@ -59,6 +59,18 @@ class SupabaseJournalRepository implements JournalRepository {
       'get_history_overview',
     );
     return HistoryOverview.fromJson(overview);
+  });
+
+  @override
+  Future<SentenceRewrite> rewrite({
+    required String entryId,
+    required String sentence,
+  }) => guardFailures(() async {
+    final response = await _client.functions.invoke(
+      'rewrite-sentence',
+      body: {'entry_id': entryId, 'sentence': sentence},
+    );
+    return SentenceRewrite.fromJson(response.data as Map<String, dynamic>);
   });
 
   @override

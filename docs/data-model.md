@@ -39,8 +39,8 @@ erDiagram
 | `daily_usage` | `user_id`, `usage_date`, `exercises`, `reward_corrections`, `reward_exercises` ; PK (user, date). Corrections et vocabulaire du jour se comptent dans leurs propres tables | Inc-5 |
 | `ai_usage` | `id`, `user_id`, `feature`, `model`, `input_tokens`, `output_tokens`, `created_at` | Inc-2 |
 | `vocabulary_items` | `id`, `user_id`, `entry_id`, `language`, `term`, `translation`, `example`, `learned_at`, `created_at` ; unique (user, langue, terme sans casse) | Inc-3 |
-| `subscriptions` | `user_id` (PK), `plan`, `expires_at`, `in_trial`, `updated_at` | Inc-4 |
-| `purchase_events` | `event_id` (PK, fourni par RevenueCat), `user_id`, `product_id`, `type`, `received_at` | Inc-4 |
+| `subscriptions` | `user_id` (PK), `plan`, `expires_at`, `in_trial`, `last_event_at`, `updated_at` | Inc-4 |
+| `purchase_events` | `event_id` (PK, fourni par RevenueCat), `user_id`, `type`, `product_id`, `event_at`, `received_at` | Inc-4 |
 | `exercises` | `id`, `language`, `category`, `ui_locale`, `payload` (jsonb), `created_at` — cache partagé | Inc-5 |
 | `exercise_attempts` | `id`, `user_id`, `exercise_id`, `correct`, `created_at` | Inc-5 |
 | `wallets` | `user_id` (PK), `correction_credits` (≥ 0), `exam_credits` (≥ 0), `ads_removed` | Inc-7 |
@@ -81,8 +81,10 @@ n'est stocké. Gain maximal pour un tricheur : une correction d'avance, une seul
 
 ## Limites de l'offre
 
-`plan_limits()` est la source unique : 7 phrases, 1000 caractères, 1 correction et 5 mots
-de vocabulaire par jour, 4 jours d'historique en gratuit. `get_entitlements(date)` les expose à l'app avec le nombre de corrections
+`plan_limits(user)` est la source unique. Gratuit : 7 phrases, 1000 caractères,
+1 correction et 5 mots de vocabulaire par jour, 4 jours d'historique. Premium (abonnement
+non expiré) : 40 phrases, 6000 caractères, 30 corrections par jour, vocabulaire et
+historique sans limite. `get_entitlements(date)` les expose à l'app avec le nombre de corrections
 restantes ; l'app n'a aucune constante de limite.
 
 ## Index

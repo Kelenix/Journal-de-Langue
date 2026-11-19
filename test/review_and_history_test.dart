@@ -203,8 +203,9 @@ void main() {
       expect(find.text(english.correctionYourVersion), findsOneWidget);
     });
 
-    testWidgets('les journaux plus anciens sont signalés comme conservés, '
-        'sans offre payante', (tester) async {
+    testWidgets('les journaux plus anciens sont signalés comme conservés', (
+      tester,
+    ) async {
       journal
         ..seedPast(sampleEntry())
         ..lockedEntries = 3;
@@ -215,7 +216,6 @@ void main() {
         find.text('${english.historyLocked(3)} ${english.historyWindow(4)}'),
         findsOneWidget,
       );
-      expect(find.textContaining('Premium'), findsNothing);
     });
 
     testWidgets('un historique entièrement verrouillé n\'affiche pas l\'état '

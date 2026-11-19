@@ -26,6 +26,8 @@
 | Historique limité | Fenêtre de 4 jours appliquée par la RLS : un journal plus ancien est illisible même par un client modifié | `supabase test db` |
 | Vocabulaire | Lecture de ses mots uniquement ; seule la colonne « appris » est modifiable ; limite de 5 par jour appliquée en base | `supabase test db`, tests d'intégration |
 | Données de démonstration | `supabase/seed.sql` n'est joué qu'en local ; son compte de test n'existe pas en production | Revue |
+| Abonnement | Écrit uniquement par la fonction `revenuecat-webhook` ; l'app ne peut que le lire. Les limites Premium sont appliquées en base : un client modifié n'obtient rien | `supabase test db`, tests d'intégration |
+| Webhook d'achats | Secret partagé comparé en temps constant ; sans secret configuré, tout est refusé ; notification rejouée appliquée une seule fois ; notification plus ancienne ignorée | Tests d'intégration |
 | Brouillon | Chiffré sur l'appareil (Keystore / Keychain) ; effacé après correction et à la suppression du compte | Tests d'écran |
 
 ## Permissions demandées
@@ -43,4 +45,5 @@ Internet uniquement.
 | Mention de l'envoi des journaux à Anthropic | Politique de confidentialité, Inc-9 (obligatoire avant publication) |
 | Limitation du débit des appels à `correct-entry` | Le quota du jour borne déjà le coût ; un utilisateur peut toutefois multiplier les demandes refusées. À traiter avant publication si l'usage le montre |
 | Comportement réel du modèle face à un texte hostile | Non vérifiable sans clé API ; à tester à la main avec la vraie API |
+| Transfert d'achat entre comptes (`TRANSFER`) | Non traité : la notification est enregistrée sans effet. À traiter avec Inc-4b |
 | Épinglage de certificat | Non retenu : pas de donnée bancaire ni de santé ; à réévaluer si le besoin change |

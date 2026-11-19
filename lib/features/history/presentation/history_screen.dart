@@ -102,27 +102,42 @@ class _LockedNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final historyDays = overview.historyDays;
+    final message = [
+      l10n.historyLocked(overview.lockedEntries),
+      if (historyDays != null) l10n.historyWindow(historyDays),
+    ].join(' ');
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
         children: [
-          ExcludeSemantics(
-            child: Icon(
-              Icons.lock_outline,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Text(
-              '${l10n.historyLocked(overview.lockedEntries)} '
-              '${l10n.historyWindow(overview.historyDays)}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ExcludeSemantics(
+                child: Icon(
+                  Icons.lock_outline,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text(
+                  message,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          // Des journaux verrouillés existent : l'utilisateur a déjà été
+          // corrigé, l'offre payante peut lui être proposée.
+          OutlinedButton(
+            onPressed: () => context.push(AppRoutes.paywall),
+            child: Text(l10n.historyUnlock),
           ),
         ],
       ),

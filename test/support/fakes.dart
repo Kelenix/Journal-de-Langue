@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:journal_de_langue/core/errors/failure.dart';
 import 'package:journal_de_langue/features/auth/domain/auth_repository.dart';
+import 'package:journal_de_langue/features/billing/domain/billing_repository.dart';
+import 'package:journal_de_langue/features/billing/domain/offer.dart';
+import 'package:journal_de_langue/features/billing/domain/subscription.dart';
 import 'package:journal_de_langue/features/journal/domain/journal_draft_store.dart';
 import 'package:journal_de_langue/features/journal/domain/journal_entry.dart';
 import 'package:journal_de_langue/features/journal/domain/journal_repository.dart';
@@ -138,15 +141,21 @@ JournalEntry sampleEntry({
 
 /// Journaux en mémoire, avec la règle gratuite : une correction par jour.
 class FakeJournalRepository implements JournalRepository {
-  FakeJournalRepository({this.vocabulary});
+  FakeJournalRepository({this.vocabulary, this.subscriptions});
+
+  static const _freeDailyCorrections = 1;
+  static const _premiumDailyCorrections = 30;
 
   /// Reçoit le vocabulaire des journaux corrigés, comme le fait le serveur.
   final FakeVocabularyRepository? vocabulary;
 
+  /// Source de l'offre de l'utilisateur ; sans elle, l'offre est gratuite.
+  final FakeSubscriptionRepository? subscriptions;
+
   final submissions = <({String text, String idempotencyKey})>[];
   final _entries = <String, JournalEntry>{};
   JournalEntry? _entryOfDay;
-  int correctionsLeft = 1;
+  int _correctionsToday = 0;
 
   /// Journaux plus anciens que ce que l'offre permet de relire.
   int lockedEntries = 0;
@@ -161,7 +170,7 @@ class FakeJournalRepository implements JournalRepository {
   void seedCorrectedToday(JournalEntry entry) {
     seedPast(entry);
     _entryOfDay = entry;
-    correctionsLeft = 0;
+    _correctionsToday++;
   }
 
   /// Place un journal corrigé un jour précédent.
@@ -177,16 +186,23 @@ class FakeJournalRepository implements JournalRepository {
 
   @override
   Future<HistoryOverview> historyOverview() async =>
-      HistoryOverview(historyDays: 4, lockedEntries: lockedEntries);
+      subscriptions?.activePlan == null
+      ? HistoryOverview(historyDays: 4, lockedEntries: lockedEntries)
+      : const HistoryOverview(historyDays: null, lockedEntries: 0);
 
   @override
   Future<JournalAllowance> allowance(DateTime day) async {
     final failure = loadFailure;
     if (failure != null) throw failure;
+    final plan = subscriptions?.activePlan;
+    final dailyCorrections = plan == null
+        ? _freeDailyCorrections
+        : _premiumDailyCorrections;
     return JournalAllowance(
-      maxSentences: 7,
-      maxCharacters: 1000,
-      correctionsLeft: correctionsLeft,
+      plan: plan,
+      maxSentences: plan == null ? 7 : 40,
+      maxCharacters: plan == null ? 1000 : 6000,
+      correctionsLeft: (dailyCorrections - _correctionsToday).clamp(0, 30),
     );
   }
 
@@ -260,4 +276,105 @@ class InMemoryJournalDraftStore implements JournalDraftStore {
 
   @override
   Future<void> clearAll() async => drafts.clear();
+}
+
+/// Abonnement en mémoire, tel que le serveur le connaît.
+class FakeSubscriptionRepository implements SubscriptionRepository {
+  FakeSubscriptionRepository([this.subscription]);
+
+  /// Échéance lointaine par rapport à l'horloge des tests.
+  static final farFuture = DateTime(2027, 11, 19);
+
+  Subscription? subscription;
+
+  /// Abonnement qui n'apparaît qu'après ce nombre de lectures, comme une
+  /// notification d'achat arrivée en retard.
+  Subscription? delayed;
+  int readsBeforeDelayed = 0;
+
+  SubscriptionPlan? get activePlan => subscription?.plan;
+
+  @override
+  Future<Subscription?> current() async {
+    if (delayed != null && readsBeforeDelayed-- <= 0) {
+      subscription = delayed;
+      delayed = null;
+    }
+    return subscription;
+  }
+}
+
+/// Store en mémoire : un achat réussi active l'abonnement côté « serveur ».
+class FakeBillingRepository implements BillingRepository {
+  FakeBillingRepository(this.subscriptions);
+
+  static const annual = Offer(
+    plan: SubscriptionPlan.annual,
+    priceLabel: r'$29.99',
+    price: 29.99,
+    currencyCode: 'USD',
+    trialDays: 3,
+  );
+  static const monthly = Offer(
+    plan: SubscriptionPlan.monthly,
+    priceLabel: r'$4.99',
+    price: 4.99,
+    currencyCode: 'USD',
+    trialDays: 3,
+  );
+  static const weekly = Offer(
+    plan: SubscriptionPlan.weekly,
+    priceLabel: r'$2.99',
+    price: 2.99,
+    currencyCode: 'USD',
+  );
+
+  final FakeSubscriptionRepository subscriptions;
+  final purchases = <SubscriptionPlan>[];
+
+  /// Fait échouer le chargement des offres, l'achat et la restauration.
+  Failure? failure;
+
+  /// L'utilisateur referme la fenêtre de paiement du store.
+  bool cancelsPurchase = false;
+
+  /// La notification d'achat n'atteint jamais le serveur.
+  bool neverConfirms = false;
+
+  /// Achat déjà fait avec le compte du store, à retrouver par la restauration.
+  SubscriptionPlan? restorablePlan;
+
+  // Dans le désordre : l'app doit les présenter annuel, mensuel, hebdomadaire.
+  @override
+  Future<List<Offer>> offers() async {
+    final failure = this.failure;
+    if (failure != null) throw failure;
+    return const [weekly, annual, monthly];
+  }
+
+  @override
+  Future<PurchaseOutcome> purchase(Offer offer) async {
+    final failure = this.failure;
+    if (failure != null) throw failure;
+    if (cancelsPurchase) return PurchaseOutcome.cancelledByUser;
+
+    purchases.add(offer.plan);
+    if (!neverConfirms) _activate(offer.plan, inTrial: offer.trialDays != null);
+    return PurchaseOutcome.completed;
+  }
+
+  @override
+  Future<void> restore() async {
+    final failure = this.failure;
+    if (failure != null) throw failure;
+    final plan = restorablePlan;
+    if (plan != null) _activate(plan, inTrial: false);
+  }
+
+  void _activate(SubscriptionPlan plan, {required bool inTrial}) =>
+      subscriptions.subscription = Subscription(
+        plan: plan,
+        expiresAt: FakeSubscriptionRepository.farFuture,
+        inTrial: inTrial,
+      );
 }

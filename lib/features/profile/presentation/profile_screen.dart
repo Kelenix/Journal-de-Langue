@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/errors/failure.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/external_links.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../routing/app_routes.dart';
 import '../../../shared/presentation/failure_message.dart';
 import '../../auth/application/auth_providers.dart';
+import '../../billing/application/billing_providers.dart';
+import '../../billing/domain/subscription.dart';
+import '../../billing/presentation/offer_labels.dart';
 import '../../journal/application/journal_providers.dart';
 import '../../languages/application/language_providers.dart';
 import '../../languages/domain/learning_language.dart';
@@ -46,6 +53,7 @@ class ProfileScreen extends ConsumerWidget {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _showLanguagePicker(context, activeLanguage),
             ),
+            const _PlanSection(),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.logout),
@@ -169,5 +177,79 @@ class ProfileScreen extends ConsumerWidget {
       ),
     );
     return isConfirmed ?? false;
+  }
+}
+
+/// Offre de l'utilisateur, restauration des achats et gestion de l'abonnement.
+class _PlanSection extends ConsumerWidget {
+  const _PlanSection();
+
+  Future<void> _restore(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final isRestored = await ref
+        .read(paywallControllerProvider.notifier)
+        .restore();
+    final error = ref.read(paywallControllerProvider).error;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          isRestored
+              ? l10n.paywallWelcome
+              : failureMessage(l10n, error ?? const UnexpectedFailure()),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final subscription = watchActiveSubscription(ref);
+    final isRestoring = ref.watch(paywallControllerProvider).isLoading;
+    // Les offres payantes ne sont jamais proposées avant une première
+    // correction (INTAKE §6).
+    final canDiscoverPremium =
+        subscription == null && watchHasCorrectedJournal(ref);
+
+    return Column(
+      children: [
+        ListTile(
+          leading: const Icon(Icons.workspace_premium_outlined),
+          title: Text(l10n.profilePlan),
+          subtitle: Text(_planDescription(context, subscription)),
+          trailing: canDiscoverPremium ? const Icon(Icons.chevron_right) : null,
+          onTap: canDiscoverPremium
+              ? () => context.push(AppRoutes.paywall)
+              : null,
+        ),
+        if (subscription != null)
+          ListTile(
+            leading: const Icon(Icons.open_in_new),
+            title: Text(l10n.profileManageSubscription),
+            onTap: () => ref.read(urlOpenerProvider)(subscriptionManagementUrl),
+          ),
+        ListTile(
+          leading: const Icon(Icons.restore),
+          title: Text(l10n.paywallRestore),
+          enabled: !isRestoring,
+          onTap: () => _restore(context, ref),
+        ),
+      ],
+    );
+  }
+
+  String _planDescription(BuildContext context, Subscription? subscription) {
+    final l10n = AppLocalizations.of(context);
+    if (subscription == null) return l10n.profilePlanFree;
+
+    final date = MaterialLocalizations.of(
+      context,
+    ).formatShortDate(subscription.expiresAt.toLocal());
+    final plan = l10n.profilePlanPremium(planName(l10n, subscription.plan));
+    final deadline = subscription.inTrial
+        ? l10n.profilePlanTrialUntil(date)
+        : l10n.profilePlanUntil(date);
+    return '$plan\n$deadline';
   }
 }

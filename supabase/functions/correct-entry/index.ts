@@ -1,25 +1,22 @@
-// POST /functions/v1/correct-entry — corrige le journal du jour (US-05 à US-07).
+// POST /functions/v1/correct-entry — corrige le journal du jour (US-05 à US-07, US-12).
 // Le quota est réservé en base avant l'appel à Claude et rendu si la correction échoue.
-import { createClient } from "npm:@supabase/supabase-js@2.119.2";
+import { errorMessage, recordUsage } from "../_shared/claude.ts";
 import {
-  correctEntry,
+  admin,
+  DATE_PATTERN,
+  isLanguage,
+  isUiLocale,
+  json,
+  jsonBody,
   type Language,
-  LANGUAGES,
   type UiLocale,
-  UI_LOCALES,
-  type Usage,
-} from "./corrector.ts";
+  userIdFrom,
+  UUID_PATTERN,
+} from "../_shared/http.ts";
+import { correctEntry, type Level } from "./corrector.ts";
 
 // Garde-fou large contre les requêtes abusives ; la limite de l'offre est appliquée en base.
 const MAX_TEXT_LENGTH = 10_000;
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-
-const admin = createClient(
-  Deno.env.get("SUPABASE_URL")!,
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  { auth: { persistSession: false, autoRefreshToken: false } },
-);
 
 interface CorrectionRequest {
   text: string;
@@ -29,46 +26,28 @@ interface CorrectionRequest {
   idempotencyKey: string;
 }
 
-function parseRequest(body: unknown): CorrectionRequest | null {
-  if (typeof body !== "object" || body === null) return null;
-  const { text, language, ui_locale, local_date, idempotency_key } = body as Record<
-    string,
-    unknown
-  >;
+function parseRequest(body: Record<string, unknown> | null): CorrectionRequest | null {
+  if (!body) return null;
+  const { text, language, ui_locale, local_date, idempotency_key } = body;
   const isValid = typeof text === "string" && text.length <= MAX_TEXT_LENGTH &&
-    LANGUAGES.includes(language as Language) &&
-    UI_LOCALES.includes(ui_locale as UiLocale) &&
+    isLanguage(language) && isUiLocale(ui_locale) &&
     typeof local_date === "string" && DATE_PATTERN.test(local_date) &&
     typeof idempotency_key === "string" && UUID_PATTERN.test(idempotency_key);
   if (!isValid) return null;
   return {
-    text: text as string,
-    language: language as Language,
-    uiLocale: ui_locale as UiLocale,
-    localDate: local_date as string,
-    idempotencyKey: idempotency_key as string,
+    text,
+    language,
+    uiLocale: ui_locale,
+    localDate: local_date,
+    idempotencyKey: idempotency_key,
   };
-}
-
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-async function userIdFrom(request: Request): Promise<string | null> {
-  const token = request.headers.get("Authorization")?.replace(/^Bearer /i, "");
-  if (!token) return null;
-  const { data } = await admin.auth.getUser(token);
-  return data.user?.id ?? null;
 }
 
 async function loadEntry(entryId: string): Promise<unknown> {
   const { data, error } = await admin
     .from("journal_entries")
     .select(
-      "id, language, entry_date, original_text, corrected_text, " +
+      "id, language, entry_date, original_text, corrected_text, level, " +
         "correction_items(position, original, corrected, category, explanation), " +
         "vocabulary_items(id, term, translation, example, learned_at)",
     )
@@ -79,17 +58,6 @@ async function loadEntry(entryId: string): Promise<unknown> {
     .single();
   if (error) throw error;
   return data;
-}
-
-async function recordUsage(userId: string, usage: Usage): Promise<void> {
-  const { error } = await admin.from("ai_usage").insert({
-    user_id: userId,
-    feature: "correction_basic",
-    model: usage.model,
-    input_tokens: usage.inputTokens,
-    output_tokens: usage.outputTokens,
-  });
-  if (error) console.error("Coût IA non journalisé", error.message);
 }
 
 /** Rend le quota du jour, puis répond avec l'erreur. */
@@ -109,7 +77,7 @@ Deno.serve(async (request) => {
   const userId = await userIdFrom(request);
   if (!userId) return json(401, { error: "unauthorized" });
 
-  const input = parseRequest(await request.json().catch(() => null));
+  const input = parseRequest(await jsonBody(request));
   if (!input) return json(400, { error: "invalid_input" });
 
   const { data: reservation, error: reservationError } = await admin.rpc("reserve_correction", {
@@ -131,17 +99,19 @@ Deno.serve(async (request) => {
   const entryId: string = reservation.entry_id;
   if (reservation.status === "corrected") return json(200, await loadEntry(entryId));
 
+  const level: Level = reservation.level;
+  const feature = `correction_${level}`;
   let result;
   try {
-    result = await correctEntry(input.text, input.language, input.uiLocale);
+    result = await correctEntry(input.text, input.language, input.uiLocale, level);
   } catch (error) {
     // Jamais le texte du journal dans les journaux techniques.
-    console.error("Correction IA en échec", error instanceof Error ? error.message : error);
+    console.error("Correction IA en échec", errorMessage(error));
     return releaseAndRespond(entryId, 503, "ai_unavailable");
   }
 
   if (result.outcome !== "corrected") {
-    await recordUsage(userId, result.usage);
+    await recordUsage(userId, feature, result.usage);
     return releaseAndRespond(
       entryId,
       422,
@@ -160,7 +130,7 @@ Deno.serve(async (request) => {
   });
   if (completionError) {
     console.error("Correction non enregistrée", completionError.message);
-    await recordUsage(userId, result.usage);
+    await recordUsage(userId, feature, result.usage);
     return releaseAndRespond(entryId, 503, "ai_unavailable");
   }
 
