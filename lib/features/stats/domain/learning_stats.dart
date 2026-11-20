@@ -29,8 +29,9 @@ abstract class LearningStats with _$LearningStats {
     /// Du type de faute le plus fréquent au moins fréquent.
     @Default(<CategoryCount>[]) List<CategoryCount> mistakesByCategory,
 
-    /// Semaines des 8 dernières, de la plus ancienne à la plus récente.
-    @Default(<WeeklyMistakeRate>[]) List<WeeklyMistakeRate> weeklyMistakeRate,
+    /// Journaux corrigés de la langue par semaine, sur les 8 dernières, de la
+    /// plus ancienne à la plus récente ; une semaine sans journal est absente.
+    @Default(<WeeklyJournals>[]) List<WeeklyJournals> weeklyJournals,
   }) = _LearningStats;
 
   factory LearningStats.fromJson(Map<String, dynamic> json) =>
@@ -49,14 +50,14 @@ abstract class CategoryCount with _$CategoryCount {
 }
 
 @freezed
-abstract class WeeklyMistakeRate with _$WeeklyMistakeRate {
+abstract class WeeklyJournals with _$WeeklyJournals {
   @JsonSerializable(fieldRename: FieldRename.snake)
-  const factory WeeklyMistakeRate({
+  const factory WeeklyJournals({
     /// Lundi de la semaine.
     required DateTime weekStart,
-    required double mistakesPerSentence,
-  }) = _WeeklyMistakeRate;
+    required int journals,
+  }) = _WeeklyJournals;
 
-  factory WeeklyMistakeRate.fromJson(Map<String, dynamic> json) =>
-      _$WeeklyMistakeRateFromJson(json);
+  factory WeeklyJournals.fromJson(Map<String, dynamic> json) =>
+      _$WeeklyJournalsFromJson(json);
 }

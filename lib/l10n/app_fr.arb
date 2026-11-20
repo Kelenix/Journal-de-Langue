@@ -15,6 +15,7 @@
   "actionContinue": "Continuer",
   "actionCancel": "Annuler",
   "actionRetry": "Réessayer",
+  "actionRefresh": "Actualiser",
   "authSignInTitle": "Connexion",
   "authSignUpTitle": "Créer un compte",
   "authEmailLabel": "E-mail",
@@ -75,7 +76,7 @@
   "errorInvalidCode": "Code incorrect ou expiré.",
   "errorRateLimited": "Trop de tentatives. Réessaie dans quelques minutes.",
   "errorUnexpected": "Une erreur est survenue. Réessaie.",
-  "journalSentenceCount": "{count} / {max} phrases",
+  "journalSentenceCount": "{count, plural, =0{0 phrase sur {max}} =1{1 phrase sur {max}} other{{count} phrases sur {max}}}",
   "@journalSentenceCount": {
     "placeholders": {
       "count": {
@@ -94,14 +95,14 @@
       }
     }
   },
-  "journalSubmit": "Corriger",
+  "journalSubmit": "Corriger mon journal",
   "journalSubmitting": "Claude lit ton journal…",
   "journalDailyLimitReached": "Tu as utilisé ta correction gratuite du jour. Continue ta série avec Premium.",
   "journalViewCorrection": "Voir la correction",
   "correctionTitle": "Correction",
   "correctionYourVersion": "Ta version",
   "correctionCorrectedVersion": "Version corrigée",
-  "correctionPointsTitle": "{count, plural, =1{1 point à retenir} other{{count} points à retenir}}",
+  "correctionPointsTitle": "{count, plural, =1{1 faute corrigée} other{{count} fautes corrigées}}",
   "@correctionPointsTitle": {
     "placeholders": {
       "count": {
@@ -121,7 +122,7 @@
       }
     }
   },
-  "correctionDone": "Terminer",
+  "correctionDone": "Terminé",
   "errorAiUnavailable": "Claude n'a pas pu répondre. Rien n'a été décompté de ton offre. Réessaie dans un instant.",
   "errorTooManySentences": "Ce journal dépasse le nombre de phrases de ton offre.",
   "errorInvalidText": "Ce texte est vide ou trop long.",
@@ -129,23 +130,16 @@
   "errorInvalidDate": "La date de ton téléphone semble incorrecte.",
   "errorWrongLanguage": "Ce texte ne semble pas écrit dans la langue que tu apprends.",
   "errorContentRefused": "Ce texte ne peut pas être corrigé.",
+  "errorTooManyAttempts": "Trop d'essais aujourd'hui. Réessaie plus tard.",
+  "errorRequestInProgress": "Ta demande est encore en cours. Réessaie dans un instant.",
   "journalTitle": "Mon journal",
   "journalGreeting": "Bonjour !",
   "journalHeadline": "Une phrase à la fois.",
-  "journalIntro": "Prends quelques minutes pour écrire dans la langue que tu apprends.",
-  "journalCardTitle": "Mon journal du jour",
+  "journalCardTitle": "Ton journal",
   "journalCorrectedTitle": "Ton journal est corrigé.",
   "journalCorrectedBody": "Découvre ce que tu as appris.",
   "correctionEncouragement": "Chaque erreur est une occasion d'apprendre.",
   "correctionVocabularyTitle": "À réviser",
-  "reviewLearnedCount": "{count, plural, =0{Aucun mot appris pour l'instant} =1{1 mot appris} other{{count} mots appris}}",
-  "@reviewLearnedCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "reviewMarkLearned": "Marquer comme appris",
   "reviewMarkToReview": "Remettre à réviser",
   "historyMistakes": "{count, plural, =0{Aucune faute} =1{1 faute} other{{count} fautes}}",
@@ -245,8 +239,6 @@
   "paywallRestore": "Restaurer mes achats",
   "paywallWelcome": "Bienvenue dans Premium !",
   "historyUnlock": "Voir tout mon historique avec Premium",
-  "profilePlan": "Mon offre",
-  "profilePlanFree": "Gratuite",
   "profilePlanPremium": "Premium ({plan})",
   "@profilePlanPremium": {
     "placeholders": {
@@ -291,7 +283,6 @@
   "rewriteCasual": "Familier",
   "rewriteProfessional": "Professionnel",
   "exercisesTitle": "Exercices",
-  "exercisesCardBody": "Quelques questions pour ancrer ce que tu apprends.",
   "exercisesPersonalized": "Choisi d'après tes erreurs les plus fréquentes",
   "exerciseProgress": "Question {current} / {total}",
   "@exerciseProgress": {
@@ -328,14 +319,6 @@
   "errorUsageLimit": "Tu as atteint la limite du jour. À demain !",
   "paywallBenefitAdvanced": "Corrections avancées et reformulations",
   "paywallBenefitExercises": "Exercices sur tes propres erreurs",
-  "profileLanguages": "{count, plural, =1{Langue apprise} other{Langues apprises}}",
-  "@profileLanguages": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "profileLanguagesPremiumNote": "Ajoute les langues que tu pratiques. Ton journal s'écrit dans la langue en cours ; chaque langue garde ses journaux et son vocabulaire.",
   "languageCurrent": "Langue du journal",
   "languageMakeCurrent": "Écrire dans cette langue",
@@ -345,7 +328,7 @@
   "journalSwitchLanguage": "Changer de langue",
   "errorLanguageLimit": "Ton offre ne permet pas d'autre langue. Retires-en une pour en ajouter une autre.",
   "paywallBenefitLanguages": "Plusieurs langues, dictée et statistiques",
-  "journalStreak": "{count, plural, =1{1 jour de suite} other{{count} jours de suite}}",
+  "journalStreak": "{count, plural, =1{1 jour d'affilée} other{{count} jours d'affilée}}",
   "@journalStreak": {
     "placeholders": {
       "count": {
@@ -354,7 +337,7 @@
     }
   },
   "progressStreakLabel": "Série en cours",
-  "progressStreakUnit": "{count, plural, =1{jour} other{jours}}",
+  "progressStreakUnit": "{count, plural, one{jour d'écriture d'affilée} other{jours d'écriture d'affilée}}",
   "@progressStreakUnit": {
     "placeholders": {
       "count": {
@@ -363,40 +346,17 @@
     }
   },
   "progressStreakStart": "Écris un journal aujourd'hui pour lancer ta série.",
-  "progressStreakKeep": "Écris chaque jour pour la prolonger.",
-  "progressJournals": "Journaux écrits",
-  "progressWordsLearned": "Mots appris",
-  "progressWordsOf": "sur {total}",
-  "@progressWordsOf": {
-    "placeholders": {
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-  "progressMistakesTitle": "Fautes par type",
+  "progressJournals": "journaux écrits",
+  "progressWordsLearned": "mots appris",
+  "progressMistakesTitle": "Tes fautes fréquentes",
   "progressMistakesEmpty": "Aucune faute relevée pour l'instant.",
-  "progressRateTitle": "Fautes par phrase",
-  "progressRateSubtitle": "Semaine par semaine, sur les 8 dernières semaines",
-  "progressRateWeek": "Semaine du {date} : {rate} par phrase",
-  "@progressRateWeek": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      },
-      "rate": {
-        "type": "String"
-      }
-    }
-  },
-  "progressRateDetails": "Voir le détail",
-  "progressRateEmpty": "Les semaines apparaîtront avec tes journaux.",
   "progressPremiumTitle": "Statistiques détaillées",
   "progressPremiumBody": "Mots appris, fautes les plus fréquentes et progrès semaine après semaine, avec Premium.",
   "voiceDictate": "Dicter",
   "voiceStopDictation": "Arrêter la dictée",
   "voicePermissionDenied": "Sans accès au micro, la dictée n'est pas possible. Tu peux l'autoriser dans les réglages du téléphone, ou écrire au clavier.",
   "voiceDictationUnavailable": "Ton téléphone ne propose pas la dictée dans cette langue.",
+  "voiceDictationFailed": "La dictée n'a pas pu démarrer. Réessaie dans un instant.",
   "voiceListen": "Écouter la version corrigée",
   "voiceStopListening": "Arrêter la lecture",
   "exportTitle": "Exporter mes révisions en PDF",
@@ -437,6 +397,20 @@
   "exportPdfTranslation": "Traduction",
   "exportPdfExample": "Exemple",
   "exportPdfCorrections": "Mes journaux corrigés",
+  "exportPdfMistake": "{original} → {corrected} : {explanation}",
+  "@exportPdfMistake": {
+    "placeholders": {
+      "original": {
+        "type": "String"
+      },
+      "corrected": {
+        "type": "String"
+      },
+      "explanation": {
+        "type": "String"
+      }
+    }
+  },
   "shopTitle": "Boutique",
   "shopOwnedTitle": "Mes achats",
   "shopNothingOwned": "Aucun achat pour l'instant.",
@@ -489,8 +463,8 @@
       }
     }
   },
-  "examTitle": "Simulation d'examen",
-  "examCardBody": "Un sujet d'examen, ta copie notée et un plan de révision.",
+  "examTitle": "Examen blanc",
+  "examCardBody": "Noté sur 20, avec un plan",
   "examNoCredit": "Le Pack Examinateur donne une simulation complète : un sujet de production écrite dans la langue que tu apprends, ta copie notée sur 20, une correction renforcée et un plan de révision.",
   "examBuyPack": "Obtenir le Pack Examinateur",
   "examCreditsLeft": "{count, plural, =1{1 simulation disponible} other{{count} simulations disponibles}}",
@@ -505,6 +479,7 @@
   "examStart": "Commencer la simulation",
   "examStarting": "Création de ton sujet…",
   "examResumeNote": "Ta simulation reste disponible : tu peux la quitter et revenir la terminer.",
+  "examDraftNotSaved": "Brouillon non enregistré : vérifie ta connexion avant de quitter.",
   "examWordTarget": "Entre {min} et {max} mots",
   "@examWordTarget": {
     "placeholders": {
@@ -516,7 +491,7 @@
       }
     }
   },
-  "examWordCount": "{count, plural, =1{1 mot} other{{count} mots}}",
+  "examWordCount": "{count, plural, one{{count} mot} other{{count} mots}}",
   "@examWordCount": {
     "placeholders": {
       "count": {
@@ -619,12 +594,64 @@
   },
   "reviewShowTranslation": "Voir la traduction",
   "reviewAgain": "À revoir",
-  "reviewKnown": "Je sais",
+  "reviewKnown": "Je la connais",
   "reviewDeckDone": "Cartes du jour revues. Bravo !",
   "reviewDeckMore": "Revoir d'autres cartes",
   "welcomeTitle": "Apprends en écrivant",
   "welcomeFeatureWrite": "Quelques phrases par jour, dans ta langue cible",
   "welcomeFeatureCorrect": "Chaque faute corrigée et expliquée",
   "welcomeFeatureReview": "Tes mots du jour à réviser",
-  "welcomeHaveAccount": "J'ai déjà un compte"
+  "welcomeHaveAccount": "J'ai déjà un compte",
+  "journalCardBody": "Écris en {language, select, en{anglais} es{espagnol} de{allemand} fr{français} other{ta langue}}, sans crainte des fautes",
+  "@journalCardBody": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "journalFreeCorrectionsLeft": "{count, plural, =1{1 correction gratuite aujourd'hui} other{{count} corrections gratuites aujourd'hui}}",
+  "@journalFreeCorrectionsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "correctionToRemember": "À retenir",
+  "exercisesTileBody": "{count} questions par jour",
+  "@exercisesTileBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewLearnedOf": "{learned} appris sur {total}",
+  "@reviewLearnedOf": {
+    "placeholders": {
+      "learned": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "progressWeeklyTitle": "Journaux par semaine",
+  "progressWeeklySpan": "8 semaines",
+  "progressWeeklyLabel": "Journaux par semaine sur 8 semaines : {counts}",
+  "@progressWeeklyLabel": {
+    "placeholders": {
+      "counts": {
+        "type": "String"
+      }
+    }
+  },
+  "profilePlanFreeTitle": "Offre gratuite",
+  "profilePlanFreeDetail": "1 correction par jour",
+  "profilePremiumPitch": "Premium : 30 corrections par jour, corrections avancées, plusieurs langues et aucune publicité.",
+  "profileLanguagesTitle": "Langues",
+  "profilePurchases": "Achats",
+  "profilePrivacy": "Confidentialité"
 }

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:journal_de_langue/core/errors/failure.dart';
 import 'package:journal_de_langue/features/billing/domain/subscription.dart';
 import 'package:journal_de_langue/features/languages/domain/learning_language.dart';
+import 'package:journal_de_langue/shared/widgets/error_message.dart';
 
 import 'support/fakes.dart';
 import 'support/pump_app.dart';
@@ -44,9 +45,9 @@ void main() {
   Future<void> openTab(WidgetTester tester, IconData icon) =>
       tapOn(tester, find.byIcon(icon));
 
-  Future<void> openLanguages(WidgetTester tester, {int count = 1}) async {
+  Future<void> openLanguages(WidgetTester tester) async {
     await openTab(tester, Icons.person_outline);
-    await tapText(tester, english.profileLanguages(count));
+    await tapText(tester, english.profileLanguagesTitle);
   }
 
   /// Ligne d'une langue dans la feuille de gestion des langues.
@@ -110,7 +111,7 @@ void main() {
         findsOneWidget,
       );
 
-      await openTab(tester, Icons.edit_note_outlined);
+      await openTab(tester, Icons.edit_outlined);
       await tapOn(tester, find.byTooltip(english.journalSwitchLanguage));
       await tapOn(
         tester,
@@ -126,13 +127,36 @@ void main() {
       ]);
     });
 
+    testWidgets('un changement de langue raté depuis la puce est expliqué sur '
+        'le journal, pas dans le profil', (tester) async {
+      subscribe(SubscriptionPlan.monthly);
+      await languages.activate(LearningLanguage.spanish);
+      await pump(tester);
+
+      languages.failure = const NetworkFailure();
+      await tapOn(tester, find.byTooltip(english.journalSwitchLanguage));
+      await tapOn(
+        tester,
+        find.widgetWithText(
+          PopupMenuItem<LearningLanguage>,
+          english.languageEnglish,
+        ),
+      );
+
+      expect(find.text(english.errorNetwork), findsOneWidget);
+
+      languages.failure = null;
+      await openLanguages(tester);
+      expect(find.byType(ErrorMessage), findsNothing);
+    });
+
     testWidgets('mensuel : une quatrième langue est refusée avec une '
         'explication', (tester) async {
       subscribe(SubscriptionPlan.monthly);
       await languages.activate(LearningLanguage.spanish);
       await languages.activate(LearningLanguage.german);
       await pump(tester);
-      await openLanguages(tester, count: 3);
+      await openLanguages(tester);
 
       await tapOn(tester, languageRow(english.languageFrench));
 
@@ -145,7 +169,7 @@ void main() {
       await languages.activate(LearningLanguage.spanish);
       await languages.activate(LearningLanguage.german);
       await pump(tester);
-      await openLanguages(tester, count: 3);
+      await openLanguages(tester);
 
       await tapOn(tester, languageRow(english.languageFrench));
 
@@ -159,7 +183,7 @@ void main() {
       subscribe(SubscriptionPlan.monthly);
       await languages.activate(LearningLanguage.spanish);
       await pump(tester);
-      await openLanguages(tester, count: 2);
+      await openLanguages(tester);
 
       expect(find.byTooltip(english.languageRemove), findsNWidgets(2));
 
@@ -185,7 +209,7 @@ void main() {
       await pump(tester);
       await openTab(tester, Icons.person_outline);
 
-      expect(find.text(english.profileLanguages(1)), findsOneWidget);
+      // Une seule langue rappelée à droite de la ligne.
       expect(find.text(english.languageSpanish), findsOneWidget);
     });
   });
@@ -193,7 +217,7 @@ void main() {
   group('statistiques', () {
     Future<void> openProgress(WidgetTester tester) async {
       await pump(tester);
-      await openTab(tester, Icons.local_fire_department_outlined);
+      await openTab(tester, Icons.bar_chart_rounded);
     }
 
     testWidgets('sans journal, l\'écran dit quand la série commencera', (
@@ -217,9 +241,10 @@ void main() {
       await openProgress(tester);
 
       expect(find.text(english.progressStreakLabel), findsOneWidget);
-      // Le chiffre et son unité forment un seul texte.
-      expect(find.text('2 ${english.progressStreakUnit(2)}'), findsOneWidget);
+      expect(find.text('2'), findsOneWidget);
+      expect(find.text(english.progressStreakUnit(2)), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
+      expect(find.text(english.progressWeeklyTitle), findsNothing);
       expect(find.text(english.progressMistakesTitle), findsNothing);
 
       await tapText(tester, english.paywallDiscover);
@@ -227,29 +252,29 @@ void main() {
       expect(find.text(english.paywallTitle), findsOneWidget);
     });
 
-    testWidgets('Premium : mots appris, fautes par type et par semaine', (
-      tester,
-    ) async {
+    testWidgets('Premium : journaux par semaine, mots appris et fautes par '
+        'type', (tester) async {
+      final semantics = tester.ensureSemantics();
       subscribe(SubscriptionPlan.monthly);
       journal.seedPast(sampleEntry());
 
       await openProgress(tester);
 
       expect(find.text(english.progressWordsLearned), findsOneWidget);
-      expect(find.text(english.progressWordsOf(1)), findsOneWidget);
       expect(find.text(english.categoryConjugation), findsOneWidget);
       expect(find.text(english.progressPremiumTitle), findsNothing);
       expect(find.text(english.progressJournals), findsOneWidget);
+      expect(find.text(english.progressWeeklyTitle), findsOneWidget);
       // L'axe couvre toujours 8 semaines, même sans journal les premières.
-      expect(find.text('Sep 28'), findsOneWidget);
-      expect(find.text('Nov 16'), findsOneWidget);
-
-      await tapText(tester, english.progressRateDetails);
-
+      expect(find.text('9/28'), findsOneWidget);
+      expect(find.text('11/16'), findsOneWidget);
       expect(
-        find.text(english.progressRateWeek('Nov 16', '0.50')),
-        findsWidgets,
+        find.bySemanticsLabel(
+          english.progressWeeklyLabel('0, 0, 0, 0, 0, 0, 0, 1'),
+        ),
+        findsOneWidget,
       );
+      semantics.dispose();
     });
 
     testWidgets('des statistiques qui ne se chargent pas proposent de '

@@ -15,7 +15,14 @@ export const LANGUAGE_NAMES: Record<Language, string> = {
 };
 
 export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-export const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Jour calendaire « AAAA-MM-JJ » qui existe : « 2026-02-30 » est refusé. */
+export function isLocalDate(value: unknown): value is string {
+  return typeof value === "string" && DATE_PATTERN.test(value) &&
+    !Number.isNaN(Date.parse(`${value}T00:00:00Z`)) &&
+    new Date(`${value}T00:00:00Z`).toISOString().startsWith(value);
+}
 
 /** Client avec le rôle service : n'est jamais exposé à l'app. */
 export const admin = createClient(

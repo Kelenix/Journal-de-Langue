@@ -120,7 +120,13 @@ class _JournalEditorState extends ConsumerState<JournalEditor>
     final maxSentences = allowance.maxSentences;
     final sentenceCount = countSentences(_text.text);
     final isOverLimit = sentenceCount > maxSentences;
-    final canSubmit = sentenceCount > 0 && !isOverLimit;
+    // Comptés comme sur le serveur (points de code) : un brouillon restauré ou
+    // dicté peut dépasser la limite que le champ applique à la frappe.
+    final characterCount = _text.text.runes.length;
+    final canSubmit =
+        sentenceCount > 0 &&
+        !isOverLimit &&
+        characterCount <= allowance.maxCharacters;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -142,7 +148,7 @@ class _JournalEditorState extends ConsumerState<JournalEditor>
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         Text(
-                          l10n.journalIntro,
+                          l10n.journalCardBody(widget.language.code),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: muted,
                           ),
@@ -171,11 +177,20 @@ class _JournalEditorState extends ConsumerState<JournalEditor>
                 maxLength: allowance.maxCharacters,
                 textCapitalization: TextCapitalization.sentences,
                 keyboardType: TextInputType.multiline,
-                decoration: InputDecoration(hintText: l10n.journalEmpty),
+                // Le nombre de caractères s'affiche sous la jauge.
+                decoration: InputDecoration(
+                  hintText: l10n.journalEmpty,
+                  counterText: '',
+                ),
                 style: theme.textTheme.bodyLarge,
               ),
-              const SizedBox(height: AppSpacing.sm),
-              _SentenceProgress(count: sentenceCount, max: maxSentences),
+              const SizedBox(height: AppSpacing.md),
+              _SentenceProgress(
+                count: sentenceCount,
+                max: maxSentences,
+                characters: characterCount,
+                maxCharacters: allowance.maxCharacters,
+              ),
               if (allowance.correctionsLeft == 0) ...[
                 const SizedBox(height: AppSpacing.md),
                 Text(
@@ -192,6 +207,7 @@ class _JournalEditorState extends ConsumerState<JournalEditor>
               const SizedBox(height: AppSpacing.xl),
               PrimaryButton(
                 label: l10n.journalSubmit,
+                trailingIcon: Icons.arrow_forward_rounded,
                 isLoading: submission.isLoading,
                 onPressed: canSubmit ? _submit : null,
               ),
@@ -200,6 +216,10 @@ class _JournalEditorState extends ConsumerState<JournalEditor>
                 Text(
                   submission.isLoading
                       ? l10n.journalSubmitting
+                      : allowance.plan == null
+                      ? l10n.journalFreeCorrectionsLeft(
+                          allowance.correctionsLeft,
+                        )
                       : l10n.journalCorrectionsLeft(allowance.correctionsLeft),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodySmall?.copyWith(color: muted),
@@ -216,36 +236,60 @@ class _JournalEditorState extends ConsumerState<JournalEditor>
   }
 }
 
-/// Nombre de phrases écrites par rapport à la limite de l'offre.
+/// Phrases écrites par rapport à la limite de l'offre, et caractères.
 class _SentenceProgress extends StatelessWidget {
-  const _SentenceProgress({required this.count, required this.max});
+  const _SentenceProgress({
+    required this.count,
+    required this.max,
+    required this.characters,
+    required this.maxCharacters,
+  });
 
   final int count;
   final int max;
+  final int characters;
+  final int maxCharacters;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final isOverLimit = count > max;
+    final style = theme.textTheme.bodySmall?.copyWith(
+      color: isOverLimit
+          ? theme.colorScheme.error
+          : theme.colorScheme.onSurfaceVariant,
+    );
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SoftProgressBar(
           value: count / max,
           color: isOverLimit ? theme.colorScheme.error : null,
         ),
         const SizedBox(height: AppSpacing.sm),
-        Text(
-          isOverLimit
-              ? l10n.journalTooManySentences(max)
-              : l10n.journalSentenceCount(count, max),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: isOverLimit
-                ? theme.colorScheme.error
-                : theme.colorScheme.onSurfaceVariant,
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                isOverLimit
+                    ? l10n.journalTooManySentences(max)
+                    : l10n.journalSentenceCount(count, max),
+                style: style,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              '$characters / $maxCharacters',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: characters > maxCharacters
+                    ? theme.colorScheme.error
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       ],
     );

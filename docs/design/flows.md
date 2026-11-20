@@ -19,7 +19,9 @@ flowchart TD
   H -->|Achat| D
 ```
 
-L'écran d'offres n'est jamais montré avant qu'une première correction soit terminée.
+L'écran d'offres ne s'ouvre jamais de lui-même avant qu'une première correction soit
+terminée, et aucun rappel ne le propose avant ; seul le Profil y mène dès le premier jour
+(ADR-040).
 
 ## Onglets
 
@@ -41,12 +43,14 @@ Mise en page du brand kit (ADR-019), refaite d'après la maquette (ADR-038).
 │▓└──────────────────────────┘▓│
 │ ╰────────────────────────────╯ │
 │ ┌──────────────────────────┐ │
-│ │ Mon journal du jour   🎤(P)│ │   carte blanche, dictée Premium
+│ │ Ton journal           🎤(P)│ │   carte blanche, dictée Premium
+│ │ Écris en anglais, sans…  │ │
 │ │ ┌──────────────────────┐ │ │
 │ │ │ Aujourd'hui, j'ai…   │ │ │   saisie, brouillon automatique
 │ │ └──────────────────────┘ │ │
-│ │ ▓▓▓▓▓░░░░░  3 / 7 phrases│ │   progression en corail
-│ │ [       Corriger       ] │ │
+│ │ ▓▓▓▓▓░░░░░░░░░░░░░░░░░░░ │ │   progression en corail
+│ │ 3 phrases sur 7  120/1000│ │   phrases et caractères
+│ │ [ Corriger mon journal → ]│ │
 │ │ 1 correction disponible  │ │
 │ └──────────────────────────┘ │
 │ ╭ Journal Hist. Rév. Prog. ╮ │   barre d'onglets flottante
@@ -67,18 +71,19 @@ Mise en page du brand kit (ADR-019), refaite d'après la maquette (ADR-038).
 ```
 ┌──────────────────────────────┐
 │ (←)      Correction       (⚑)│   boutons ronds : retour, signaler
-│▓(2) 2 points à retenir       ▓│   bilan sur l'aplat vert
+│▓(2) 2 fautes corrigées       ▓│   bilan sur l'aplat vert
 │▓    Chaque erreur est une…   ▓│
 │ [Ta version|Version corrigée]│   bascule, corrigée par défaut
 │ ┌──────────────────────────┐ │
 │ │ Today I __went__ to… 🔊(P)│ │
 │ └──────────────────────────┘ │
-│ ┌ ~~have went~~ → went ─────┐ │   une carte par faute
+│ À retenir                    │
+│ ┌ Conjugaison         🔊(P)─┐ │   une carte par faute, écoute
+│ │ ~~have went~~  went       │ │   de la phrase corrigée
 │ │ Le prétérit s'emploie…    │ │
-│ À réviser                    │
-│ [grocery store · épicerie]   │   mots en étiquettes corail
 │ Reformuler une phrase  🔒/›  │
-│ [        Terminer         ]  │   toujours visible en bas
+│ [grocery store · épicerie]   │   mots en pastilles corail
+│ [        Terminé          ]  │   toujours visible en bas
 └──────────────────────────────┘
 ```
 - Chargement : squelette + « Claude lit ton journal… » (jusqu'à 15 s).
@@ -93,27 +98,32 @@ de fautes). Gratuit : au-delà de 4 jours, carte corail « journaux conservés �
 invitation Premium. Vide : « Ton premier journal apparaîtra ici. »
 
 ### Réviser
-En tête, deux tuiles : **Exercices** (aplat vert ; une question à la fois, retour
-immédiat) et **Simulation d'examen** (corail doux, après une première correction).
+En tête, deux tuiles : **Exercices** (aplat vert ; 3 questions par jour en gratuit, 20
+en Premium, retour immédiat) et **Examen blanc** (corail doux, noté sur 20 avec un plan ;
+toujours visible, sa boutique n'est proposée qu'après une première correction).
 Ensuite la **carte du jour** : jusqu'à 5 mots à réviser, un à la fois (« Carte du jour ·
 1 sur 5 », le mot, son exemple) ; la traduction s'affiche à la demande, « Je sais » le
 marque appris, « À revoir » le garde ; une fois le paquet fini, « Revoir d'autres
 cartes » s'il en reste. Puis **Tes mots** : mots appris sur le total, barre de
-progression, cartes terme / traduction / exemple avec un bouton rond « Appris ». Vide : « Corrige un journal pour obtenir des
+progression, puis les mots (terme et traduction) groupés dans une carte, chacun avec un
+bouton rond « Appris » ; l'exemple est sur la carte du jour. Vide : « Corrige un journal pour obtenir des
 mots à réviser. » Aucune publicité pendant une révision.
 
 ### Progrès
-Série de jours sur l'aplat vert (visible par tous), journaux écrits. Mots appris, fautes
-par type, fautes par phrase semaine après semaine (la dernière semaine en vert profond) :
-Premium, sinon carte corail « Statistiques détaillées ». Export PDF (Premium, onglet
-Réviser).
+Série de jours sur l'aplat vert, le chiffre en grand (visible par tous), et journaux
+écrits. En Premium : journaux par semaine sur 8 semaines (une colonne par semaine, vides
+comprises, la semaine en cours en vert profond, sa date sous chaque colonne), mots appris
+et « Tes fautes fréquentes » par type ; sinon carte corail « Statistiques détaillées ».
+Export PDF (Premium, onglet Réviser).
 
 ### Profil
-En-tête : initiale et e-mail du compte. Carte verte de l'offre (« Découvrir Premium »
-après une première correction, « Gérer mon abonnement » pour un abonné). Puis trois
-groupes : langues, boutique (solde des crédits), « Restaurer mes achats », confidentialité
-des publicités ; conditions, confidentialité, à propos ; déconnexion, suppression du
-compte (double confirmation).
+En-tête : initiale et e-mail du compte. Carte verte de l'offre : « Offre gratuite ·
+1 correction par jour », ce que Premium ajoute et « Découvrir Premium » ; pour un abonné,
+son offre, l'échéance et « Gérer mon abonnement ». Puis **Langues** (langues actives
+rappelées à droite), **Achats** (solde des crédits ; restauration des achats) et
+**Confidentialité** (feuille : conditions, politique de confidentialité, choix
+publicitaires là où ils sont exigés, à propos) ; enfin déconnexion et suppression du
+compte (double confirmation), sans pastille.
 
 ### Offres (paywall)
 ```

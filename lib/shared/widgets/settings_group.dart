@@ -38,10 +38,12 @@ class SettingsTile extends StatelessWidget {
     this.onTap,
     this.warm = false,
     this.isDestructive = false,
+    this.plain = false,
     super.key,
   });
 
   static const _badgeSize = 36.0;
+  static const _valueMaxWidth = 150.0;
 
   final IconData icon;
   final String title;
@@ -55,6 +57,9 @@ class SettingsTile extends StatelessWidget {
   final bool warm;
   final bool isDestructive;
 
+  /// Action simple (déconnexion…) : icône seule, sans pastille ni chevron.
+  final bool plain;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -62,18 +67,24 @@ class SettingsTile extends StatelessWidget {
     final error = theme.colorScheme.error;
     final subtitle = this.subtitle;
     final value = this.value;
-    final hasChevron = onTap != null && !isDestructive;
+    final hasChevron = onTap != null && !isDestructive && !plain;
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       minVerticalPadding: AppSpacing.md,
       textColor: isDestructive ? error : null,
-      leading: IconBadge(
-        icon,
-        size: _badgeSize,
-        warm: warm,
-        color: isDestructive ? error : null,
-      ),
+      leading: plain
+          // Même largeur qu'une pastille : les libellés restent alignés.
+          ? SizedBox(
+              width: _badgeSize,
+              child: Icon(icon, color: isDestructive ? error : muted),
+            )
+          : IconBadge(
+              icon,
+              size: _badgeSize,
+              warm: warm,
+              color: isDestructive ? error : null,
+            ),
       title: Text(title),
       subtitle: subtitle == null ? null : Text(subtitle),
       trailing: value == null && !hasChevron
@@ -82,9 +93,14 @@ class SettingsTile extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (value != null)
-                  Text(
-                    value,
-                    style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: _valueMaxWidth),
+                    child: Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+                    ),
                   ),
                 if (hasChevron)
                   ExcludeSemantics(

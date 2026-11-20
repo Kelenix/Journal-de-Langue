@@ -1,11 +1,11 @@
 // POST /functions/v1/next-exercises — prochains exercices de l'utilisateur (US-14).
 // Les exercices viennent d'une réserve partagée ; Claude n'est appelé que pour la compléter.
 import { z } from "npm:zod@4.6.7";
-import { askClaude, errorMessage } from "../_shared/claude.ts";
+import { askClaude, errorMessage, recordUsage } from "../_shared/claude.ts";
 import {
   admin,
-  DATE_PATTERN,
   isLanguage,
+  isLocalDate,
   isUiLocale,
   json,
   jsonBody,
@@ -79,10 +79,7 @@ Deno.serve(async (request) => {
   const language = body?.language;
   const uiLocale = body?.ui_locale;
   const localDate = body?.local_date;
-  if (
-    !isLanguage(language) || !isUiLocale(uiLocale) ||
-    typeof localDate !== "string" || !DATE_PATTERN.test(localDate)
-  ) {
+  if (!isLanguage(language) || !isUiLocale(uiLocale) || !isLocalDate(localDate)) {
     return json(400, { error: "invalid_input" });
   }
 
@@ -103,7 +100,10 @@ Deno.serve(async (request) => {
       console.error("Génération d'exercices en échec", errorMessage(generationError));
       return json(503, { error: "ai_unavailable" });
     }
-    if (answer.outcome === "refused") return json(503, { error: "ai_unavailable" });
+    if (answer.outcome === "refused") {
+      await recordUsage(userId, "exercises", answer.usage);
+      return json(503, { error: "ai_unavailable" });
+    }
 
     const { error: addError } = await admin.rpc("add_exercises", {
       p_user_id: userId,
@@ -117,6 +117,7 @@ Deno.serve(async (request) => {
     });
     if (addError) {
       console.error("Exercices non ajoutés à la réserve", addError.message);
+      await recordUsage(userId, "exercises", answer.usage);
       return json(500, { error: "internal" });
     }
     ({ data: picked, error } = await pick(userId, language, uiLocale, localDate));

@@ -10,6 +10,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/clock.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../routing/app_routes.dart';
+import '../../../shared/presentation/failure_message.dart';
 import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/surfaces.dart';
 import '../../ads/domain/ad_status.dart';
@@ -71,11 +72,11 @@ class JournalScreen extends ConsumerWidget {
                   ),
                   child: AsyncView(
                     value: ref.watch(journalDayProvider),
-                    onRetry: () => ref.invalidate(journalDayProvider),
-                    builder: (day) =>
-                        day.allowance.correctionsLeft > 0 ||
-                            day.allowance.credits > 0 ||
-                            day.allowance.rewardCorrections > 0
+                    onRetry: () async {
+                      await reloadFailedSubscription(ref);
+                      ref.invalidate(journalDayProvider);
+                    },
+                    builder: (day) => day.allowance.canCorrect
                         ? JournalEditor(
                             // Un brouillon par compte et par langue.
                             key: ValueKey((userId, language)),
@@ -84,7 +85,7 @@ class JournalScreen extends ConsumerWidget {
                             allowance: day.allowance,
                           )
                         : _DailyLimitReached(
-                            entry: day.entry,
+                            entryId: day.entryId,
                             isPremium: day.allowance.plan != null,
                           ),
                   ),
@@ -136,12 +137,19 @@ class _LanguagePill extends ConsumerWidget {
     );
     if (!canSwitch) return pill;
 
+    ref.listen(journalLanguageControllerProvider, (_, next) {
+      final error = next.error;
+      if (error == null) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(failureMessage(l10n, error))));
+    });
+
     return PopupMenuButton<LearningLanguage>(
       tooltip: l10n.journalSwitchLanguage,
-      enabled: !ref.watch(languageSelectionControllerProvider).isLoading,
-      onSelected: (language) => ref
-          .read(languageSelectionControllerProvider.notifier)
-          .select(language),
+      enabled: !ref.watch(journalLanguageControllerProvider).isLoading,
+      onSelected: (language) =>
+          ref.read(journalLanguageControllerProvider.notifier).select(language),
       itemBuilder: (context) => [
         for (final language in languages.skip(1))
           PopupMenuItem(
@@ -353,11 +361,11 @@ class _WeekDots extends StatelessWidget {
 
 /// La correction du jour est utilisée : accès à la correction et rappel.
 class _DailyLimitReached extends ConsumerWidget {
-  const _DailyLimitReached({required this.entry, required this.isPremium});
+  const _DailyLimitReached({required this.entryId, required this.isPremium});
 
   static const _badgeRadius = 28.0;
 
-  final JournalEntry? entry;
+  final String? entryId;
   final bool isPremium;
 
   @override
@@ -366,12 +374,12 @@ class _DailyLimitReached extends ConsumerWidget {
     final theme = Theme.of(context);
     final colors = theme.extension<AppColors>()!;
     final muted = theme.colorScheme.onSurfaceVariant;
-    final entry = this.entry;
+    final entryId = this.entryId;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (entry != null) ...[
+        if (entryId != null) ...[
           SoftCard(
             padding: const EdgeInsets.all(AppSpacing.xl),
             child: Column(
@@ -400,7 +408,7 @@ class _DailyLimitReached extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.xl),
                 FilledButton(
                   onPressed: () =>
-                      context.push(AppRoutes.correctionOf(entry.id)),
+                      context.push(AppRoutes.correctionOf(entryId)),
                   child: Text(l10n.journalViewCorrection),
                 ),
               ],
@@ -415,8 +423,8 @@ class _DailyLimitReached extends ConsumerWidget {
             style: theme.textTheme.bodyMedium?.copyWith(color: muted),
           )
         else
-          // L'offre payante n'est proposée qu'ici, une fois la correction
-          // gratuite du jour utilisée (INTAKE §6).
+          // Sur le journal, l'offre payante n'apparaît qu'une fois la
+          // correction gratuite du jour utilisée (INTAKE §6).
           SoftCard(
             color: theme.colorScheme.secondaryContainer,
             elevated: false,

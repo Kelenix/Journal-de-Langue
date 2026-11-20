@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/errors/failure.dart';
 import '../../../core/supabase/supabase_client_provider.dart';
 import '../../auth/application/auth_providers.dart';
 import '../../billing/application/billing_providers.dart';
@@ -73,9 +74,13 @@ class AdsController extends Notifier<bool> {
   /// À appeler en quittant une correction, jamais pendant sa lecture.
   Future<void> afterCorrection() async {
     if (state) return;
-    final status = await ref.read(adStatusProvider.future);
-    if (!status.adsEnabled || !await _service.prepare()) return;
-    if (await _service.showInterstitial()) state = true;
+    try {
+      final status = await ref.read(adStatusProvider.future);
+      if (!status.adsEnabled || !await _service.prepare()) return;
+      if (await _service.showInterstitial()) state = true;
+    } on Failure {
+      // Statut des publicités illisible : pas d'interstitiel, rien d'autre.
+    }
   }
 
   Future<RewardResult> watchRewarded(AdRewardKind kind) async {
@@ -96,9 +101,15 @@ class AdsController extends Notifier<bool> {
 
     for (var attempt = 0; attempt < _confirmationAttempts; attempt++) {
       await Future<void>.delayed(_confirmationDelay);
-      if ((await repository.status()).rewardsLeft(kind) > before) {
-        ref.invalidate(adStatusProvider);
-        return RewardResult.granted;
+      try {
+        if ((await repository.status()).rewardsLeft(kind) > before) {
+          ref.invalidate(adStatusProvider);
+          return RewardResult.granted;
+        }
+      } on Failure {
+        // Réseau coupé après la vidéo : AdMob prévient quand même le serveur,
+        // « Actualiser » la montrera.
+        return RewardResult.pending;
       }
     }
     return RewardResult.pending;

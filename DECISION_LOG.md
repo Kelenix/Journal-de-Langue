@@ -5,6 +5,126 @@
 
 ---
 
+## ADR-041 — Phase 5 : corrections de la revue, limites des appels à Claude, reports
+
+- **Date** : 2026-11-20
+- **Statut** : Accepté
+- **Décideur** : Claude (rôles : code-reviewer, performance-engineer, qa-engineer),
+  phase 5 lancée par l'utilisateur (« Oui, lance »)
+- **Contexte** : trois relectures complètes (app : cœur et autres écrans ; serveur) ont
+  relevé une soixantaine de points. Chacun a été vérifié dans le code avant d'être
+  corrigé ou reporté.
+- **Décision (serveur)**, migration `20261121140000_retries_and_limits.sql` :
+  1. **Envoi rejoué pendant la correction** : la même clé d'idempotence encore en cours
+     rend `busy` (HTTP 409 `correction_in_progress`) au lieu d'effacer la réservation et
+     de rappeler Claude. Une réservation abandonnée depuis plus de 2 minutes est
+     remplacée.
+  2. **Tentatives qui rendent le quota** (refus, mauvaise langue, résultat non
+     enregistré) : comptées dans `ai_usage` (`succeeded = false`), plafonnées à 10 par
+     24 h pour la correction et à 5 pour la notation d'examen (`too_many_attempts`).
+     Les pannes de l'API ne comptent pas : une panne générale ne bloque personne.
+  3. **Reformulations** : la limite du jour compte les appels à Claude, refus compris.
+  4. **Durées** : correction avancée 90 s et notation d'examen 120 s, sans nouvelle
+     tentative (limite de 150 s d'une Edge Function) ; fenêtre de notation portée à
+     3 minutes. Valeurs à confirmer avec la clé API (`docs/manual-tasks.md`). L'app
+     abandonne ces appels au-delà de 150 s (60 s pour reformulation et exercices).
+  5. **Reprise d'un journal hors de l'historique lisible** : refusée (`history_locked`),
+     comme la RLS.
+  6. Exercices offerts déjà faits comptés une fois ; une réponse renvoyée après une
+     coupure rend son résultat sans décompter (index unique par jour) ; deux usages
+     simultanés d'une récompense prennent deux vidéos ; un exercice généré mal formé est
+     écarté sans perdre le lot ; dates impossibles refusées (400).
+  7. **Abonnements** : un événement d'une autre formule (expiration, remboursement) ne
+     raccourcit pas l'abonnement encore actif.
+  8. Index sur `purchase_events.user_id` et `one_time_purchases.user_id` (suppression de
+     compte) ; droit explicite du rôle service sur `exams` ; clés AdMob rechargées
+     seulement pour une clé inconnue, au plus une fois par minute, délai de 5 s.
+- **Décision (app)** :
+  1. Une coupure réseau pendant le renouvellement de la session ne bloque plus l'app sur
+     l'écran d'erreur ; « Réessayer » ne relit que les langues.
+  2. Le journal, l'historique et les statistiques se rechargent quand le jour change,
+     app restée ouverte (minuit, retour au premier plan). Un observateur dans la
+     coquille invalide ces providers, observés par des écrans seulement (ADR-022).
+  3. « Réessayer » relit l'abonnement s'il avait échoué ; un rechargement des langues
+     raté garde la liste au lieu de renvoyer au démarrage ; une erreur l'emporte sur la
+     valeur précédente dans `AsyncView`.
+  4. Limite de caractères comptée comme sur le serveur ; journal du jour chargé
+     seulement quand plus aucune correction ne reste ; refus `daily_limit` → limite du
+     jour affichée.
+  5. Examen : brouillon envoyé à la fermeture, avertissement s'il n'est pas enregistré,
+     copie en cours de notation en lecture seule. Achats non lus ≠ « rien acheté ».
+  6. PDF construit dans un autre isolate, textes longs coupés d'une page à l'autre.
+  7. Dictée : liste des langues attendue 2 s, puis variante attendue ; écoute en échec
+     signalée sans masquer le bouton. Un seul bouton « Écouter » actif à la fois.
+- **Reporté, avec raison** :
+  - Réinitialisation du mot de passe dont l'enregistrement échoue après le code : rare
+    (coupure entre deux appels), correction lourde (session déjà ouverte par le code).
+  - Historique et correction rechargés en entier (colonnes inutiles, second
+    chargement) : gain non mesuré, lié au format des pages.
+  - Valeurs inconnues d'énumérations envoyées par un serveur plus récent : à traiter au
+    premier ajout de valeur (règle : jamais de nouvelle valeur sans app qui la connaît).
+  - Trousseau iOS conservé après désinstallation : à traiter avant la sortie iOS.
+  - Rafale parallèle de reformulations : Premium seulement, modèle économique ; risque
+    accepté (la limite du jour reprend après la rafale).
+  - **Achats de test (sandbox) acceptés en production** : Apple valide l'app avec des
+    achats de test ; les refuser ferait rejeter l'app. Les testeurs sont connus.
+  - Bannière rechargée à chaque réapparition, définition d'une session pour
+    l'interstitiel, mot qui change de place quand on le coche, widget de bannière dans
+    l'interface du domaine : compromis assumés.
+- **Conséquences** : règles couvertes par `supabase/tests/retries_and_limits_test.sql`
+  et les tests d'écran ajoutés ; à valider sur téléphone : dictée, lecture, interstitiel.
+- **Impact** : technique, financier (coût de l'IA borné), fonctionnel mineur.
+
+---
+
+## ADR-040 — Écrans fidèles aux maquettes : thème clair, journaux par semaine, Profil
+
+- **Date** : 2026-11-20
+- **Statut** : Accepté
+- **Décideur** : Utilisateur (« je veux exactement ce que je voie sur les maquette »),
+  Claude (exécution et lecture de l'INTAKE §6)
+- **Contexte** : sur son téléphone, l'utilisateur relève des écarts avec les maquettes
+  validées (ADR-038) : l'app suit le mode sombre du téléphone, la barre d'onglets a un
+  grand vide en haut, Réviser vide n'a pas l'examen blanc, la carte d'offre du Profil ne
+  ressemble pas à la maquette.
+- **Décision** :
+  1. **Thème clair seul**, comme la maquette, même si le téléphone est en mode sombre ;
+     ressources Android `values-night` supprimées.
+  2. **Barre d'onglets** : les marges de l'écran ne sont plus ajoutées à l'intérieur de
+     la barre (cause du vide) ; icônes de la maquette.
+  3. **Écrans repris un à un** : Journal (« Ton journal », phrases et caractères,
+     « Corriger mon journal → »), Correction (« Ta version / Version corrigée »,
+     « À retenir », écoute de chaque phrase corrigée en Premium, mots en pastilles
+     au-dessus de « Terminé »), Réviser (tuiles Exercices et Examen blanc, carte du jour,
+     « Tes mots » en liste groupée), Progrès (la série en grand, journaux par semaine,
+     chiffres en tuiles, « Tes fautes fréquentes »), Profil (carte d'offre, Langues,
+     Achats, Confidentialité, puis déconnexion et suppression sans pastille).
+  4. **Journaux par semaine** : en Premium, `get_stats` renvoie les journaux corrigés de
+     la langue sur 8 semaines (`weekly_journals`, migration
+     `20261121130000_stats_weekly_journals.sql`) à la place des fautes par phrase, pour
+     le graphique de la maquette. Les semaines sans journal restent sur l'axe.
+  5. **Offres** : l'INTAKE §6 demande que l'écran d'abonnement n'apparaisse pas dès la
+     première ouverture. Il ne s'ouvre donc jamais de lui-même avant une première
+     correction, et les rappels en contexte (Journal, Progrès, exercices, examen,
+     langues) restent réservés à l'après. Le Profil, où l'on gère son offre, montre
+     toujours « Découvrir Premium » et « Achats », comme la maquette ; Réviser montre
+     toujours l'examen blanc (sa boutique attend la première correction).
+  6. **Confidentialité** regroupe conditions, politique de confidentialité, choix
+     publicitaires (là où ils sont exigés) et « À propos » dans une feuille.
+     « Restaurer mes achats » quitte le Profil : il reste dans Achats et dans les offres,
+     tous deux accessibles depuis le Profil dès le premier jour.
+  7. **Accessibilité** gardée : bascule des versions de 40 points à l'écran pour 52 au
+     toucher ; « Carte du jour » en capitales à l'écran mais lue normalement ; graphique
+     décrit en une phrase ; feuilles du Profil et de l'export ouvertes sur tout l'écran.
+- **Alternatives écartées** : garder le mode sombre (écart visible, refusé) ; garder les
+  fautes par phrase (écart accepté en ADR-038, refusé ici) ; offres visibles partout dès
+  le premier jour (contraire à l'INTAKE §6).
+- **Conséquences** : plus de mode sombre ; graphique de Progrès alimenté par une nouvelle
+  donnée ; tests adaptés (176 tests d'interface, 52 d'intégration, 244 SQL) ; captures des
+  stores refaites.
+- **Impact** : fonctionnel (réversible). Le bouton « Découvrir Premium » du Profil est
+  visible avant la première correction.
+
 ## ADR-039 — Captures des stores rendues par l'app
 
 - **Date** : 2026-11-20
@@ -53,8 +173,9 @@
   l'une l'autre, le retour ramène à l'accueil. Le logo de l'app passe sur un vert plus
   foncé pour se détacher de l'aplat.
 - **Écarts avec la maquette** : le graphique de Progrès montre les fautes par phrase (donnée
-  existante) au lieu des journaux par semaine ; le contenu s'arrête au-dessus de la barre
-  d'onglets au lieu de passer dessous, pour qu'aucun bouton ne soit caché.
+  existante) au lieu des journaux par semaine (repris par ADR-040 : journaux par semaine) ;
+  le contenu s'arrête au-dessus de la barre d'onglets au lieu de passer dessous, pour
+  qu'aucun bouton ne soit caché.
 - **Alternatives écartées** : retouches du thème seul (n'aurait pas changé la structure
   des écrans) ; bibliothèque de composants externe (dépendance pour peu de gain).
 - **Conséquences** : textes et parcours inchangés ; quelques tests adaptés au nouveau

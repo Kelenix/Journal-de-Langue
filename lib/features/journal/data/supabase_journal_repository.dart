@@ -21,6 +21,11 @@ class SupabaseJournalRepository implements JournalRepository {
   /// Lignes par requête, sous la limite de l'API (`max_rows`).
   static const _batchSize = 200;
 
+  /// Au-delà du plus long appel à Claude côté serveur (ADR-041) : une connexion
+  /// morte sans erreur ne laisse pas l'écran attendre indéfiniment.
+  static const _correctionTimeout = Duration(seconds: 150);
+  static const _rewriteTimeout = Duration(seconds: 60);
+
   final SupabaseClient _client;
 
   @override
@@ -33,13 +38,15 @@ class SupabaseJournalRepository implements JournalRepository {
   });
 
   @override
-  Future<JournalEntry?> entryOfDay(DateTime day) => guardFailures(() async {
-    final row = await _detailsInOrder(
-      _entries()
-          .eq('entry_date', isoDate(day))
-          .order('corrected_at', ascending: false),
-    ).limit(1).maybeSingle();
-    return row == null ? null : JournalEntry.fromJson(row);
+  Future<String?> entryIdOfDay(DateTime day) => guardFailures(() async {
+    final row = await _client
+        .from('journal_entries')
+        .select('id')
+        .eq('entry_date', isoDate(day))
+        .order('corrected_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
+    return row?['id'] as String?;
   });
 
   @override
@@ -96,10 +103,12 @@ class SupabaseJournalRepository implements JournalRepository {
     required String entryId,
     required String sentence,
   }) => guardFailures(() async {
-    final response = await _client.functions.invoke(
-      'rewrite-sentence',
-      body: {'entry_id': entryId, 'sentence': sentence},
-    );
+    final response = await _client.functions
+        .invoke(
+          'rewrite-sentence',
+          body: {'entry_id': entryId, 'sentence': sentence},
+        )
+        .timeout(_rewriteTimeout);
     return SentenceRewrite.fromJson(response.data as Map<String, dynamic>);
   });
 
@@ -111,16 +120,18 @@ class SupabaseJournalRepository implements JournalRepository {
     required DateTime day,
     required String idempotencyKey,
   }) => guardFailures(() async {
-    final response = await _client.functions.invoke(
-      'correct-entry',
-      body: {
-        'text': text,
-        'language': language.code,
-        'ui_locale': uiLocale,
-        'local_date': isoDate(day),
-        'idempotency_key': idempotencyKey,
-      },
-    );
+    final response = await _client.functions
+        .invoke(
+          'correct-entry',
+          body: {
+            'text': text,
+            'language': language.code,
+            'ui_locale': uiLocale,
+            'local_date': isoDate(day),
+            'idempotency_key': idempotencyKey,
+          },
+        )
+        .timeout(_correctionTimeout);
     return JournalEntry.fromJson(response.data as Map<String, dynamic>);
   });
 

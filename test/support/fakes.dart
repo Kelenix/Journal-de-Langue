@@ -241,6 +241,12 @@ class FakeJournalRepository implements JournalRepository {
   /// Place un journal corrigé un jour précédent.
   void seedPast(JournalEntry entry) => _entries[entry.id] = entry;
 
+  /// Le serveur passe au jour suivant : quota du jour neuf.
+  void startNewDay() {
+    _entryOfDay = null;
+    _correctionsToday = 0;
+  }
+
   /// Journaux corrigés, du plus récent au plus ancien.
   List<JournalEntry> get savedEntries =>
       _entries.values.toList()
@@ -308,7 +314,7 @@ class FakeJournalRepository implements JournalRepository {
   }
 
   @override
-  Future<JournalEntry?> entryOfDay(DateTime day) async => _entryOfDay;
+  Future<String?> entryIdOfDay(DateTime day) async => _entryOfDay?.id;
 
   @override
   Future<JournalEntry> entry(String id) async => _entries[id]!;
@@ -485,6 +491,10 @@ class FakeBillingRepository implements BillingRepository {
   /// Achat déjà fait avec le compte du store, à retrouver par la restauration.
   SubscriptionPlan? restorablePlan;
 
+  /// Achats à l'unité déjà faits avec le compte du store, retrouvés eux aussi
+  /// par la restauration.
+  final restorableProducts = <OneTimeProduct>[];
+
   // Dans le désordre : l'app doit les présenter annuel, mensuel, hebdomadaire.
   @override
   Future<List<Offer>> offers() async {
@@ -531,6 +541,9 @@ class FakeBillingRepository implements BillingRepository {
     if (failure != null) throw failure;
     final plan = restorablePlan;
     if (plan != null) _activate(plan, inTrial: false);
+    for (final product in restorableProducts) {
+      wallet?.grant(product);
+    }
   }
 
   void _activate(SubscriptionPlan plan, {required bool inTrial}) =>
@@ -678,6 +691,16 @@ class FakeStatsRepository implements StatsRepository {
       counts[item.category] = (counts[item.category] ?? 0) + 1;
     }
     final words = inLanguage.expand((entry) => entry.vocabulary).toList();
+    final weeks = <DateTime, int>{};
+    for (final entry in inLanguage) {
+      final date = entry.entryDate;
+      final monday = DateTime(
+        date.year,
+        date.month,
+        date.day - date.weekday + 1,
+      );
+      weeks[monday] = (weeks[monday] ?? 0) + 1;
+    }
     return LearningStats(
       isPremium: true,
       streakDays: streak,
@@ -689,13 +712,10 @@ class FakeStatsRepository implements StatsRepository {
         for (final MapEntry(:key, :value) in counts.entries)
           CategoryCount(category: key, count: value),
       ]..sort((a, b) => b.count.compareTo(a.count)),
-      weeklyMistakeRate: [
-        if (inLanguage.isNotEmpty)
-          WeeklyMistakeRate(
-            weekStart: DateTime(2026, 11, 16),
-            mistakesPerSentence: 0.5,
-          ),
-      ],
+      weeklyJournals: [
+        for (final MapEntry(:key, :value) in weeks.entries)
+          WeeklyJournals(weekStart: key, journals: value),
+      ]..sort((a, b) => a.weekStart.compareTo(b.weekStart)),
     );
   }
 }
@@ -752,8 +772,15 @@ class FakeWalletRepository implements WalletRepository {
 
   Wallet wallet;
 
+  /// Fait échouer la lecture des achats.
+  Failure? failure;
+
   @override
-  Future<Wallet> current() async => wallet;
+  Future<Wallet> current() async {
+    final failure = this.failure;
+    if (failure != null) throw failure;
+    return wallet;
+  }
 
   /// Ce que la notification d'achat apporterait.
   void grant(OneTimeProduct product) {

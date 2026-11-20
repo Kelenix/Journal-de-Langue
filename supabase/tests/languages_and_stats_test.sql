@@ -160,17 +160,16 @@ select is(
   'la série tient tant que le dernier journal date d''hier'
 );
 select is(
-  public.get_stats('en', current_date) - array['weekly_mistake_rate', 'week_days'],
+  public.get_stats('en', current_date) - array['weekly_journals', 'week_days'],
   '{"is_premium": true, "streak_days": 2, "journals": 2, "words_learned": 1, "words_total": 2,
     "mistakes_by_category": [{"category": "conjugation", "count": 3}]}'::jsonb,
   'Premium : mots appris et fautes par catégorie'
 );
 select is(
-  (select sum((week ->> 'mistakes_per_sentence')::numeric * 2)
-     from jsonb_array_elements(public.get_stats('en', current_date) -> 'weekly_mistake_rate') as week)
-    in (1.5, 2.0 + 1.0),
-  true,
-  'Premium : fautes par phrase, semaine par semaine (3 sur 4, ou 1 sur 2 puis 2 sur 2)'
+  (select sum((week ->> 'journals')::int)::int
+     from jsonb_array_elements(public.get_stats('en', current_date) -> 'weekly_journals') as week),
+  2,
+  'Premium : journaux de la langue, semaine par semaine'
 );
 
 -- Un journal il y a deux jours, rien depuis : la série est perdue.

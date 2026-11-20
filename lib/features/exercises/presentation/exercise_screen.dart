@@ -400,8 +400,8 @@ class _DailyLimit extends ConsumerWidget {
             isPremium ? l10n.exercisesLimitPremium : l10n.exercisesLimitFree,
             textAlign: TextAlign.center,
           ),
-          // Jamais d'offre payante avant une première correction
-          // (INTAKE §6).
+          // Rappel en contexte : seulement après une première correction
+          // (ADR-040).
           if (!isPremium && watchHasCorrectedJournal(ref)) ...[
             const SizedBox(height: AppSpacing.lg),
             FilledButton(

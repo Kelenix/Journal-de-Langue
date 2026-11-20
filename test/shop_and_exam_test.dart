@@ -148,7 +148,7 @@ void main() {
       await pump(tester);
       await openTab(tester, Icons.person_outline);
 
-      await tapText(tester, english.shopTitle);
+      await tapText(tester, english.profilePurchases);
 
       expect(find.text(english.errorBillingUnavailable), findsOneWidget);
       expect(owned(english.shopCredits(3)), findsOneWidget);
@@ -161,7 +161,7 @@ void main() {
       journal.seedPast(sampleEntry());
       await pump(tester);
       await openTab(tester, Icons.person_outline);
-      await tapText(tester, english.shopTitle);
+      await tapText(tester, english.profilePurchases);
 
       await tapAndWait(tester, buyButton(OneTimeProduct.examPack), seconds: 1);
 
@@ -175,7 +175,7 @@ void main() {
       journal.seedPast(sampleEntry());
       await pump(tester);
       await openTab(tester, Icons.person_outline);
-      await tapText(tester, english.shopTitle);
+      await tapText(tester, english.profilePurchases);
 
       await tapAndWait(
         tester,
@@ -193,7 +193,7 @@ void main() {
       journal.seedPast(sampleEntry());
       await pump(tester);
       await openTab(tester, Icons.person_outline);
-      await tapText(tester, english.shopTitle);
+      await tapText(tester, english.profilePurchases);
 
       await tapAndWait(
         tester,
@@ -215,27 +215,47 @@ void main() {
       expect(find.text(english.shopRemoveAdsBody), findsNothing);
     });
 
-    testWidgets('avant la première correction, la boutique n\'est pas proposée '
-        'dans le profil', (tester) async {
+    testWidgets('dès le premier jour, le profil mène aux achats et à leur '
+        'restauration', (tester) async {
       await pump(tester);
       await openTab(tester, Icons.person_outline);
 
-      expect(find.text(english.shopTitle), findsNothing);
+      await tapText(tester, english.profilePurchases);
+
+      expect(find.text(english.shopTitle), findsOneWidget);
+      await tester.scrollUntilVisible(find.text(english.paywallRestore), 300);
+      expect(find.text(english.paywallRestore), findsOneWidget);
+    });
+
+    testWidgets('« sans publicité » acheté avec le même compte du store est '
+        'restauré depuis les achats', (tester) async {
+      billing.restorableProducts.add(OneTimeProduct.removeAds);
+      await pump(tester);
+      await openTab(tester, Icons.person_outline);
+      await tapText(tester, english.profilePurchases);
+
+      await tester.scrollUntilVisible(find.text(english.paywallRestore), 300);
+      await tapText(tester, english.paywallRestore);
+
+      expect(find.text(english.shopRestored), findsOneWidget);
+      await scrollToTop(tester);
+      expect(owned(english.shopAdsRemoved), findsOneWidget);
     });
   });
 
   group('simulation d\'examen', () {
     Future<void> openExam(WidgetTester tester) async {
-      await openTab(tester, Icons.style_outlined);
+      await openTab(tester, Icons.copy_outlined);
       await tapText(tester, english.examTitle);
     }
 
     testWidgets('avant la première correction et sans pack, la simulation '
-        'n\'est pas proposée', (tester) async {
+        's\'explique sans proposer la boutique', (tester) async {
       await pump(tester);
-      await openTab(tester, Icons.style_outlined);
+      await openExam(tester);
 
-      expect(find.text(english.examTitle), findsNothing);
+      expect(find.text(english.examNoCredit), findsOneWidget);
+      expect(find.text(english.examBuyPack), findsNothing);
     });
 
     testWidgets('sans pack : explication et accès à la boutique', (
@@ -324,6 +344,65 @@ void main() {
         tester.widget<TextField>(find.byType(TextField)).controller!.text,
         'Dear Sam,',
       );
+    });
+
+    testWidgets('quitter la simulation envoie le dernier texte écrit', (
+      tester,
+    ) async {
+      exams.exams.add(
+        Exam(
+          id: 'exam-open',
+          language: LearningLanguage.english,
+          level: ExamLevel.b1,
+          status: ExamStatus.inProgress,
+          createdAt: DateTime(2026, 11, 18),
+          prompt: sampleExamPrompt,
+          answer: 'Dear Sam,',
+        ),
+      );
+      await pump(tester);
+      await openExam(tester);
+
+      await tester.enterText(find.byType(TextField), 'Dear Sam, I am fine.');
+      await tester.pump();
+      // Retour avant l'enregistrement automatique, qui attend 2 secondes.
+      await tapOn(tester, find.byType(BackButton));
+
+      expect(exams.drafts, ['Dear Sam, I am fine.']);
+    });
+
+    testWidgets('une copie en cours de notation ne se modifie plus', (
+      tester,
+    ) async {
+      exams.exams.add(
+        Exam(
+          id: 'exam-grading',
+          language: LearningLanguage.english,
+          level: ExamLevel.b1,
+          status: ExamStatus.grading,
+          createdAt: DateTime(2026, 11, 18),
+          prompt: sampleExamPrompt,
+          answer: 'Dear Sam,',
+        ),
+      );
+      await pump(tester);
+      await openExam(tester);
+
+      expect(find.text(english.examGrading), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+    });
+
+    testWidgets('des achats illisibles ne passent pas pour « rien acheté »', (
+      tester,
+    ) async {
+      wallet.failure = const NetworkFailure();
+      await pump(tester);
+      await openTab(tester, Icons.person_outline);
+      await tapText(tester, english.profilePurchases);
+
+      expect(find.text(english.shopNothingOwned), findsNothing);
+      expect(find.text(english.errorNetwork), findsOneWidget);
+      expect(find.text(english.shopRemoveAdsBody), findsNothing);
     });
 
     testWidgets('un sujet qui n\'a pas pu être créé est expliqué', (

@@ -29,7 +29,8 @@ class LanguageChoiceList extends ConsumerWidget {
       final isActivated = await ref
           .read(languageSelectionControllerProvider.notifier)
           .select(language);
-      if (isActivated) onActivated?.call();
+      // La feuille a pu être refermée pendant l'activation.
+      if (isActivated && context.mounted) onActivated?.call();
     }
 
     return Column(

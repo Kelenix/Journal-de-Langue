@@ -165,7 +165,10 @@ async function start(userId: string, body: Record<string, unknown>): Promise<Res
     p_input_tokens: usage.inputTokens,
     p_output_tokens: usage.outputTokens,
   });
-  if (startError) throw startError;
+  if (startError) {
+    await recordUsage(userId, "exam_topic", usage);
+    throw startError;
+  }
 
   return json(200, await loadExam(examId));
 }
@@ -196,8 +199,10 @@ async function submit(userId: string, body: Record<string, unknown>): Promise<Re
       model: MODEL,
       effort: "medium",
       maxTokens: 16000,
-      // Une copie entière à corriger : bien plus long qu'un journal.
-      timeoutMs: 60_000,
+      // Une copie entière, notée critère par critère : l'appel le plus long. Une seule
+      // tentative, sous la limite de 150 s d'une Edge Function (ADR-041).
+      timeoutMs: 120_000,
+      maxRetries: 0,
       system: gradingPrompt(claim.language, claim.level, claim.ui_locale),
       input: { task: claim.prompt?.task ?? "", answer: text },
       schema: Grading,
@@ -234,7 +239,10 @@ async function submit(userId: string, body: Record<string, unknown>): Promise<Re
     p_input_tokens: usage.inputTokens,
     p_output_tokens: usage.outputTokens,
   });
-  if (completeError) throw completeError;
+  if (completeError) {
+    await recordUsage(userId, "exam_grading", usage);
+    throw completeError;
+  }
 
   return json(200, await loadExam(examId));
 }

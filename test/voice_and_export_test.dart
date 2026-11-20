@@ -54,7 +54,7 @@ void main() {
   Future<void> openCorrection(WidgetTester tester) async {
     journal.seedPast(sampleEntry());
     await pump(tester);
-    await tapOn(tester, find.byIcon(Icons.history_outlined));
+    await tapOn(tester, find.byIcon(Icons.schedule_outlined));
     await tapText(tester, 'I has a cat.');
   }
 
@@ -64,7 +64,7 @@ void main() {
       expect(find.byTooltip(english.voiceListen), findsNothing);
 
       await tapText(tester, english.correctionDone);
-      await tapOn(tester, find.byIcon(Icons.edit_note_outlined));
+      await tapOn(tester, find.byIcon(Icons.edit_outlined));
 
       expect(find.byTooltip(english.voiceDictate), findsNothing);
     });
@@ -140,7 +140,7 @@ void main() {
   group('export PDF', () {
     Future<void> openReview(WidgetTester tester) async {
       await pump(tester);
-      await tapOn(tester, find.byIcon(Icons.style_outlined));
+      await tapOn(tester, find.byIcon(Icons.copy_outlined));
     }
 
     testWidgets('gratuit : pas d\'export', (tester) async {
@@ -164,6 +164,22 @@ void main() {
       expect(sharedPdfs, hasLength(1));
       expect(sharedPdfs.single.fileName, 'journal-de-langue-en-2026-11-19.pdf');
       expect(sharedPdfs.single.size, greaterThan(1000));
+    });
+
+    testWidgets('un journal plus long qu\'une page est exporté', (
+      tester,
+    ) async {
+      subscribe();
+      // 6 000 caractères, la limite Premium : plus d'une page A4.
+      journal.seedPast(sampleEntry(originalText: 'Today I has a cat. ' * 316));
+      await openReview(tester);
+
+      await tapOn(tester, find.byTooltip(english.exportTitle));
+      await tester.runAsync(() => tapText(tester, english.exportLastWeek));
+      await tester.pumpAndSettle();
+
+      expect(find.text(english.errorUnexpected), findsNothing);
+      expect(sharedPdfs, hasLength(1));
     });
 
     testWidgets('rien sur la période : l\'app le dit, sans partager', (

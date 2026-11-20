@@ -11,10 +11,8 @@ import '../../../shared/widgets/app_bars.dart';
 import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/badges.dart';
 import '../../../shared/widgets/empty_state.dart';
-import '../../../shared/widgets/section_title.dart';
 import '../../../shared/widgets/surfaces.dart';
 import '../../billing/application/billing_providers.dart';
-import '../../journal/application/journal_providers.dart';
 import '../../export/application/export_providers.dart';
 import '../../export/domain/export_period.dart';
 import '../application/vocabulary_providers.dart';
@@ -52,39 +50,43 @@ class _ReviewList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    // Payante : présentée après une première correction (INTAKE §6), ou à
-    // qui a déjà un Pack Examinateur.
-    final showsExam =
-        watchHasCorrectedJournal(ref) ||
-        (ref.watch(walletProvider).value?.examCredits ?? 0) > 0;
     // Les mots à réviser d'abord, les mots appris ensuite.
     final toReview = items.where((item) => item.learnedAt == null);
     final learned = items.where((item) => item.learnedAt != null).toList();
     final words = [...toReview, ...learned];
 
     final header = [
-      _PracticeTiles(showsExam: showsExam),
+      const _PracticeTiles(),
       const SizedBox(height: AppSpacing.xl),
       if (items.isEmpty)
         EmptyState(icon: Icons.style_outlined, message: l10n.reviewEmpty)
       else ...[
         DailyCard(words: items),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Expanded(child: SectionTitle(l10n.reviewWordsTitle)),
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Text(
-                l10n.reviewLearnedCount(learned.length),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Expanded(
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    l10n.reviewWordsTitle,
+                    style: theme.textTheme.titleMedium?.copyWith(fontSize: 18),
+                  ),
+                ),
+              ),
+              Text(
+                l10n.reviewLearnedOf(learned.length, items.length),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+        const SizedBox(height: AppSpacing.sm),
         SoftProgressBar(value: learned.length / items.length),
         const SizedBox(height: AppSpacing.lg),
       ],
@@ -96,38 +98,49 @@ class _ReviewList extends ConsumerWidget {
       itemCount: header.length + words.length,
       itemBuilder: (context, index) {
         if (index < header.length) return header[index];
-        final item = words[index - header.length];
-        return _VocabularyCard(key: ValueKey(item.id), item: item);
+        final position = index - header.length;
+        final item = words[position];
+        return _WordRow(
+          key: ValueKey(item.id),
+          item: item,
+          isFirst: position == 0,
+          isLast: position == words.length - 1,
+        );
       },
     );
   }
 }
 
-/// Exercices sur l'aplat vert ; l'examen blanc, payant, à côté en corail.
-class _PracticeTiles extends StatelessWidget {
-  const _PracticeTiles({required this.showsExam});
+/// Exercices sur l'aplat vert, examen blanc en corail, côte à côte.
+class _PracticeTiles extends ConsumerWidget {
+  const _PracticeTiles();
 
-  final bool showsExam;
+  // Exercices permis par jour (ADR-024).
+  static const _freeExercises = 3;
+  static const _premiumExercises = 20;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final exercises = HeroCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      onTap: () => context.push(AppRoutes.exercises),
-      child: _PracticeTileContent(
-        icon: Icons.quiz_outlined,
-        title: l10n.exercisesTitle,
-        body: l10n.exercisesCardBody,
-      ),
-    );
-    if (!showsExam) return exercises;
+    final exercisesPerDay = watchActiveSubscription(ref) == null
+        ? _freeExercises
+        : _premiumExercises;
 
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(child: exercises),
+          Expanded(
+            child: HeroCard(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              onTap: () => context.push(AppRoutes.exercises),
+              child: _PracticeTileContent(
+                icon: Icons.help_center_outlined,
+                title: l10n.exercisesTitle,
+                body: l10n.exercisesTileBody(exercisesPerDay),
+              ),
+            ),
+          ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: SoftCard(
@@ -148,6 +161,7 @@ class _PracticeTiles extends StatelessWidget {
   }
 }
 
+/// Icône en haut, titre et description en bas.
 class _PracticeTileContent extends StatelessWidget {
   const _PracticeTileContent({
     required this.icon,
@@ -155,6 +169,10 @@ class _PracticeTileContent extends StatelessWidget {
     required this.body,
     this.warm = false,
   });
+
+  static const _minHeight = 118.0;
+  static const _badgeSize = 40.0;
+  static const _translucent = 0.14;
 
   final IconData icon;
   final String title;
@@ -165,33 +183,67 @@ class _PracticeTileContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textColor = warm ? theme.colorScheme.onSecondaryContainer : null;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        IconBadge(icon, accent: warm),
-        const SizedBox(height: AppSpacing.xl),
-        Text(
-          title,
-          style: theme.textTheme.titleMedium?.copyWith(color: textColor),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          body,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: textColor ?? theme.colorScheme.onSurfaceVariant,
+    final onHero = theme.colorScheme.onSurface;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: _minHeight),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          if (warm)
+            IconBadge(icon, accent: true)
+          else
+            // Sur l'aplat vert : pastille ivoire translucide.
+            ExcludeSemantics(
+              child: Container(
+                width: _badgeSize,
+                height: _badgeSize,
+                decoration: BoxDecoration(
+                  color: onHero.withValues(alpha: _translucent),
+                  borderRadius: BorderRadius.circular(AppRadius.chip),
+                ),
+                child: Icon(icon, size: _badgeSize / 2, color: onHero),
+              ),
+            ),
+          const SizedBox(height: AppSpacing.lg),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(color: textColor),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                body,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: textColor ?? theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-/// Un mot à réviser : terme, traduction et exemple ; un bouton rond le marque
-/// comme appris.
-class _VocabularyCard extends ConsumerWidget {
-  const _VocabularyCard({required this.item, super.key});
+/// Un mot de la liste : terme et traduction ; un bouton rond le marque comme
+/// appris. Les lignes forment une seule carte, séparées d'un filet.
+class _WordRow extends ConsumerWidget {
+  const _WordRow({
+    required this.item,
+    required this.isFirst,
+    required this.isLast,
+    super.key,
+  });
+
+  static const _checkSize = 44.0;
+  static const _radius = Radius.circular(AppRadius.tile);
 
   final VocabularyItem item;
+  final bool isFirst;
+  final bool isLast;
 
   Future<void> _toggleLearned(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
@@ -214,11 +266,18 @@ class _VocabularyCard extends ConsumerWidget {
     final scheme = theme.colorScheme;
     final isLearned = item.learnedAt != null;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: SoftCard(
-        radius: AppRadius.tile,
-        elevated: false,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.vertical(
+          top: isFirst ? _radius : Radius.zero,
+          bottom: isLast ? _radius : Radius.zero,
+        ),
+        border: isLast
+            ? null
+            : Border(bottom: BorderSide(color: scheme.surfaceContainer)),
+      ),
+      child: Padding(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg,
           AppSpacing.md,
@@ -231,19 +290,17 @@ class _VocabularyCard extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.term, style: theme.textTheme.titleSmall),
                   Text(
-                    item.translation,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: scheme.onSurfaceVariant,
+                    item.term,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xs),
                   Text(
-                    item.example,
+                    item.translation,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: scheme.onSurfaceVariant,
-                      fontStyle: FontStyle.italic,
                     ),
                   ),
                 ],
@@ -257,10 +314,13 @@ class _VocabularyCard extends ConsumerWidget {
               isSelected: isLearned,
               style: isLearned
                   ? IconButton.styleFrom(
+                      fixedSize: const Size.square(_checkSize),
                       backgroundColor: scheme.primary,
                       foregroundColor: scheme.onPrimary,
                     )
                   : IconButton.styleFrom(
+                      fixedSize: const Size.square(_checkSize),
+                      backgroundColor: theme.cardColor,
                       foregroundColor: scheme.onSurfaceVariant,
                       side: BorderSide(color: scheme.outlineVariant),
                     ),
@@ -284,6 +344,7 @@ class _ExportAction extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final period = await showModalBottomSheet<ExportPeriod>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       builder: (sheetContext) => SafeArea(
         child: Column(
@@ -343,7 +404,7 @@ class _ExportAction extends ConsumerWidget {
     return IconButton(
       tooltip: l10n.exportTitle,
       style: roundButtonStyle(context),
-      icon: const Icon(Icons.picture_as_pdf_outlined),
+      icon: const Icon(Icons.file_download_outlined),
       onPressed: () => _export(context, ref),
     );
   }

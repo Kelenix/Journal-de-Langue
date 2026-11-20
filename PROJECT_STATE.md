@@ -5,7 +5,7 @@
 
 ## Snapshot
 
-- **Phase courante** : 4 — Implémentation
+- **Phase courante** : 5 — Qualité & performance (lancée le 2026-11-20)
 - **Dernière mise à jour** : 2026-11-20
 - **Santé** : 🟢 bonne
 - **Prochaine action** : Inc-9 en cours (feu vert du 2026-11-19). Fait : suivi du coût
@@ -13,11 +13,20 @@
   d'accessibilité, signalement des contenus IA, build de publication vérifié, CI Android,
   configuration iOS, fiches et déclarations des stores, image de présentation, tests
   d'intégration relancés (52). Demande du 2026-11-20 : **interface entièrement refaite**
-  d'après la maquette validée, carte du jour comprise (ADR-038), à essayer sur le téléphone avec un APK
+  d'après la maquette validée, carte du jour comprise (ADR-038), essayée sur le téléphone avec un APK
   « profile » (`build/app/outputs/flutter-apk/`). Sans compte, l'app s'ouvre sur
   l'accueil de la maquette. Captures des stores refaites avec la nouvelle interface, en
   français et en anglais (ADR-039). Inc-9 est terminé pour tout ce qui ne dépend pas
-  des comptes des stores.
+  des comptes des stores. Le 2026-11-20, écrans alignés exactement sur les maquettes
+  (ADR-040) : thème clair seul, barre d'onglets sans vide, journaux par semaine dans
+  Progrès, Profil de la maquette ; validés par l'utilisateur sur son téléphone.
+  **Phase 5** (feu vert du 2026-11-20) : taille mesurée, trois relectures complètes,
+  corrections et tests faits (ADR-041). Reste : relancer les tests SQL, d'intégration
+  et Deno quand la base locale sera recréée (Docker Desktop a été réinitialisé :
+  images et volumes disparus ; recréation reportée par l'utilisateur), **avant**
+  d'envoyer la migration `20261121140000` au projet Supabase hébergé (une migration
+  envoyée ne se corrige plus que par une nouvelle) ; mesurer le démarrage sur le
+  téléphone.
   En attente côté utilisateur : comptes stores, RevenueCat (Inc-4b) et AdMob, clé API
   Anthropic, textes légaux à compléter (voir `docs/manual-tasks.md`).
 - **Règle de l'utilisateur (2026-11-19)** : rien n'est signé sur ce PC ; clé d'envoi et
@@ -36,7 +45,7 @@
 | 2 — Planification           | ✅ fait | `docs/risks.md`, backlog ci-dessous |
 | 3 — Architecture & design   | ✅ fait | `docs/architecture.md`, `system-design.md`, `data-model.md`, `design/` |
 | 4 — Implémentation          | 🔄 en cours | Inc-0 à Inc-8 livrés : jalons J1 (boucle gratuite), J2 (Premium complet) et J3 (monétisation complète) atteints ; restent Inc-1b et Inc-4b, bloqués par des comptes |
-| 5 — Qualité & performance   | ⬜ à faire | QA et revue faites à chaque incrément |
+| 5 — Qualité & performance   | 🔄 en cours | Revue complète et corrections faites (ADR-041), `docs/performance.md`, `docs/qa/test-plan.md` ; restent les tests sur base locale et la mesure du démarrage sur téléphone |
 | 6 — Publication (stores)    | ⬜ à faire | |
 | 7 — Documentation           | ⬜ à faire | README et docs tenus au fil de l'eau |
 | 8 — Maintenance             | ⬜ à faire | |
@@ -60,19 +69,21 @@
 | Inc-8 | Publicités : bannière, interstitiel, vidéo récompensée, consentement | US-22, 23 | ✅ | testé avec les publicités de démonstration de Google ; rappel de récompense simulé en local (ADR-030, ADR-031) ; vrais blocs avec le compte AdMob |
 | Inc-9 | Qualité, publication, documentation, textes légaux | US-24 | ✅ | ADR-032 à 039 (refonte de l'interface et captures des stores comprises) ; mise en ligne avec les comptes des stores |
 
-## Ce qui est vérifié (2026-11-19)
+## Ce qui est vérifié (2026-11-20)
 
 | Vérification | Résultat |
 |--------------|----------|
-| `flutter analyze` (hôte et conteneur) | 0 problème |
-| `flutter test` (hôte) | 159 tests verts |
-| `flutter test test_integration --concurrency=1` (Supabase local, fonctions de correction, d'achat, de reformulation, d'exercices, d'examen et de récompense, langues, statistiques, achats à l'unité, faux Claude) | 51 tests verts |
-| `supabase test db` (RLS et fonctions) | 222 tests verts |
+| `flutter analyze`, `dart format` (hôte) | 0 problème |
+| `flutter test` (hôte) | 194 tests verts (phase 5) |
+| Phase 5 : `supabase test db`, tests d'intégration, Deno après la migration `20261121140000` | `deno check` des 6 fonctions et 5 tests Deno verts avant la réinitialisation de Docker ; tests SQL et d'intégration à relancer (base locale à recréer) |
+| `flutter test test_integration --concurrency=1` (Supabase local, fonctions de correction, d'achat, de reformulation, d'exercices, d'examen et de récompense, langues, statistiques, achats à l'unité, faux Claude) | 52 tests verts |
+| `supabase test db` (RLS et fonctions) | 244 tests verts |
 | Tests Deno (vérification des signatures AdMob) et `deno check` des 6 fonctions | 5 tests verts, types corrects |
 | `supabase db reset` (migrations rejouées depuis zéro, données de démonstration) | réussi |
 | Build APK | réussi (conteneur Flutter jusqu'au 2026-11-19, remplacé par le poste : ADR-037) |
 | Parcours sur émulateur Android (APK de debug) | inscription avec code reçu par e-mail local, choix de la langue, session et brouillon conservés après mise à jour de l'app, compteur de phrases, envoi sans clé Claude (message « rien n'est débité »), déconnexion : OK. Non rejoués à la main : suppression de compte, correction réussie (couverts par les tests). |
-| Rendu du brand kit sur émulateur | écran Journal, écran de connexion, icône dans le tiroir d'applications : conformes. Mode sombre et iOS non contrôlés visuellement. |
+| Rendu du brand kit sur émulateur | écran Journal, écran de connexion, icône dans le tiroir d'applications : conformes. iOS non contrôlé visuellement ; pas de mode sombre (ADR-040). |
+| Écrans sur le téléphone de l'utilisateur (APK « profile », ADR-040) | conformes aux maquettes, validé par l'utilisateur le 2026-11-20 |
 | Écrans Inc-3 à Inc-5 sur émulateur (APK construit dans Docker, Supabase local) | conformes : Réviser avec carte Exercices, séance d'exercices corrigée par le serveur (bonne réponse et choix faux marqués d'une icône), Historique limité puis complet avec Premium, écran d'offres depuis une phrase à reformuler en gratuit, trois reformulations en Premium (faux Claude). Données temporaires retirées ensuite. |
 | Écrans Inc-6 sur émulateur (APK Docker, Supabase local, Premium simulé) | conformes : série sur le Journal, écran Progrès gratuit puis Premium, ajout d'une langue et changement par la puce (brouillon gardé par langue), demande du micro à la première dictée et refus expliqué, PDF généré et proposé au partage, aperçu lisible (accents, tableau, pagination). Deux défauts trouvés et corrigés : semaines sans journal absentes du graphique (axe trompeur), langue des journaux comptés non précisée. Dictée acceptée et lecture à voix haute : non essayées (pas de micro). Données de test retirées. |
 | Écrans Inc-7 sur émulateur (APK Docker, Supabase local, achats simulés par le webhook, faux Claude) | conformes : carte Simulation d'examen dans Réviser, choix du niveau, sujet, compteur de mots, brouillon enregistré en base, copie notée (critères, copie corrigée, plan de révision), boutique avec les achats en cours depuis le Profil. Libellé corrigé : « les achats ne sont pas encore disponibles » (et non « les abonnements »). Achat réel impossible sans store (Inc-4b). Données de test retirées. |
@@ -101,13 +112,14 @@
   nombre qu'au prochain démarrage ; le serveur, lui, applique la limite tout de suite.
 - Reformulations : une phrase de plus de 500 caractères est refusée par le serveur
   avec un message générique.
-- CI GitHub Actions : verte sur le dernier commit poussé (analyse, tests, base) ; rouge
-  sur le commit intermédiaire `f046a68`, qui contenait le début d'Inc-5 sans sa
-  doublure de test. Le build Android n'est pas dans la CI (Inc-9).
+- CI GitHub Actions : rouge sur les deux derniers commits poussés (`c933569`,
+  `6c1f437`), job `database` : un test SQL dépendait de la date (exercices du jour).
+  Corrigé dans les changements en attente de commit ; analyse, tests et build Android
+  y étaient verts.
 - Icône iOS générée mais jamais vue sur un appareil ; visuels des stores à produire depuis
   `design/app_icon_1024.png` (Inc-9).
-- Mode sombre dérivé du brand kit : à faire valider.
-- Inc-0 à Inc-6 sont commités par l'utilisateur ; Inc-7 et Inc-8 attendent leur commit.
+- Inc-0 à Inc-9 et la refonte sont commités par l'utilisateur ; l'alignement sur les
+  maquettes (ADR-040) et la phase 5 (ADR-041) attendent son commit.
 
 ## Décisions ouvertes / questions à l'utilisateur
 
@@ -131,6 +143,23 @@
 - voir `docs/manual-tasks.md`
 
 ## Journal de session (résumé court, le plus récent en haut)
+
+- 2026-11-20 — Phase 5 : téléchargement estimé à 23,3 Mo au plus sur arm64 (budget
+  30 Mo) ; CI rouge expliquée (test SQL daté, déjà corrigé) ; couverture 92,7 % ;
+  trois relectures complètes. Corrigés : envoi rejoué et tentatives refusées qui
+  coûtaient des appels à Claude sans limite, délais trop courts des corrections
+  avancées, exercices offerts mal comptés, session bloquée après une coupure, app
+  ouverte d'un jour à l'autre, brouillon d'examen perdu, export PDF d'un long journal,
+  dictée Android 13+, et une vingtaine de points plus petits. Migration
+  `20261121140000_retries_and_limits.sql`, ADR-041. Docker Desktop réinitialisé
+  pendant la phase (pas par Claude) : tests SQL et d'intégration à relancer.
+
+- 2026-11-20 — Écrans alignés sur les maquettes, à la demande de l'utilisateur : thème
+  clair seul, vide de la barre d'onglets corrigé, Journal, Correction, Réviser, Progrès
+  (journaux par semaine, nouvelle donnée de `get_stats`) et Profil repris un à un.
+  Contrôle visuel par rendu des écrans : feuilles du Profil ouvertes sous la barre
+  d'onglets, dates du graphique de tailles inégales et « Je la connais » sur deux lignes,
+  corrigés. Validé par l'utilisateur sur son téléphone. ADR-040.
 
 - 2026-11-19 — Inc-8 livré : publicités pour les comptes gratuits de plus de 14 jours
   seulement (décidé par le serveur), consentement par le SDK Google, bannière standard

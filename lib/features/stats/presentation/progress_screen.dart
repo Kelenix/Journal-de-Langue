@@ -14,7 +14,6 @@ import '../../../shared/widgets/app_bars.dart';
 import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/badges.dart';
 import '../../../shared/widgets/empty_state.dart';
-import '../../../shared/widgets/section_title.dart';
 import '../../../shared/widgets/surfaces.dart';
 import '../../journal/application/journal_providers.dart';
 import '../../journal/presentation/category_labels.dart';
@@ -24,8 +23,8 @@ import '../../languages/presentation/language_labels.dart';
 import '../application/stats_providers.dart';
 import '../domain/learning_stats.dart';
 
-/// Série de jours, puis, en Premium, mots appris, fautes par type et fautes
-/// par phrase semaine après semaine (US-16).
+/// Série de jours et journaux écrits, puis, en Premium, journaux par
+/// semaine, mots appris et fautes fréquentes (US-16).
 class ProgressScreen extends ConsumerWidget {
   const ProgressScreen({super.key});
 
@@ -93,42 +92,40 @@ class _Progress extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final wordsLearned = stats.wordsLearned;
-    final wordsTotal = stats.wordsTotal;
 
     return ListView(
       padding: tabPagePadding,
       children: [
         _StreakCard(days: stats.streakDays),
         const SizedBox(height: AppSpacing.md),
+        if (stats.isPremium) ...[
+          _WeeklyJournalsChart(weeks: stats.weeklyJournals, today: today),
+          const SizedBox(height: AppSpacing.md),
+        ],
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: _StatTile(
-                // La langue figure déjà en tête de l'écran.
                 label: l10n.progressJournals,
                 value: '${stats.journals}',
               ),
             ),
-            if (wordsLearned != null && wordsTotal != null) ...[
+            if (wordsLearned != null) ...[
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _StatTile(
                   label: l10n.progressWordsLearned,
                   value: '$wordsLearned',
-                  detail: l10n.progressWordsOf(wordsTotal),
-                  meter: wordsTotal == 0 ? 0 : wordsLearned / wordsTotal,
                 ),
               ),
             ],
           ],
         ),
         const SizedBox(height: AppSpacing.md),
-        if (stats.isPremium) ...[
-          _MistakesByCategory(counts: stats.mistakesByCategory),
-          const SizedBox(height: AppSpacing.md),
-          _WeeklyMistakeRate(weeks: stats.weeklyMistakeRate, today: today),
-        ] else
+        if (stats.isPremium)
+          _MistakesByCategory(counts: stats.mistakesByCategory)
+        else
           const _PremiumTeaser(),
       ],
     );
@@ -140,6 +137,7 @@ class _StreakCard extends StatelessWidget {
   const _StreakCard({required this.days});
 
   static const _heroSize = 56.0;
+  static const _unitSize = 15.0;
   static const _flameSize = 84.0;
   static const _flameIconSize = 40.0;
 
@@ -168,32 +166,29 @@ class _StreakCard extends StatelessWidget {
                           color: muted,
                         ),
                       ),
-                      // Un seul texte : l'unité passe à la ligne en très
-                      // grands caractères.
-                      Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '$days',
-                              style: theme.textTheme.displaySmall?.copyWith(
-                                fontSize: _heroSize,
-                              ),
-                            ),
-                            TextSpan(
-                              text: ' ${l10n.progressStreakUnit(days)}',
-                              style: theme.textTheme.titleMedium,
-                            ),
-                          ],
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        '$days',
+                        style: theme.textTheme.displaySmall?.copyWith(
+                          fontSize: _heroSize,
+                          height: 1.1,
                         ),
                       ),
                       Text(
-                        days == 0
-                            ? l10n.progressStreakStart
-                            : l10n.progressStreakKeep,
+                        l10n.progressStreakUnit(days),
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: muted,
+                          fontSize: _unitSize,
                         ),
                       ),
+                      if (days == 0) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          l10n.progressStreakStart,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: muted,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -208,7 +203,7 @@ class _StreakCard extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    Icons.local_fire_department,
+                    Icons.local_fire_department_outlined,
                     size: _flameIconSize,
                     color: colors.onAccent,
                   ),
@@ -223,27 +218,17 @@ class _StreakCard extends StatelessWidget {
 }
 
 class _StatTile extends StatelessWidget {
-  const _StatTile({
-    required this.label,
-    required this.value,
-    this.detail,
-    this.meter,
-  });
+  const _StatTile({required this.label, required this.value});
+
+  static const _valueSize = 28.0;
+  static const _labelSize = 13.0;
 
   final String label;
   final String value;
-  final String? detail;
-
-  /// Part remplie, de 0 à 1.
-  final double? meter;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
-    final meter = this.meter;
-    final detail = this.detail;
-
     return SoftCard(
       radius: AppRadius.tile,
       elevated: false,
@@ -251,20 +236,20 @@ class _StatTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(value, style: theme.textTheme.headlineMedium),
+            Text(
+              value,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontSize: _valueSize,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               label,
-              style: theme.textTheme.bodySmall?.copyWith(color: muted),
-            ),
-            if (detail != null)
-              Text(
-                detail,
-                style: theme.textTheme.bodySmall?.copyWith(color: muted),
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontSize: _labelSize,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-            if (meter != null) ...[
-              const SizedBox(height: AppSpacing.sm),
-              SoftProgressBar(value: meter),
-            ],
+            ),
           ],
         ),
       ),
@@ -272,30 +257,186 @@ class _StatTile extends StatelessWidget {
   }
 }
 
+/// Carte blanche à titre, sans ombre ; une précision peut suivre le titre.
 class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.child, this.subtitle});
+  const _Section({required this.title, required this.child, this.trailing});
+
+  static const _trailingSize = 13.0;
 
   final String title;
-  final String? subtitle;
+  final String? trailing;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final trailing = this.trailing;
     return SoftCard(
       elevated: false,
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
         AppSpacing.lg,
         AppSpacing.lg,
-        AppSpacing.sm,
+        AppSpacing.md,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SectionTitle(title, subtitle: subtitle),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Expanded(
+                child: Semantics(
+                  header: true,
+                  child: Text(title, style: theme.textTheme.titleMedium),
+                ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  trailing,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: _trailingSize,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
           child,
         ],
       ),
+    );
+  }
+}
+
+/// Une colonne par semaine sur les 8 dernières, vides comprises : l'axe du
+/// temps reste régulier. La semaine en cours ressort en vert profond.
+class _WeeklyJournalsChart extends StatelessWidget {
+  const _WeeklyJournalsChart({required this.weeks, required this.today});
+
+  static const _weekCount = 8;
+  static const _plotHeight = 104.0;
+  static const _gap = 8.0;
+  static const _labelGap = 6.0;
+  static const _emptyBar = 2.0;
+  static const _pastOpacity = 0.23;
+  static const _barRadius = BorderRadius.vertical(
+    top: Radius.circular(8),
+    bottom: Radius.circular(4),
+  );
+
+  final List<WeeklyJournals> weeks;
+  final DateTime today;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    // Jour et mois : « 29/9 » en français, « 9/29 » en anglais.
+    final dayMonth = l10n.localeName == 'fr'
+        ? DateFormat('d/M', 'fr')
+        : DateFormat.Md(l10n.localeName);
+
+    // Lundis des 8 dernières semaines, comme les semaines du serveur.
+    final thisMonday = DateTime(
+      today.year,
+      today.month,
+      today.day - (today.weekday - DateTime.monday),
+    );
+    final mondays = [
+      for (var back = _weekCount - 1; back >= 0; back--)
+        DateTime(thisMonday.year, thisMonday.month, thisMonday.day - 7 * back),
+    ];
+    final byMonday = {
+      for (final week in weeks)
+        DateUtils.dateOnly(week.weekStart): week.journals,
+    };
+    final counts = [for (final monday in mondays) byMonday[monday] ?? 0];
+    final highest = counts.fold(0, max);
+
+    return _Section(
+      title: l10n.progressWeeklyTitle,
+      trailing: l10n.progressWeeklySpan,
+      child: Semantics(
+        container: true,
+        label: l10n.progressWeeklyLabel(counts.join(', ')),
+        excludeSemantics: true,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: _gap,
+          children: [
+            for (final (index, monday) in mondays.indexed)
+              Expanded(
+                child: _WeekColumn(
+                  barHeight: counts[index] == 0
+                      ? _emptyBar
+                      : max(_emptyBar, _plotHeight * counts[index] / highest),
+                  label: dayMonth.format(monday),
+                  isCurrent: index == mondays.length - 1,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Une colonne posée sur la ligne de base, sa date en dessous.
+class _WeekColumn extends StatelessWidget {
+  const _WeekColumn({
+    required this.barHeight,
+    required this.label,
+    required this.isCurrent,
+  });
+
+  final double barHeight;
+  final String label;
+
+  /// La semaine en cours ressort ; les précédentes restent en retrait.
+  final bool isCurrent;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Column(
+      children: [
+        SizedBox(
+          height: _WeeklyJournalsChart._plotHeight,
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              width: double.infinity,
+              height: barHeight,
+              decoration: BoxDecoration(
+                borderRadius: _WeeklyJournalsChart._barRadius,
+                color: isCurrent
+                    ? scheme.primary
+                    : scheme.primary.withValues(
+                        alpha: _WeeklyJournalsChart._pastOpacity,
+                      ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: _WeeklyJournalsChart._labelGap),
+        // La date reste dans sa colonne, même en très grands caractères.
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            maxLines: 1,
+            style: theme.textTheme.labelSmall?.copyWith(
+              letterSpacing: 0,
+              color: isCurrent ? scheme.onSurface : scheme.onSurfaceVariant,
+              fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w400,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -343,7 +484,7 @@ class _MistakesByCategory extends StatelessWidget {
                               ),
                             ],
                           ),
-                          const SizedBox(height: AppSpacing.xs),
+                          const SizedBox(height: AppSpacing.sm),
                           SoftProgressBar(value: entry.count / highest),
                         ],
                       ),
@@ -355,187 +496,8 @@ class _MistakesByCategory extends StatelessWidget {
   }
 }
 
-/// Colonnes des 8 dernières semaines, une par semaine, vides comprises : l'axe
-/// du temps reste régulier. Seule la dernière valeur est écrite ; chaque
-/// colonne la donne au toucher, et le détail reste lisible en liste.
-class _WeeklyMistakeRate extends StatelessWidget {
-  const _WeeklyMistakeRate({required this.weeks, required this.today});
-
-  static const _weekCount = 8;
-  static const _plotHeight = 120.0;
-  static const _labelSpace = 24.0;
-
-  final List<WeeklyMistakeRate> weeks;
-  final DateTime today;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final locale = Localizations.localeOf(context).toLanguageTag();
-    final dayMonth = DateFormat.MMMd(locale);
-    final rate = NumberFormat.decimalPatternDigits(
-      locale: locale,
-      decimalDigits: 2,
-    );
-    final highest = weeks.fold(
-      0.0,
-      (most, week) => max(most, week.mistakesPerSentence),
-    );
-
-    // Lundis des 8 dernières semaines, comme les semaines du serveur.
-    final thisMonday = DateTime(
-      today.year,
-      today.month,
-      today.day - (today.weekday - DateTime.monday),
-    );
-    final mondays = [
-      for (var back = _weekCount - 1; back >= 0; back--)
-        DateTime(thisMonday.year, thisMonday.month, thisMonday.day - 7 * back),
-    ];
-    final byMonday = {
-      for (final week in weeks) DateUtils.dateOnly(week.weekStart): week,
-    };
-    final latest = weeks.lastOrNull;
-
-    String describe(WeeklyMistakeRate week) => l10n.progressRateWeek(
-      dayMonth.format(week.weekStart),
-      rate.format(week.mistakesPerSentence),
-    );
-
-    return _Section(
-      title: l10n.progressRateTitle,
-      subtitle: l10n.progressRateSubtitle,
-      child: weeks.isEmpty
-          ? Text(l10n.progressRateEmpty)
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(
-                  height: _plotHeight,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      for (final monday in mondays)
-                        Expanded(
-                          child: switch (byMonday[monday]) {
-                            null => const SizedBox.shrink(),
-                            final week => Tooltip(
-                              message: describe(week),
-                              triggerMode: TooltipTriggerMode.tap,
-                              child: Semantics(
-                                label: describe(week),
-                                excludeSemantics: true,
-                                child: _Column(
-                                  isLatest: week == latest,
-                                  // Même échelle pour toutes les colonnes ;
-                                  // une semaine sans faute garde un trait.
-                                  height: max(
-                                    2,
-                                    (_plotHeight - _labelSpace) *
-                                        (highest == 0
-                                            ? 0
-                                            : week.mistakesPerSentence /
-                                                  highest),
-                                  ),
-                                  label: week == latest
-                                      ? rate.format(week.mistakesPerSentence)
-                                      : null,
-                                ),
-                              ),
-                            ),
-                          },
-                        ),
-                    ],
-                  ),
-                ),
-                Divider(height: 1, color: theme.colorScheme.outlineVariant),
-                const SizedBox(height: AppSpacing.xs),
-                ExcludeSemantics(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      for (final monday in [mondays.first, mondays.last])
-                        Text(
-                          dayMonth.format(monday),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                ExpansionTile(
-                  tilePadding: EdgeInsets.zero,
-                  shape: const Border(),
-                  collapsedShape: const Border(),
-                  title: Text(
-                    l10n.progressRateDetails,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  children: [
-                    for (final week in weeks.reversed)
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                        title: Text(describe(week)),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-    );
-  }
-}
-
-/// Une colonne posée sur la ligne de base, sa valeur écrite juste au-dessus.
-class _Column extends StatelessWidget {
-  const _Column({required this.height, required this.isLatest, this.label});
-
-  static const _width = 20.0;
-  static const _labelGap = 2.0;
-  static const _dataEndRadius = Radius.circular(4);
-  static const _pastOpacity = 0.35;
-
-  final double height;
-
-  /// La dernière semaine ressort ; les précédentes restent en retrait.
-  final bool isLatest;
-  final String? label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final label = this.label;
-
-    // L'étiquette se place dans la marge réservée en haut du graphique, sans
-    // agrandir la colonne.
-    return Stack(
-      alignment: Alignment.bottomCenter,
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          width: _width,
-          height: height,
-          decoration: BoxDecoration(
-            color: isLatest
-                ? theme.colorScheme.primary
-                : theme.colorScheme.primary.withValues(alpha: _pastOpacity),
-            borderRadius: const BorderRadius.vertical(top: _dataEndRadius),
-          ),
-        ),
-        if (label != null)
-          Positioned(
-            bottom: height + _labelGap,
-            child: Text(label, style: theme.textTheme.labelMedium),
-          ),
-      ],
-    );
-  }
-}
-
-/// Gratuit : ce que Premium ajoute. L'offre n'est proposée qu'après une
-/// première correction (INTAKE §6).
+/// Gratuit : ce que Premium ajoute. Le bouton vers les offres n'apparaît
+/// qu'après une première correction (ADR-040).
 class _PremiumTeaser extends ConsumerWidget {
   const _PremiumTeaser();
 

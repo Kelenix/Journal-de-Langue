@@ -9,6 +9,10 @@ enum DictationStart {
 
   /// Pas de reconnaissance vocale pour cette langue sur l'appareil.
   unavailable,
+
+  /// L'écoute n'a pas pu démarrer (micro occupé par un appel…) : la dictée
+  /// reste proposée.
+  failed,
 }
 
 /// Dictée et lecture à voix haute par les services vocaux du système, sans

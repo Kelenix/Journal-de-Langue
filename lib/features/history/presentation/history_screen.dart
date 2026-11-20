@@ -24,16 +24,33 @@ class HistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final overview = ref.watch(historyOverviewProvider).value;
+    final overviewValue = ref.watch(historyOverviewProvider);
+    final overview = overviewValue.value;
     final lockedEntries = overview?.lockedEntries ?? 0;
+
+    Future<void> retry() async {
+      await reloadFailedSubscription(ref);
+      ref
+        ..invalidate(historyOverviewProvider)
+        ..invalidate(journalHistoryProvider);
+    }
 
     return Scaffold(
       appBar: TabAppBar(title: l10n.tabHistory),
       body: AsyncView(
         value: ref.watch(journalHistoryProvider),
-        onRetry: () => ref.invalidate(journalHistoryProvider),
+        onRetry: retry,
         builder: (history) {
           if (history.entries.isEmpty && lockedEntries == 0) {
+            // L'aperçu dit si des journaux sont verrouillés : pas de « premier
+            // journal » tant qu'on ne le sait pas.
+            if (!overviewValue.hasValue || overviewValue.hasError) {
+              return AsyncView(
+                value: overviewValue,
+                onRetry: retry,
+                builder: (_) => const SizedBox.shrink(),
+              );
+            }
             return EmptyState(
               icon: Icons.history_outlined,
               message: l10n.historyEmpty,

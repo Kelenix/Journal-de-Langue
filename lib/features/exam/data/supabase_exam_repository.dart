@@ -50,7 +50,13 @@ class SupabaseExamRepository implements ExamRepository {
       _invoke({'action': 'submit', 'exam_id': examId, 'answer': answer});
 
   Future<Exam> _invoke(Map<String, Object> body) => guardFailures(() async {
-    final response = await _client.functions.invoke('exam', body: body);
+    // Au-delà de la notation la plus longue côté serveur (120 s, ADR-041) : une
+    // connexion morte sans erreur ne laisse pas l'écran attendre indéfiniment.
+    final response = await _client.functions
+        .invoke('exam', body: body)
+        .timeout(_timeout);
     return Exam.fromJson(response.data as Map<String, dynamic>);
   });
+
+  static const _timeout = Duration(seconds: 150);
 }

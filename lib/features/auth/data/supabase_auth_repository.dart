@@ -15,7 +15,13 @@ class SupabaseAuthRepository implements AuthRepository {
 
   Stream<String?> _userIdEvents() async* {
     yield _auth.currentUser?.id;
-    yield* _auth.onAuthStateChange.map((state) => state.session?.user.id);
+    // Une coupure réseau pendant le renouvellement du jeton arrive comme une
+    // erreur du flux, rejouée à chaque nouvel abonnement : la session reste
+    // valable et le renouvellement est retenté. Une session perdue arrive, elle,
+    // comme une déconnexion.
+    yield* _auth.onAuthStateChange
+        .map((state) => state.session?.user.id)
+        .handleError((Object _) {});
   }
 
   @override
@@ -68,7 +74,12 @@ class SupabaseAuthRepository implements AuthRepository {
   Future<void> deleteAccount() => guardFailures(() async {
     await _client.rpc<void>('delete_account');
     // Le compte n'existe plus côté serveur : seule la session locale reste à
-    // effacer.
-    await _auth.signOut(scope: SignOutScope.local);
+    // effacer. Elle l'est avant l'appel au serveur, dont l'échec (réseau) ne
+    // change plus rien : la suppression a réussi.
+    try {
+      await _auth.signOut(scope: SignOutScope.local);
+    } on Exception {
+      // Session locale déjà retirée.
+    }
   });
 }

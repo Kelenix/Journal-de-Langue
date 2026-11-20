@@ -68,6 +68,10 @@ class _DictationButtonState extends ConsumerState<DictationButton> {
         messenger.showSnackBar(
           SnackBar(content: Text(l10n.voiceDictationUnavailable)),
         );
+      case DictationStart.failed:
+        messenger.showSnackBar(
+          SnackBar(content: Text(l10n.voiceDictationFailed)),
+        );
     }
   }
 
@@ -121,24 +125,34 @@ class ListenButton extends ConsumerStatefulWidget {
 }
 
 class _ListenButtonState extends ConsumerState<ListenButton> {
-  late final VoiceService _voice = ref.read(voiceServiceProvider);
-  bool _isSpeaking = false;
+  // Lus dès le départ, hors de `ref` : ils servent encore pendant la
+  // fermeture de l'écran, où `ref` n'est plus utilisable.
+  late final VoiceService _voice;
+  late final SpeakingButtonNotifier _speaking;
+
+  @override
+  void initState() {
+    super.initState();
+    _voice = ref.read(voiceServiceProvider);
+    _speaking = ref.read(speakingButtonProvider.notifier);
+  }
 
   @override
   void dispose() {
-    if (_isSpeaking) _voice.stopSpeaking();
+    // Le bouton suivant remplacera ce bouton dans l'état partagé.
+    if (_speaking.isActive(this)) _voice.stopSpeaking();
     super.dispose();
   }
 
   Future<void> _toggle() async {
-    if (_isSpeaking) {
+    if (_speaking.isActive(this)) {
+      _speaking.stop(this);
       await _voice.stopSpeaking();
-      if (mounted) setState(() => _isSpeaking = false);
       return;
     }
-    setState(() => _isSpeaking = true);
+    _speaking.start(this);
     await _voice.speak(widget.text, widget.language);
-    if (mounted) setState(() => _isSpeaking = false);
+    _speaking.stop(this);
   }
 
   @override
@@ -147,11 +161,12 @@ class _ListenButtonState extends ConsumerState<ListenButton> {
         ref.watch(canSpeakProvider(widget.language)).value ?? false;
     if (!canSpeak) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context);
+    final isSpeaking = ref.watch(speakingButtonProvider) == this;
 
     return IconButton(
-      tooltip: _isSpeaking ? l10n.voiceStopListening : l10n.voiceListen,
+      tooltip: isSpeaking ? l10n.voiceStopListening : l10n.voiceListen,
       style: _tonalStyle(Theme.of(context)),
-      isSelected: _isSpeaking,
+      isSelected: isSpeaking,
       icon: const Icon(Icons.volume_up_outlined),
       selectedIcon: const Icon(Icons.stop_circle_outlined),
       onPressed: _toggle,
@@ -163,4 +178,5 @@ class _ListenButtonState extends ConsumerState<ListenButton> {
 ButtonStyle _tonalStyle(ThemeData theme) => IconButton.styleFrom(
   backgroundColor: theme.colorScheme.primaryContainer,
   foregroundColor: theme.colorScheme.onPrimaryContainer,
+  fixedSize: const Size.square(48),
 );

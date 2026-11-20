@@ -49,6 +49,9 @@ const _aiUnavailableStatus = 503;
 
 /// Refus renvoyé par une Edge Function, d'après son champ `error`.
 Failure _correctionDenial(String code) {
+  if (code == 'correction_in_progress' || code == 'exam_busy') {
+    return const RequestInProgressFailure();
+  }
   if (code == 'premium_required') return const PremiumRequiredFailure();
   if (code == 'rewrite_limit') return const UsageLimitFailure();
   if (code == 'no_exam_credit') return const NoExamCreditFailure();

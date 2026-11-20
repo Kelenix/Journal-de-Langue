@@ -31,7 +31,7 @@ void main() {
       subscriptions: subscriptions,
       reports: reports,
     );
-    await tapOn(tester, find.byIcon(Icons.history_outlined));
+    await tapOn(tester, find.byIcon(Icons.schedule_outlined));
     await tapOn(tester, find.text('I has a cat.'));
   }
 

@@ -3,8 +3,8 @@
 import { errorMessage, recordUsage } from "../_shared/claude.ts";
 import {
   admin,
-  DATE_PATTERN,
   isLanguage,
+  isLocalDate,
   isUiLocale,
   json,
   jsonBody,
@@ -31,7 +31,7 @@ function parseRequest(body: Record<string, unknown> | null): CorrectionRequest |
   const { text, language, ui_locale, local_date, idempotency_key } = body;
   const isValid = typeof text === "string" && text.length <= MAX_TEXT_LENGTH &&
     isLanguage(language) && isUiLocale(ui_locale) &&
-    typeof local_date === "string" && DATE_PATTERN.test(local_date) &&
+    isLocalDate(local_date) &&
     typeof idempotency_key === "string" && UUID_PATTERN.test(idempotency_key);
   if (!isValid) return null;
   return {
@@ -96,6 +96,8 @@ Deno.serve(async (request) => {
     const { status: _status, reason, ...limits } = reservation;
     return json(403, { error: reason, ...limits });
   }
+  // Même envoi encore en cours (renvoyé après une coupure) : l'app réessaiera.
+  if (reservation.status === "busy") return json(409, { error: "correction_in_progress" });
   const entryId: string = reservation.entry_id;
   if (reservation.status === "corrected") return json(200, await loadEntry(entryId));
 

@@ -1,11 +1,14 @@
 -- Règles de l'incrément 5 : niveau de correction, reformulations, exercices.
 -- Lancer : supabase test db
 begin;
-select plan(30);
+select plan(31);
 
 -- La base locale peut contenir d'autres données : chaque vérification faite avec le rôle
 -- propriétaire se limite aux comptes et aux exercices créés ici (langue allemande, absente
 -- des données de démonstration).
+-- Les tests d'intégration peuvent avoir rempli la réserve allemande : elle est vidée le
+-- temps de ce test, annulé à la fin.
+delete from public.exercises where language = 'de';
 insert into auth.users (id, email)
 values
   ('00000000-0000-0000-0000-00000000000a', 'gratuit@example.test'),
@@ -149,7 +152,10 @@ select is(
   'la bonne réponse n''est pas envoyée avec la question'
 );
 
--- Le compte gratuit travaille le type du jour, commun à tous.
+-- Le compte gratuit travaille le type du jour, commun à tous. Ce type change chaque jour
+-- et retombe sur la conjugaison un jour sur sept : la réserve du compte Premium est vidée
+-- pour que la vérification ne dépende pas de la date.
+delete from public.exercises where language = 'de';
 select is(
   pg_temp.pick('00000000-0000-0000-0000-00000000000a') ->> 'status',
   'need_generation',
@@ -190,6 +196,13 @@ create temporary table generic_ids on commit drop as
   select (exercise ->> 'id')::uuid as id, row_number() over () as position
     from jsonb_array_elements(
       pg_temp.pick('00000000-0000-0000-0000-00000000000a') -> 'exercises') as exercise;
+-- Un quatrième exercice de la réserve, au-delà de la limite du jour.
+insert into generic_ids (id, position)
+select id, 4
+  from public.exercises
+ where language = 'de' and question like 'Générique %'
+   and id not in (select id from generic_ids)
+ limit 1;
 grant select on generic_ids to authenticated;
 set local role authenticated;
 
@@ -219,9 +232,16 @@ select is(
   'troisième exercice du jour'
 );
 select is(
-  public.answer_exercise((select id from generic_ids where position = 1), 1, current_date),
+  public.answer_exercise((select id from generic_ids where position = 4), 1, current_date),
   '{"status": "limit"}'::jsonb,
   'gratuit : pas de quatrième réponse le même jour'
+);
+select is(
+  (select row(a ->> 'status', a ->> 'is_correct', a ->> 'left')::text
+     from public.answer_exercise(
+       (select id from generic_ids where position = 1), 1, current_date) as a),
+  '(ok,true,0)',
+  'une réponse renvoyée rend son résultat sans compter un exercice de plus'
 );
 select is(
   public.answer_exercise((select id from generic_ids where position = 1), 1, current_date + 9)

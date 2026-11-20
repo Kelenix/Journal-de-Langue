@@ -40,9 +40,8 @@ onglet actif, version choisie), corail doux `#FBE3D9` (cartes d'offre et de limi
 
 ### Mode sombre
 
-Le brand kit ne définit que le mode clair. Le mode sombre en reprend les teintes : fond
-`#111A17`, vert éclairci `#8FCDBD` pour les éléments principaux, corail inchangé, texte
-ivoire. À faire valider par l'éditeur.
+Aucun : l'app reste en mode clair, comme la maquette, même quand le téléphone est en mode
+sombre (ADR-040).
 
 ## Typographie
 

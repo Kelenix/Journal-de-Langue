@@ -22,6 +22,9 @@
       supabase functions deploy exam
 
 - [ ] Fixer une limite de dépense mensuelle dans la console Anthropic.
+- [ ] Avec la clé, mesurer la durée d'une correction avancée longue (40 phrases) et d'une
+      notation d'examen : le serveur leur laisse 90 s et 120 s (ADR-041). Me donner les
+      durées si elles s'en approchent.
 
 ## Voix et export (Inc-6, livré)
 
@@ -57,7 +60,8 @@
       attendus par le serveur : `premium_weekly` (2,99 €), `premium_monthly` (4,99 €),
       `premium_annual` (29,99 €), chacun avec un essai gratuit de 3 jours. Sur Google
       Play, l'identifiant est celui de l'abonnement ; l'offre de base peut porter
-      n'importe quel nom.
+      n'importe quel nom. Sur l'App Store, les 3 dans **le même groupe d'abonnements** :
+      un seul actif à la fois, changement de formule géré par Apple.
 - [ ] Dans RevenueCat : créer le droit (entitlement) `premium`, une offre (offering)
       contenant les 3 produits, puis me communiquer les clés publiques SDK Android et iOS.
 - [ ] Dans RevenueCat, Integrations > Webhooks : URL
@@ -109,7 +113,6 @@
 
 - [ ] Valider ou remplacer l'icône et le logo générés (`design/app_icon_1024.png`) : c'est
       une première exécution du concept du brand kit, pas un logo de designer.
-- [ ] Valider le mode sombre, que le brand kit ne définit pas.
 - [ ] Trancher l'écart du brand kit : son aperçu dit « 10 phrases maximum », l'app
       applique les 7 phrases validées.
 

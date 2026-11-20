@@ -178,6 +178,82 @@ void main() {
     expect(find.text(english.correctionCorrectedVersion), findsOneWidget);
   });
 
+  testWidgets(
+    'le lendemain, l\'app restée ouverte propose un nouveau journal',
+    (tester) async {
+      var now = testNow;
+      journal.seedCorrectedToday(sampleEntry());
+      await pumpApp(
+        tester,
+        auth: auth,
+        languages: languages,
+        journal: journal,
+        drafts: drafts,
+        clock: () => now,
+      );
+      expect(find.text(english.journalDailyLimitReached), findsOneWidget);
+
+      now = testNow.add(const Duration(days: 1));
+      journal.startNewDay();
+      tester.binding
+        ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+        ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TextField), findsOneWidget);
+    },
+  );
+
+  testWidgets('un brouillon plus long que la limite de l\'offre ne part pas', (
+    tester,
+  ) async {
+    // Compté comme sur le serveur : « é » vaut un caractère, le point aussi.
+    drafts.drafts[draftKey] = '${'a' * 1000}é.';
+    await pumpJournal(tester);
+
+    expect(find.text('1002 / 1000'), findsOneWidget);
+    await tapSubmit(tester);
+    expect(journal.submissions, isEmpty);
+  });
+
+  testWidgets('quota utilisé depuis un autre appareil : le refus mène à la '
+      'correction du jour', (tester) async {
+    await pumpJournal(tester);
+    await write(tester, 'I has a cat.');
+    journal
+      ..seedCorrectedToday(sampleEntry())
+      ..submitFailure = const CorrectionDeniedFailure(
+        CorrectionDenial.dailyLimit,
+      );
+
+    await tapSubmit(tester);
+
+    expect(find.text(english.journalViewCorrection), findsOneWidget);
+  });
+
+  testWidgets('un journal sans faute est salué', (tester) async {
+    journal.seedCorrectedToday(
+      sampleEntry(originalText: 'I have a cat.').copyWith(items: const []),
+    );
+    await pumpJournal(tester);
+
+    await tapText(tester, english.journalViewCorrection);
+
+    expect(find.text(english.correctionNoMistakes), findsOneWidget);
+  });
+
+  testWidgets('« Ta version » montre le texte envoyé, la version corrigée '
+      'est affichée d\'abord', (tester) async {
+    journal.seedCorrectedToday(sampleEntry());
+    await pumpJournal(tester);
+    await tapText(tester, english.journalViewCorrection);
+    expect(find.text('I has a cat.'), findsNothing);
+
+    await tapText(tester, english.correctionYourVersion);
+
+    expect(find.text('I has a cat.'), findsOneWidget);
+  });
+
   testWidgets('le brouillon est retrouvé à l\'ouverture', (tester) async {
     drafts.drafts[draftKey] = 'Yesterday I';
     await pumpJournal(tester);

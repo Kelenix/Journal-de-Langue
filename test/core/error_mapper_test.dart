@@ -84,6 +84,33 @@ void main() {
       expect(fromFunction('rewrite_limit'), isA<UsageLimitFailure>());
       expect(fromFunction('no_exam_credit'), isA<NoExamCreditFailure>());
     });
+
+    test('une demande encore en cours peut être retentée', () {
+      Failure fromConflict(String code) =>
+          map(FunctionException(status: 409, details: {'error': code}));
+
+      expect(
+        fromConflict('correction_in_progress'),
+        isA<RequestInProgressFailure>(),
+      );
+      expect(fromConflict('exam_busy'), isA<RequestInProgressFailure>());
+    });
+
+    test('trop de tentatives sans résultat : refus expliqué', () {
+      expect(
+        map(
+          const FunctionException(
+            status: 403,
+            details: {'error': 'too_many_attempts'},
+          ),
+        ),
+        isA<CorrectionDeniedFailure>().having(
+          (f) => f.reason,
+          'reason',
+          CorrectionDenial.tooManyAttempts,
+        ),
+      );
+    });
   });
 
   group('guardFailures', () {

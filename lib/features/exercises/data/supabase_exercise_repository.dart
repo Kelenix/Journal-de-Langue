@@ -22,14 +22,17 @@ class SupabaseExerciseRepository implements ExerciseRepository {
     required String uiLocale,
     required DateTime day,
   }) => guardFailures(() async {
-    final response = await _client.functions.invoke(
-      'next-exercises',
-      body: {
-        'language': language.code,
-        'ui_locale': uiLocale,
-        'local_date': isoDate(day),
-      },
-    );
+    // Génération d'exercices par Claude comprise (deux essais de 25 s au plus).
+    final response = await _client.functions
+        .invoke(
+          'next-exercises',
+          body: {
+            'language': language.code,
+            'ui_locale': uiLocale,
+            'local_date': isoDate(day),
+          },
+        )
+        .timeout(const Duration(seconds: 60));
     final batch = response.data as Map<String, dynamic>;
     if (batch['status'] == _statusLimit) {
       return ExerciseBatch.limitReached(isPremium: batch['is_premium'] as bool);

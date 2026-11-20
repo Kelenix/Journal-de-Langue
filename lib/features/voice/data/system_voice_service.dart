@@ -11,6 +11,7 @@ import '../domain/voice_service.dart';
 class SystemVoiceService implements VoiceService {
   static const _pauseBeforeStop = Duration(seconds: 5);
   static const _maxDictation = Duration(minutes: 2);
+  static const _localesTimeout = Duration(seconds: 2);
 
   final _speech = SpeechToText();
   final _tts = FlutterTts();
@@ -44,8 +45,14 @@ class SystemVoiceService implements VoiceService {
             : DictationStart.permissionDenied;
       }
 
-      final localeId = _bestLocale(await _speech.locales(), language);
-      if (localeId == null) return DictationStart.unavailable;
+      // Android 13 et plus : la liste peut ne jamais arriver, ou ne contenir
+      // que les langues téléchargées pour l'écoute hors ligne, alors que
+      // l'écoute en ligne connaît la langue. Sinon : la variante attendue.
+      final locales = await _speech.locales().timeout(
+        _localesTimeout,
+        onTimeout: () => const [],
+      );
+      final localeId = _bestLocale(locales, language) ?? _languageTag(language);
 
       _onText = onText;
       _onDone = onDone;
@@ -61,6 +68,14 @@ class SystemVoiceService implements VoiceService {
         ),
       );
       return DictationStart.started;
+    } on ListenFailedException catch (error, stackTrace) {
+      developer.log(
+        'Écoute impossible',
+        name: 'voice',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return DictationStart.failed;
     } on PlatformException catch (error, stackTrace) {
       developer.log(
         'Dictée indisponible',
@@ -124,6 +139,9 @@ class SystemVoiceService implements VoiceService {
   @override
   Future<void> speak(String text, LearningLanguage language) async {
     try {
+      // Un seul moteur pour tous les boutons : la lecture en cours s'arrête
+      // (et rend la main à son bouton) avant la suivante.
+      await _tts.stop();
       await _tts.setLanguage(_languageTag(language));
       await _tts.awaitSpeakCompletion(true);
       await _tts.speak(text);

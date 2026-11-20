@@ -10,6 +10,7 @@ String failureMessage(AppLocalizations l10n, Object error) => switch (error) {
   InvalidCodeFailure() => l10n.errorInvalidCode,
   RateLimitedFailure() => l10n.errorRateLimited,
   AiUnavailableFailure() => l10n.errorAiUnavailable,
+  RequestInProgressFailure() => l10n.errorRequestInProgress,
   BillingUnavailableFailure() => l10n.errorBillingUnavailable,
   PurchaseFailure() => l10n.errorPurchaseFailed,
   PremiumRequiredFailure() => l10n.errorPremiumRequired,
@@ -27,6 +28,7 @@ String failureMessage(AppLocalizations l10n, Object error) => switch (error) {
     CorrectionDenial.invalidDate => l10n.errorInvalidDate,
     CorrectionDenial.wrongLanguage => l10n.errorWrongLanguage,
     CorrectionDenial.contentRefused => l10n.errorContentRefused,
+    CorrectionDenial.tooManyAttempts => l10n.errorTooManyAttempts,
   },
   _ => l10n.errorUnexpected,
 };

@@ -31,13 +31,13 @@ void main() {
   testWidgets('chaque onglet affiche son écran', (tester) async {
     await pumpReadyApp(tester);
 
-    await openTab(tester, Icons.history_outlined);
+    await openTab(tester, Icons.schedule_outlined);
     expect(find.text(english.historyEmpty), findsOneWidget);
 
-    await openTab(tester, Icons.style_outlined);
+    await openTab(tester, Icons.copy_outlined);
     expect(find.text(english.reviewEmpty), findsOneWidget);
 
-    await openTab(tester, Icons.local_fire_department_outlined);
+    await openTab(tester, Icons.bar_chart_rounded);
     expect(find.text(english.progressEmpty), findsOneWidget);
 
     await openTab(tester, Icons.person_outline);

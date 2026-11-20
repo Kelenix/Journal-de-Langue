@@ -112,9 +112,8 @@ void main() {
     expect(find.byType(NavigationBar), findsNothing);
   });
 
-  testWidgets('un e-mail non confirmé propose de saisir le code', (
-    tester,
-  ) async {
+  /// Connexion avec un e-mail jamais confirmé, puis saisie du code proposée.
+  Future<void> openCodeEntry(WidgetTester tester) async {
     auth.failure = const EmailNotConfirmedFailure();
     await pumpApp(tester, auth: auth, languages: languages);
     await openSignIn(tester);
@@ -123,8 +122,24 @@ void main() {
     await enter(tester, english.authPasswordLabel, password);
     await tapButton(tester, english.authSignInAction);
     await tapText(tester, english.verifyEnterCode);
+  }
+
+  testWidgets('un e-mail non confirmé propose de saisir le code', (
+    tester,
+  ) async {
+    await openCodeEntry(tester);
 
     expect(find.text(english.verifyInstructions(email)), findsOneWidget);
+  });
+
+  testWidgets('le code de confirmation peut être renvoyé', (tester) async {
+    await openCodeEntry(tester);
+    auth.failure = null;
+
+    await tapText(tester, english.verifyResend);
+
+    expect(auth.calls, contains('resendSignUpCode $email'));
+    expect(find.text(english.verifyResent), findsOneWidget);
   });
 
   testWidgets('mot de passe oublié : code puis nouveau mot de passe', (
@@ -166,7 +181,7 @@ void main() {
     testWidgets('changer de langue remplace la langue active', (tester) async {
       await openProfile(tester);
 
-      await tapText(tester, english.profileLanguages(1));
+      await tapText(tester, english.profileLanguagesTitle);
       await tapText(tester, english.languageFrench);
 
       expect(find.text(english.profileChangeLanguageNote), findsNothing);

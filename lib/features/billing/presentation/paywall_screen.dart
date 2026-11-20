@@ -60,7 +60,8 @@ class _OffersState extends ConsumerState<_Offers> {
     if (!await action()) return;
 
     messenger.showSnackBar(SnackBar(content: Text(l10n.paywallWelcome)));
-    router.pop();
+    // Offres déjà refermées pendant la confirmation : rien d'autre à fermer.
+    if (mounted) router.pop();
   }
 
   @override

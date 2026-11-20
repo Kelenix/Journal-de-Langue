@@ -98,7 +98,7 @@ void main() {
           correctionsLeft: 1,
         ),
       );
-      expect(await journal.entryOfDay(today), isNull);
+      expect(await journal.entryIdOfDay(today), isNull);
     },
   );
 
@@ -113,7 +113,7 @@ void main() {
     expect(entry.items.first.explanation, contains('have'));
 
     expect(await journal.entry(entry.id), entry);
-    expect(await journal.entryOfDay(today), entry);
+    expect(await journal.entryIdOfDay(today), entry.id);
     expect((await journal.allowance(today)).correctionsLeft, 0);
   });
 

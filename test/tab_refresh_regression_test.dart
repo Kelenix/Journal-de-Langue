@@ -45,11 +45,11 @@ void main() {
   /// Ouvre chaque onglet une fois : tous sont construits, puis masqués.
   Future<void> visitEveryTab(WidgetTester tester) async {
     for (final icon in [
-      Icons.history_outlined,
-      Icons.style_outlined,
-      Icons.local_fire_department_outlined,
+      Icons.schedule_outlined,
+      Icons.copy_outlined,
+      Icons.bar_chart_rounded,
       Icons.person_outline,
-      Icons.edit_note_outlined,
+      Icons.edit_outlined,
     ]) {
       await openTab(tester, icon);
     }
@@ -72,15 +72,15 @@ void main() {
 
     await correctJournal(tester);
 
-    await openTab(tester, Icons.history_outlined);
+    await openTab(tester, Icons.schedule_outlined);
     expect(find.text('I has a cat.'), findsOneWidget);
 
-    await openTab(tester, Icons.style_outlined);
-    expect(find.text(english.reviewCardOf(1, 1)), findsOneWidget);
+    await openTab(tester, Icons.copy_outlined);
+    expect(find.text(english.reviewCardOf(1, 1).toUpperCase()), findsOneWidget);
 
-    // L'offre payante peut maintenant être proposée depuis le profil.
+    // Le profil ouvre les offres.
     await openTab(tester, Icons.person_outline);
-    await tapOn(tester, find.text(english.profilePlan));
+    await tapOn(tester, find.text(english.paywallDiscover));
     expect(find.text(english.paywallTitle), findsOneWidget);
   });
 
@@ -99,7 +99,7 @@ void main() {
 
     expect(find.text(english.journalSentenceCount(0, 40)), findsOneWidget);
 
-    await openTab(tester, Icons.history_outlined);
+    await openTab(tester, Icons.schedule_outlined);
     expect(find.text(english.historyUnlock), findsNothing);
 
     await openTab(tester, Icons.person_outline);
@@ -116,13 +116,13 @@ void main() {
     await visitEveryTab(tester);
 
     await openTab(tester, Icons.person_outline);
-    await tapOn(tester, find.text(english.profileLanguages(1)));
+    await tapOn(tester, find.text(english.profileLanguagesTitle));
     await tapOn(tester, find.text(english.languageGerman));
 
-    await openTab(tester, Icons.edit_note_outlined);
+    await openTab(tester, Icons.edit_outlined);
     expect(find.text(english.languageGerman), findsOneWidget);
 
-    await openTab(tester, Icons.style_outlined);
-    expect(find.text(english.reviewCardOf(1, 1)), findsOneWidget);
+    await openTab(tester, Icons.copy_outlined);
+    expect(find.text(english.reviewCardOf(1, 1).toUpperCase()), findsOneWidget);
   });
 }

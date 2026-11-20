@@ -88,7 +88,7 @@ Langues (ADR-025) : `plan_limits` donne `max_languages` (1 en gratuit, 3 en
 hebdomadaire ou mensuel, 4 en annuel). `usable_languages(user)` rend les langues
 actives les plus récemment choisies dans cette limite ; correction et exercices
 exigent une langue utilisable (`is_usable_language`). Statistiques (ADR-026) :
-`get_stats(langue, date)` calcule la série et les jours écrits de la semaine en cours (du lundi à la date donnée, toutes langues confondues) et, en Premium, les détails.
+`get_stats(langue, date)` calcule la série et les jours écrits de la semaine en cours (du lundi à la date donnée, toutes langues confondues) et, en Premium, les détails : mots appris, fautes par type et journaux de la langue par semaine sur 8 semaines (`weekly_journals`, ADR-040).
 
 La limite d'historique gratuit est dans la policy `select` (et non dans l'app) : elle
 compare `entry_date` à `history_start_date()`. `get_history_overview()` indique à l'app

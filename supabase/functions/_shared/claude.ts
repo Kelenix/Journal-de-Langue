@@ -25,6 +25,11 @@ interface Question<T> {
   schema: z.ZodType<T>;
   /** Délai d'une tentative ; 25 s par défaut. */
   timeoutMs?: number;
+  /**
+   * Nouvelles tentatives après une panne ; 1 par défaut. Aucune pour un appel long : une
+   * seconde tentative dépasserait la durée maximale d'une Edge Function (150 s).
+   */
+  maxRetries?: number;
 }
 
 const REQUEST_TIMEOUT_MS = 25_000;
@@ -37,7 +42,7 @@ export async function askClaude<T>(question: Question<T>): Promise<Answer<T>> {
   // Créé à la demande : une clé absente doit produire une erreur gérée, pas empêcher la
   // fonction de démarrer.
   const anthropic = new Anthropic({
-    maxRetries: 1,
+    maxRetries: question.maxRetries ?? 1,
     timeout: question.timeoutMs ?? REQUEST_TIMEOUT_MS,
   });
 
@@ -66,7 +71,10 @@ export async function askClaude<T>(question: Question<T>): Promise<Answer<T>> {
   return { outcome: "answered", data: data as T, usage };
 }
 
-/** Journalise le coût d'un appel qui n'a pas abouti à un enregistrement. */
+/**
+ * Journalise le coût d'un appel qui n'a pas abouti à un enregistrement. Ces appels sont
+ * plafonnés en base (`failed_ai_calls`, ADR-041).
+ */
 export async function recordUsage(userId: string, feature: string, usage: Usage): Promise<void> {
   const { error } = await admin.from("ai_usage").insert({
     user_id: userId,
@@ -74,6 +82,7 @@ export async function recordUsage(userId: string, feature: string, usage: Usage)
     model: usage.model,
     input_tokens: usage.inputTokens,
     output_tokens: usage.outputTokens,
+    succeeded: false,
   });
   if (error) console.error("Coût IA non journalisé", error.message);
 }

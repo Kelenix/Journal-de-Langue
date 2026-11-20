@@ -98,6 +98,13 @@ abstract class JournalAllowance with _$JournalAllowance {
       _$JournalAllowanceFromJson(json);
 }
 
+extension JournalAllowanceUse on JournalAllowance {
+  /// Une correction reste possible aujourd'hui : quota de l'offre, crédit
+  /// acheté ou correction offerte par une vidéo.
+  bool get canCorrect =>
+      correctionsLeft > 0 || credits > 0 || rewardCorrections > 0;
+}
+
 /// Étendue de l'historique lisible avec l'offre de l'utilisateur.
 @freezed
 abstract class HistoryOverview with _$HistoryOverview {

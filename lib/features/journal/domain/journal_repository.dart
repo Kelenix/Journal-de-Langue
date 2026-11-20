@@ -6,8 +6,8 @@ abstract interface class JournalRepository {
   /// Limites de l'offre et corrections restantes pour [day].
   Future<JournalAllowance> allowance(DateTime day);
 
-  /// Dernier journal corrigé de [day], s'il existe.
-  Future<JournalEntry?> entryOfDay(DateTime day);
+  /// Identifiant du dernier journal corrigé de [day], s'il existe.
+  Future<String?> entryIdOfDay(DateTime day);
 
   Future<JournalEntry> entry(String id);
 

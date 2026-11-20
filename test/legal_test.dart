@@ -106,6 +106,7 @@ void main() {
       subscriptions: subscriptions,
     );
     await tapOn(tester, find.byIcon(Icons.person_outline));
+    await tapOn(tester, find.text(english.profilePrivacy));
 
     const heading = 'The service';
     await openLegal(tester, english.legalTermsTitle, expected: heading);

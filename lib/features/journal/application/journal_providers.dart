@@ -23,8 +23,9 @@ final journalDraftStoreProvider = Provider<JournalDraftStore>(
   (ref) => const SecureJournalDraftStore(),
 );
 
-/// Situation du jour : ce que l'offre permet et le journal déjà corrigé.
-typedef JournalDay = ({JournalAllowance allowance, JournalEntry? entry});
+/// Situation du jour : ce que l'offre permet et, s'il ne reste plus de
+/// correction, le journal déjà corrigé.
+typedef JournalDay = ({JournalAllowance allowance, String? entryId});
 
 final journalDayProvider = FutureProvider.autoDispose<JournalDay>(
   (ref) async {
@@ -33,15 +34,30 @@ final journalDayProvider = FutureProvider.autoDispose<JournalDay>(
     await ref.watch(subscriptionProvider.future);
     final repository = ref.watch(journalRepositoryProvider);
     final today = ref.watch(clockProvider)();
-    // L'un après l'autre : attendus ensemble, une erreur serait enveloppée et
-    // l'écran ne saurait plus dire laquelle.
     final allowance = await repository.allowance(today);
-    final entry = await repository.entryOfDay(today);
-    return (allowance: allowance, entry: entry);
+    // Le journal du jour ne sert qu'à « Voir la correction », une fois la
+    // limite atteinte : rien à charger avant.
+    final entryId = allowance.canCorrect
+        ? null
+        : await repository.entryIdOfDay(today);
+    return (allowance: allowance, entryId: entryId);
   },
   // Pas de nouvel essai automatique : l'écran propose « Réessayer ».
   retry: (retryCount, error) => null,
 );
+
+/// Relit l'abonnement s'il n'a pas pu être chargé : le journal et l'historique
+/// en dépendent et ne se rétablissent pas sans lui. Relu tout de suite, d'autres
+/// providers l'observent (ADR-022).
+Future<void> reloadFailedSubscription(WidgetRef ref) async {
+  if (!ref.read(subscriptionProvider).hasError) return;
+  ref.invalidate(subscriptionProvider);
+  try {
+    await ref.read(subscriptionProvider.future);
+  } on Failure {
+    // L'écran qui relance affichera l'erreur.
+  }
+}
 
 /// Étendue de l'historique lisible avec l'offre, sans le charger.
 final historyOverviewProvider = FutureProvider.autoDispose<HistoryOverview>((
@@ -94,18 +110,22 @@ class JournalHistoryNotifier extends AsyncNotifier<JournalHistory> {
         moreFailure: null,
       ));
     }
+    // Un rechargement pendant l'attente (journal corrigé) remplace la liste :
+    // la page obtenue ne s'y ajoute pas.
+    bool isOutdated() =>
+        !ref.mounted || !identical(state.value?.entries, history.entries);
     try {
       final page = await ref
           .read(journalRepositoryProvider)
           .historyPage(offset: history.entries.length, limit: pageSize);
-      if (!ref.mounted) return;
+      if (isOutdated()) return;
       state = AsyncData((
         entries: [...history.entries, ...page],
         hasMore: page.length == pageSize,
         moreFailure: null,
       ));
     } on Failure catch (failure) {
-      if (!ref.mounted) return;
+      if (isOutdated()) return;
       state = AsyncData((
         entries: history.entries,
         hasMore: true,
@@ -124,8 +144,9 @@ final journalHistoryProvider =
       retry: (retryCount, error) => null,
     );
 
-/// Vrai dès que l'utilisateur a fait corriger un journal : les offres payantes
-/// ne lui sont jamais proposées avant (INTAKE §6). Une fonction et non un
+/// Vrai dès que l'utilisateur a fait corriger un journal : avant, les offres
+/// ne s'ouvrent pas d'elles-mêmes et aucun rappel ne les propose ; seul le
+/// profil y mène (INTAKE §6, ADR-040). Une fonction et non un
 /// provider, pour la même raison que `watchActiveSubscription` (ADR-022).
 bool watchHasCorrectedJournal(WidgetRef ref) =>
     (ref.watch(historyOverviewProvider).value?.correctedEntries ?? 0) > 0;
@@ -184,6 +205,13 @@ class JournalSubmissionController extends Notifier<AsyncValue<void>> {
     if (!ref.mounted) return result.value;
 
     state = result;
+    // Quota déjà utilisé ailleurs (autre appareil, réponse perdue puis texte
+    // modifié) : l'écran passe à la limite du jour, avec sa correction.
+    if (result.error case CorrectionDeniedFailure(
+      reason: CorrectionDenial.dailyLimit,
+    )) {
+      ref.invalidate(journalDayProvider);
+    }
     if (result.hasValue) {
       // Une correction change le quota du jour, l'historique, le vocabulaire
       // et les statistiques.

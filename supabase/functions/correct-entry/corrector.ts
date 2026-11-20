@@ -61,6 +61,10 @@ const SETTINGS = {
     model: Deno.env.get("ADVANCED_CORRECTION_MODEL") ?? "claude-sonnet-5-5",
     effort: "medium",
     maxTokens: 12000,
+    // Jusqu'à 40 phrases corrigées et expliquées en détail : bien plus long qu'une
+    // correction de base. Délai à confirmer avec la clé API (ADR-041).
+    timeoutMs: 90_000,
+    maxRetries: 0,
   },
 } as const;
 

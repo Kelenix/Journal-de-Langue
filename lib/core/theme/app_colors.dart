@@ -35,17 +35,6 @@ class AppColors extends ThemeExtension<AppColors> {
     shadow: Color(0x1F174D43),
   );
 
-  static const dark = AppColors(
-    mistake: Color(0xFFF2B8B5),
-    fix: Color(0xFF8FCDBD),
-    accent: BrandColors.coral,
-    onAccent: BrandColors.darkText,
-    hero: BrandColors.deepGreen,
-    onHero: BrandColors.ivory,
-    onHeroMuted: Color(0xFFC6D9D2),
-    shadow: Color(0x66000000),
-  );
-
   /// Fragment fautif ; toujours accompagné d'un texte barré.
   final Color mistake;
 

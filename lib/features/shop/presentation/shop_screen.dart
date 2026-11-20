@@ -89,7 +89,8 @@ class _OwnedCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final wallet = ref.watch(walletProvider).value ?? const Wallet();
+    final walletValue = ref.watch(walletProvider);
+    final wallet = walletValue.value ?? const Wallet();
     final dates = MaterialLocalizations.of(context);
 
     final lines = [
@@ -99,7 +100,7 @@ class _OwnedCard extends ConsumerWidget {
       for (final pass in wallet.languagePasses)
         l10n.shopPassUntil(
           languageName(l10n, pass.language),
-          dates.formatShortDate(pass.expiresAt),
+          dates.formatShortDate(pass.expiresAt.toLocal()),
         ),
       if (wallet.adsRemoved) l10n.shopAdsRemoved,
     ];
@@ -119,7 +120,14 @@ class _OwnedCard extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
-              if (lines.isEmpty)
+              // Achats pas encore lus : ni « rien pour l'instant », ni liste.
+              if (!walletValue.hasValue || walletValue.hasError)
+                AsyncView(
+                  value: walletValue,
+                  onRetry: () => ref.invalidate(walletProvider),
+                  builder: (_) => const SizedBox.shrink(),
+                )
+              else if (lines.isEmpty)
                 Text(
                   l10n.shopNothingOwned,
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -148,7 +156,9 @@ class _Catalog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final adsRemoved = ref.watch(walletProvider).value?.adsRemoved ?? false;
+    // Tant que les achats ne sont pas lus, « sans publicité » n'est pas
+    // proposé : il est peut-être déjà acheté.
+    final adsRemoved = ref.watch(walletProvider).value?.adsRemoved ?? true;
 
     List<ProductOffer> offersOf(bool Function(OneTimeProduct) matches) => [
       for (final offer in offers)

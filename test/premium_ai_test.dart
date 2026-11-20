@@ -49,7 +49,7 @@ void main() {
   }) async {
     journal.seedPast(sampleEntry(level: level));
     await pump(tester);
-    await tapOn(tester, find.byIcon(Icons.history_outlined));
+    await tapOn(tester, find.byIcon(Icons.schedule_outlined));
     await tapText(tester, 'I has a cat.');
   }
 
@@ -133,7 +133,7 @@ void main() {
   group('exercices', () {
     Future<void> openExercises(WidgetTester tester) async {
       await pump(tester);
-      await tapOn(tester, find.byIcon(Icons.style_outlined));
+      await tapOn(tester, find.byIcon(Icons.copy_outlined));
       await tapText(tester, english.exercisesTitle);
     }
 
@@ -182,7 +182,7 @@ void main() {
 
       await tapText(tester, english.exercisesDone);
 
-      expect(find.text(english.exercisesCardBody), findsOneWidget);
+      expect(find.text(english.exercisesTileBody(3)), findsOneWidget);
     });
 
     testWidgets('gratuit, limite atteinte après une première correction : '

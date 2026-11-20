@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/errors/failure.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../routing/app_routes.dart';
@@ -21,6 +22,7 @@ import '../../languages/application/language_providers.dart';
 import '../../languages/presentation/language_labels.dart';
 import '../application/exam_providers.dart';
 import '../domain/exam.dart';
+import '../domain/exam_repository.dart';
 
 /// Simulation d'examen du Pack Examinateur (US-20) : choix du niveau, sujet,
 /// rédaction, puis résultats.
@@ -40,9 +42,12 @@ class ExamScreen extends ConsumerWidget {
             final open = exams
                 .where((exam) => exam.status != ExamStatus.graded)
                 .firstOrNull;
-            return open == null
-                ? _ExamHome(graded: exams)
-                : _ExamWriting(key: ValueKey(open.id), exam: open);
+            return switch (open) {
+              null => _ExamHome(graded: exams),
+              // Copie remise, notation en cours : plus rien à modifier.
+              Exam(status: ExamStatus.grading) => const _ExamGrading(),
+              _ => _ExamWriting(key: ValueKey(open.id), exam: open),
+            };
           },
         ),
       ),
@@ -80,7 +85,8 @@ class _ExamHomeState extends ConsumerState<_ExamHome> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final credits = ref.watch(walletProvider).value?.examCredits ?? 0;
+    final wallet = ref.watch(walletProvider);
+    final credits = wallet.value?.examCredits ?? 0;
     final action = ref.watch(examControllerProvider);
     final error = action.error;
 
@@ -89,7 +95,15 @@ class _ExamHomeState extends ConsumerState<_ExamHome> {
       children: [
         const IconBadge(Icons.school_outlined, warm: true),
         const SizedBox(height: AppSpacing.lg),
-        if (credits > 0) ...[
+        // Portefeuille pas encore lu : ni « aucun pack » ni « acheter un pack »
+        // à quelqu'un qui en a peut-être un.
+        if (!wallet.hasValue || wallet.hasError)
+          AsyncView(
+            value: wallet,
+            onRetry: () => ref.invalidate(walletProvider),
+            builder: (_) => const SizedBox.shrink(),
+          )
+        else if (credits > 0) ...[
           Text(
             l10n.examCreditsLeft(credits),
             style: theme.textTheme.titleLarge,
@@ -120,8 +134,8 @@ class _ExamHomeState extends ConsumerState<_ExamHome> {
           ],
         ] else ...[
           Text(l10n.examNoCredit),
-          // Jamais d'offre payante avant une première correction
-          // (INTAKE §6).
+          // Rappel en contexte : seulement après une première correction
+          // (ADR-040).
           if (watchHasCorrectedJournal(ref)) ...[
             const SizedBox(height: AppSpacing.lg),
             FilledButton(
@@ -181,7 +195,7 @@ class _ResultTile extends StatelessWidget {
           title: Text(
             MaterialLocalizations.of(
               context,
-            ).formatMediumDate(exam.gradedAt ?? exam.createdAt),
+            ).formatMediumDate((exam.gradedAt ?? exam.createdAt).toLocal()),
           ),
           subtitle: Text(
             l10n.examResultSubtitle(
@@ -217,35 +231,53 @@ class _ExamWritingState extends ConsumerState<_ExamWriting> {
   static final _word = RegExp(r'\S+');
 
   late final _text = TextEditingController(text: widget.exam.answer ?? '');
+  // Lu dès le départ, hors de `ref` : il sert encore pendant la fermeture de
+  // l'écran, où `ref` n'est plus utilisable.
+  late final ExamRepository _exams;
+  late String _lastText = _text.text;
   Timer? _draftSaveTimer;
+  bool _isDraftUnsaved = false;
 
   @override
   void initState() {
     super.initState();
+    _exams = ref.read(examRepositoryProvider);
     _text.addListener(_onTextChanged);
   }
 
   @override
   void dispose() {
-    _draftSaveTimer?.cancel();
+    // Le dernier texte saisi part avec la fermeture de l'écran.
+    if (_draftSaveTimer?.isActive ?? false) {
+      _draftSaveTimer!.cancel();
+      unawaited(
+        _exams
+            .saveDraft(examId: widget.exam.id, answer: _text.text)
+            .catchError((Object _) {}),
+      );
+    }
     _text.dispose();
     super.dispose();
   }
 
   void _onTextChanged() {
+    // Le curseur qui bouge ne change pas le texte : rien à enregistrer.
+    if (_text.text == _lastText) return;
+    _lastText = _text.text;
     setState(() {}); // compteur de mots
     _draftSaveTimer?.cancel();
     _draftSaveTimer = Timer(_draftSaveDelay, _saveDraft);
   }
 
   Future<void> _saveDraft() async {
+    var isSaved = true;
     try {
-      await ref
-          .read(examRepositoryProvider)
-          .saveDraft(examId: widget.exam.id, answer: _text.text);
-    } on Object {
-      // Hors ligne : le texte reste à l'écran et sera envoyé avec la copie.
+      await _exams.saveDraft(examId: widget.exam.id, answer: _text.text);
+    } on Failure {
+      // Hors ligne : le texte reste à l'écran et l'utilisateur est prévenu.
+      isSaved = false;
     }
+    if (mounted) setState(() => _isDraftUnsaved = !isSaved);
   }
 
   Future<void> _submit() async {
@@ -255,7 +287,10 @@ class _ExamWritingState extends ConsumerState<_ExamWriting> {
     final isGraded = await ref
         .read(examControllerProvider.notifier)
         .submit(examId: widget.exam.id, answer: _text.text.trim());
-    if (isGraded) await router.push(AppRoutes.examResultOf(widget.exam.id));
+    // Écran quitté pendant la notation : pas de résultat ouvert par-dessus.
+    if (isGraded && mounted) {
+      await router.push(AppRoutes.examResultOf(widget.exam.id));
+    }
   }
 
   @override
@@ -331,10 +366,52 @@ class _ExamWritingState extends ConsumerState<_ExamWriting> {
         ),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          action.isLoading ? l10n.examGrading : l10n.examResumeNote,
+          action.isLoading
+              ? l10n.examGrading
+              : _isDraftUnsaved
+              ? l10n.examDraftNotSaved
+              : l10n.examResumeNote,
           textAlign: TextAlign.center,
           style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+            color: _isDraftUnsaved && !action.isLoading
+                ? theme.colorScheme.error
+                : theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Copie remise, en cours de notation par le serveur.
+class _ExamGrading extends ConsumerWidget {
+  const _ExamGrading();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.xs,
+        AppSpacing.lg,
+        AppSpacing.xl,
+      ),
+      children: [
+        SoftCard(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const IconBadge(Icons.hourglass_top_outlined, warm: true),
+              const SizedBox(height: AppSpacing.lg),
+              Text(l10n.examGrading),
+              const SizedBox(height: AppSpacing.lg),
+              OutlinedButton(
+                onPressed: () => ref.invalidate(examsProvider),
+                child: Text(l10n.actionRefresh),
+              ),
+            ],
           ),
         ),
       ],

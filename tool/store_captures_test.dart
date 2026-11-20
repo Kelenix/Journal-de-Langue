@@ -46,6 +46,17 @@ Future<void> _capture(WidgetTester tester, _Sample sample) async {
   tester.platformDispatcher.localesTestValue = [sample.locale];
   addTearDown(tester.platformDispatcher.clearLocalesTestValue);
 
+  // Les vraies ombres, que les tests remplacent par des aplats, dès le
+  // premier rendu : la première capture les montre aussi.
+  debugDisableShadows = false;
+  try {
+    await _captureScreens(tester, sample);
+  } finally {
+    debugDisableShadows = true;
+  }
+}
+
+Future<void> _captureScreens(WidgetTester tester, _Sample sample) async {
   final subscriptions = FakeSubscriptionRepository(
     Subscription(
       plan: SubscriptionPlan.annual,
@@ -70,40 +81,34 @@ Future<void> _capture(WidgetTester tester, _Sample sample) async {
   );
   final l10n = lookupAppLocalizations(sample.locale);
 
-  // Les vraies ombres, que les tests remplacent par des aplats.
-  debugDisableShadows = false;
-  try {
-    Future<void> shot(String name) async {
-      await tester.pumpAndSettle();
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('../docs/store/captures/${sample.folder}/$name.png'),
-      );
-    }
-
-    Future<void> openTab(IconData icon) => tapOn(tester, find.byIcon(icon));
-
-    await shot('1-journal');
-
-    await openTab(Icons.history_outlined);
-    await tapOn(tester, find.text(sample.corrected.originalText));
-    await shot('2-correction');
-    // Bouton retour par son type : son libellé suit la langue.
-    await tapOn(tester, find.byType(BackButton));
-
-    await openTab(Icons.style_outlined);
-    await shot('3-review');
-
-    await openTab(Icons.local_fire_department_outlined);
-    await shot('4-progress');
-
-    await openTab(Icons.style_outlined);
-    await tapOn(tester, find.text(l10n.examTitle));
-    await tapOn(tester, find.text(l10n.examScore(sample.exam.result!.score)));
-    await shot('5-exam');
-  } finally {
-    debugDisableShadows = true;
+  Future<void> shot(String name) async {
+    await tester.pumpAndSettle();
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('../docs/store/captures/${sample.folder}/$name.png'),
+    );
   }
+
+  Future<void> openTab(IconData icon) => tapOn(tester, find.byIcon(icon));
+
+  await shot('1-journal');
+
+  await openTab(Icons.schedule_outlined);
+  await tapOn(tester, find.text(sample.corrected.originalText));
+  await shot('2-correction');
+  // Bouton retour par son type : son libellé suit la langue.
+  await tapOn(tester, find.byType(BackButton));
+
+  await openTab(Icons.copy_outlined);
+  await shot('3-review');
+
+  await openTab(Icons.bar_chart_rounded);
+  await shot('4-progress');
+
+  await openTab(Icons.copy_outlined);
+  await tapOn(tester, find.text(l10n.examTitle));
+  await tapOn(tester, find.text(l10n.examScore(sample.exam.result!.score)));
+  await shot('5-exam');
 }
 
 /// Polices de l'app (DM Sans, Inter, icônes), chargées pour un rendu fidèle.
@@ -120,7 +125,7 @@ Future<void> _loadFonts() async {
   }
 }
 
-/// Progrès d'un abonné régulier : 12 jours de suite, des fautes en baisse.
+/// Progrès d'un abonné régulier : 12 jours de suite, 4 à 7 journaux par semaine.
 class _CuratedStats extends FakeStatsRepository {
   _CuratedStats() : super(journal: FakeJournalRepository());
 
@@ -145,20 +150,11 @@ class _CuratedStats extends FakeStatsRepository {
       CategoryCount(category: ErrorCategory.vocabulary, count: 7),
       CategoryCount(category: ErrorCategory.grammar, count: 5),
     ],
-    weeklyMistakeRate: [
-      for (final (index, rate) in const [
-        1.4,
-        1.25,
-        1.3,
-        1.0,
-        0.9,
-        0.75,
-        0.6,
-        0.45,
-      ].indexed)
-        WeeklyMistakeRate(
+    weeklyJournals: [
+      for (final (index, journals) in const [3, 5, 4, 6, 7, 5, 6, 4].indexed)
+        WeeklyJournals(
           weekStart: DateTime(2026, 9, 28 + 7 * index),
-          mistakesPerSentence: rate,
+          journals: journals,
         ),
     ],
   );

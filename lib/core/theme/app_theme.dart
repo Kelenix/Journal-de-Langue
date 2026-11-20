@@ -19,7 +19,6 @@ abstract final class AppTheme {
   // Le gris du brand kit (#788680) ne suffit pas pour du petit texte sur
   // ivoire (contraste 3,5) : le texte secondaire utilise un gris plus foncé.
   static const _secondaryTextLight = Color(0xFF5C6B65);
-  static const _secondaryTextDark = Color(0xFFA3B0AB);
 
   static final ThemeData light = _build(
     ColorScheme.fromSeed(seedColor: BrandColors.deepGreen).copyWith(
@@ -48,38 +47,6 @@ abstract final class AppTheme {
     ),
     cardColor: BrandColors.white,
     colors: AppColors.light,
-  );
-
-  // Le brand kit ne définit que le mode clair ; le mode sombre en reprend les
-  // teintes sur un fond vert très foncé.
-  static final ThemeData dark = _build(
-    ColorScheme.fromSeed(
-      seedColor: BrandColors.deepGreen,
-      brightness: Brightness.dark,
-    ).copyWith(
-      primary: const Color(0xFF8FCDBD),
-      onPrimary: const Color(0xFF0B2B25),
-      primaryContainer: const Color(0xFF24433C),
-      onPrimaryContainer: BrandColors.ivory,
-      secondary: BrandColors.coral,
-      onSecondary: BrandColors.darkText,
-      secondaryContainer: const Color(0xFF4A322A),
-      onSecondaryContainer: const Color(0xFFFBE3D9),
-      surface: const Color(0xFF111A17),
-      onSurface: BrandColors.ivory,
-      onSurfaceVariant: _secondaryTextDark,
-      surfaceContainerLowest: const Color(0xFF0C1311),
-      surfaceContainerLow: const Color(0xFF17211E),
-      surfaceContainer: const Color(0xFF25312D),
-      surfaceContainerHigh: const Color(0xFF2B3733),
-      surfaceContainerHighest: const Color(0xFF303C38),
-      outline: BrandColors.softGray,
-      outlineVariant: const Color(0xFF3A4743),
-      inverseSurface: BrandColors.ivory,
-      onInverseSurface: BrandColors.darkText,
-    ),
-    cardColor: const Color(0xFF1B2623),
-    colors: AppColors.dark,
   );
 
   static ThemeData _build(

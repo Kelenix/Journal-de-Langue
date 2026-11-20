@@ -10,6 +10,7 @@ import 'package:journal_de_langue/features/billing/application/billing_providers
 import 'package:journal_de_langue/features/exam/application/exam_providers.dart';
 import 'package:journal_de_langue/features/exercises/application/exercise_providers.dart';
 import 'package:journal_de_langue/features/export/application/export_providers.dart';
+import 'package:journal_de_langue/features/export/presentation/review_pdf.dart';
 import 'package:journal_de_langue/features/journal/application/journal_providers.dart';
 import 'package:journal_de_langue/features/languages/application/language_providers.dart';
 import 'package:journal_de_langue/features/reports/application/report_providers.dart';
@@ -63,6 +64,7 @@ Future<void> pumpApp(
   FakeContentReportRepository? reports,
   List<({String fileName, int size})>? sharedPdfs,
   List<Uri>? openedUrls,
+  DateTime Function()? clock,
 }) async {
   tester.view
     ..physicalSize = _phonePhysicalSize
@@ -115,6 +117,8 @@ Future<void> pumpApp(
         examRepositoryProvider.overrideWithValue(
           exams ?? FakeExamRepository(walletRepository),
         ),
+        // Construit sur place : un isolate ne suit pas le temps simulé.
+        pdfBuilderProvider.overrideWithValue(buildReviewPdf),
         pdfSharerProvider.overrideWithValue(
           (bytes, fileName) async =>
               sharedPdfs?.add((fileName: fileName, size: bytes.length)),
@@ -127,7 +131,7 @@ Future<void> pumpApp(
         journalDraftStoreProvider.overrideWithValue(
           drafts ?? InMemoryJournalDraftStore(),
         ),
-        clockProvider.overrideWithValue(() => testNow),
+        clockProvider.overrideWithValue(clock ?? () => testNow),
       ],
       child: const JournalApp(),
     ),

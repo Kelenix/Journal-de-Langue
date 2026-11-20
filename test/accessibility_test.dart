@@ -58,40 +58,30 @@ void main() {
     Future<void> Function(String screen) check,
   ) async {
     for (final (screen, icon) in [
-      ('Journal', Icons.edit_note_outlined),
-      ('Historique', Icons.history_outlined),
-      ('Réviser', Icons.style_outlined),
-      ('Progrès', Icons.local_fire_department_outlined),
+      ('Journal', Icons.edit_outlined),
+      ('Historique', Icons.schedule_outlined),
+      ('Réviser', Icons.copy_outlined),
+      ('Progrès', Icons.bar_chart_rounded),
       ('Profil', Icons.person_outline),
     ]) {
       await tapOn(tester, find.byIcon(icon));
       await check(screen);
     }
 
-    await tapOn(tester, find.byIcon(Icons.history_outlined));
+    await tapOn(tester, find.byIcon(Icons.schedule_outlined));
     await tapOn(tester, find.text('I has a cat.'));
     await check('Correction');
     await tester.pageBack();
     await tester.pumpAndSettle();
 
     await tapOn(tester, find.byIcon(Icons.person_outline));
-    await tapOn(tester, find.text(english.profilePlan));
+    await tapOn(tester, find.text(english.paywallDiscover));
     await check('Offres');
   }
 
   testWidgets('les écrans principaux respectent les règles d\'accessibilité', (
     tester,
   ) async {
-    final semantics = tester.ensureSemantics();
-    await pump(tester);
-
-    await visitScreens(tester, (screen) => expectAccessible(tester, screen));
-    semantics.dispose();
-  });
-
-  testWidgets('en mode sombre aussi', (tester) async {
-    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
-    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
     final semantics = tester.ensureSemantics();
     await pump(tester);
 

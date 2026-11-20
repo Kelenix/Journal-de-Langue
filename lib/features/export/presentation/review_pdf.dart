@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 
-import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
@@ -10,39 +9,46 @@ import '../../languages/domain/learning_language.dart';
 import '../../languages/presentation/language_labels.dart';
 import '../../vocabulary/domain/vocabulary_item.dart';
 
-/// Polices embarquées dans le PDF : celles de l'app (ADR-019), pour que les
-/// accents de toutes les langues s'affichent.
-typedef PdfFonts = ({pw.Font body, pw.Font heading});
+/// Polices de l'app (ADR-019), pour que les accents de toutes les langues
+/// s'affichent. Données brutes : le PDF est construit dans un autre isolate.
+typedef PdfFontData = ({ByteData body, ByteData heading});
 
-/// Révisions de [entries] dans un PDF : vocabulaire, puis chaque journal avec
-/// sa correction. Le document est créé sur l'appareil (ADR-005).
-Future<Uint8List> buildReviewPdf({
-  required List<JournalEntry> entries,
-  required LearningLanguage language,
-  required DateTime? firstDay,
-  required DateTime today,
-  required AppLocalizations l10n,
-  required PdfFonts fonts,
-}) {
-  final dates = DateFormat.yMMMMd(l10n.localeName);
+/// Contenu du PDF, préparé sur l'isolate principal : les dates sont déjà
+/// écrites, leurs données de langue n'existant que là.
+typedef ReviewPdfContent = ({
+  List<JournalEntry> entries,
+  LearningLanguage language,
+  String period,
+  String generatedOn,
+  Map<DateTime, String> entryDates,
+});
+
+/// Révisions dans un PDF : vocabulaire, puis chaque journal avec sa
+/// correction. Le document est créé sur l'appareil (ADR-005).
+Future<Uint8List> buildReviewPdf(
+  ReviewPdfContent content,
+  AppLocalizations l10n,
+  PdfFontData fontData,
+) {
   const ink = PdfColor.fromInt(0xFF20332E);
   const muted = PdfColor.fromInt(0xFF788680);
-  final heading = pw.TextStyle(font: fonts.heading, fontSize: 15, color: ink);
+  final body = pw.Font.ttf(fontData.body);
+  final headingFont = pw.Font.ttf(fontData.heading);
+  final heading = pw.TextStyle(font: headingFont, fontSize: 15, color: ink);
+  final entries = content.entries;
+  final title = l10n.exportPdfTitle(languageName(l10n, content.language));
 
   final words = <String, VocabularyItem>{
     for (final entry in entries.reversed)
       for (final word in entry.vocabulary) word.term.toLowerCase(): word,
   }.values.toList();
 
-  final document = pw.Document(
-    title: l10n.exportPdfTitle(languageName(l10n, language)),
-    creator: l10n.appTitle,
-  );
+  final document = pw.Document(title: title, creator: l10n.appTitle);
   document.addPage(
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(40),
-      theme: pw.ThemeData.withFont(base: fonts.body, bold: fonts.heading),
+      theme: pw.ThemeData.withFont(base: body, bold: headingFont),
       // Un historique Premium peut être long.
       maxPages: 200,
       footer: (context) => pw.Align(
@@ -54,19 +60,11 @@ Future<Uint8List> buildReviewPdf({
       ),
       build: (context) => [
         pw.Text(
-          l10n.exportPdfTitle(languageName(l10n, language)),
-          style: pw.TextStyle(font: fonts.heading, fontSize: 22, color: ink),
+          title,
+          style: pw.TextStyle(font: headingFont, fontSize: 22, color: ink),
         ),
         pw.SizedBox(height: 4),
-        pw.Text(
-          firstDay == null
-              ? l10n.exportAll
-              : l10n.exportPdfPeriod(
-                  dates.format(firstDay),
-                  dates.format(today),
-                ),
-          style: const pw.TextStyle(color: muted),
-        ),
+        pw.Text(content.period, style: const pw.TextStyle(color: muted)),
         pw.SizedBox(height: 20),
         pw.Text(l10n.correctionVocabularyTitle, style: heading),
         pw.SizedBox(height: 8),
@@ -86,7 +84,7 @@ Future<Uint8List> buildReviewPdf({
               for (final word in words)
                 [word.term, word.translation, word.example],
             ],
-            headerStyle: pw.TextStyle(font: fonts.heading, color: ink),
+            headerStyle: pw.TextStyle(font: headingFont, color: ink),
             cellStyle: const pw.TextStyle(fontSize: 10),
             headerDecoration: const pw.BoxDecoration(
               color: PdfColor.fromInt(0xFFF7F4EA),
@@ -102,12 +100,12 @@ Future<Uint8List> buildReviewPdf({
         for (final entry in entries) ...[
           pw.SizedBox(height: 14),
           pw.Text(
-            dates.format(entry.entryDate),
-            style: pw.TextStyle(font: fonts.heading, color: ink),
+            content.entryDates[entry.entryDate] ?? '',
+            style: pw.TextStyle(font: headingFont, color: ink),
           ),
           pw.SizedBox(height: 4),
-          _labelled(l10n.correctionYourVersion, entry.originalText, muted),
-          _labelled(
+          ..._labelled(l10n.correctionYourVersion, entry.originalText, muted),
+          ..._labelled(
             l10n.correctionCorrectedVersion,
             entry.correctedText,
             muted,
@@ -117,14 +115,16 @@ Future<Uint8List> buildReviewPdf({
           else
             for (final item in entry.items)
               pw.Bullet(
-                text:
-                    '${item.original} → ${item.corrected} : '
-                    '${item.explanation}',
+                text: l10n.exportPdfMistake(
+                  item.original,
+                  item.corrected,
+                  item.explanation,
+                ),
               ),
         ],
         pw.SizedBox(height: 24),
         pw.Text(
-          l10n.exportPdfGenerated(dates.format(today)),
+          content.generatedOn,
           style: const pw.TextStyle(fontSize: 9, color: muted),
         ),
       ],
@@ -133,14 +133,12 @@ Future<Uint8List> buildReviewPdf({
   return document.save();
 }
 
-pw.Widget _labelled(String label, String text, PdfColor labelColor) =>
-    pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 4),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text(label, style: pw.TextStyle(fontSize: 9, color: labelColor)),
-          pw.Text(text),
-        ],
-      ),
-    );
+/// Un intitulé, puis un texte qui peut dépasser une page (journal Premium) :
+/// enfants directs de la page, pour que le texte se coupe d'une page à l'autre.
+List<pw.Widget> _labelled(String label, String text, PdfColor labelColor) => [
+  pw.Text(label, style: pw.TextStyle(fontSize: 9, color: labelColor)),
+  pw.Padding(
+    padding: const pw.EdgeInsets.only(bottom: 4),
+    child: pw.Text(text, overflow: pw.TextOverflow.span),
+  ),
+];

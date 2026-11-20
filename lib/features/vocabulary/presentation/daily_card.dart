@@ -28,6 +28,12 @@ class _DailyCardState extends ConsumerState<DailyCard>
   static const _deckSize = 5;
   static const _doneBadgeSize = 56.0;
   static const _revealButtonHeight = 44.0;
+  static const _termSize = 32.0;
+  static const _exampleSize = 15.0;
+  static const _answerHeight = 50.0;
+  static const _answerRadius = Radius.circular(16);
+  // Marge réduite : « Je la connais » tient sur une ligne.
+  static const _answerPadding = EdgeInsets.symmetric(horizontal: AppSpacing.md);
 
   /// Mots du paquet en cours, fixés à son ouverture.
   late List<String> _deck = _newDeck();
@@ -51,8 +57,14 @@ class _DailyCardState extends ConsumerState<DailyCard>
   @override
   void didUpdateWidget(DailyCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Des mots arrivent (journal corrigé) alors qu'il n'y avait rien à réviser.
-    if (_deck.isEmpty) _deck = _newDeck();
+    // Des mots arrivent (journal corrigé) alors qu'il n'y avait rien à
+    // réviser, ou aucun mot du paquet n'est plus dans la liste (autre langue).
+    final ids = {for (final word in widget.words) word.id};
+    if (_deck.isEmpty || !_deck.any(ids.contains)) {
+      _deck = _newDeck();
+      _index = 0;
+      _revealedId = null;
+    }
   }
 
   void _restart() => setState(() {
@@ -100,7 +112,12 @@ class _DailyCardState extends ConsumerState<DailyCard>
       padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       child: SoftCard(
         radius: AppRadius.sheet,
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.xl,
+          AppSpacing.lg,
+          AppSpacing.lg,
+        ),
         child: position == null
             ? _Done(hasMore: toReview.isNotEmpty, onRestart: _restart)
             : _card(context, toReview[_deck[position]]!, position),
@@ -117,12 +134,13 @@ class _DailyCardState extends ConsumerState<DailyCard>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          l10n.reviewCardOf(position + 1, _deck.length),
+          l10n.reviewCardOf(position + 1, _deck.length).toUpperCase(),
+          semanticsLabel: l10n.reviewCardOf(position + 1, _deck.length),
           textAlign: TextAlign.center,
           style: theme.textTheme.labelMedium?.copyWith(
             color: muted,
             fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
+            letterSpacing: 1,
           ),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -132,7 +150,9 @@ class _DailyCardState extends ConsumerState<DailyCard>
           child: Text(
             word.term,
             textAlign: TextAlign.center,
-            style: theme.textTheme.headlineMedium,
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontSize: _termSize,
+            ),
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -140,6 +160,7 @@ class _DailyCardState extends ConsumerState<DailyCard>
           word.example,
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyMedium?.copyWith(
+            fontSize: _exampleSize,
             color: muted,
             fontStyle: FontStyle.italic,
           ),
@@ -154,32 +175,56 @@ class _DailyCardState extends ConsumerState<DailyCard>
             ),
           )
         else
+          // Bordure en pointillés : on devine d'abord, on vérifie ensuite.
           Center(
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(0, _revealButtonHeight),
-                shape: const StadiumBorder(),
+            child: CustomPaint(
+              painter: _DashedPillPainter(theme.colorScheme.outline),
+              child: TextButton(
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(0, _revealButtonHeight),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                  ),
+                  shape: const StadiumBorder(),
+                  textStyle: theme.textTheme.labelLarge,
+                ),
+                onPressed: () => setState(() => _revealedId = word.id),
+                child: Text(l10n.reviewShowTranslation),
               ),
-              onPressed: () => setState(() => _revealedId = word.id),
-              child: Text(l10n.reviewShowTranslation),
             ),
           ),
-        const SizedBox(height: AppSpacing.xl),
+        const SizedBox(height: AppSpacing.lg),
         Row(
           children: [
             Expanded(
               child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(_answerHeight),
+                  padding: _answerPadding,
+                  backgroundColor: theme.cardColor,
+                  side: BorderSide(color: theme.colorScheme.outlineVariant),
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(_answerRadius),
+                  ),
+                ),
                 onPressed: _isSaving
                     ? null
                     : () => setState(() => _index = position + 1),
-                child: Text(l10n.reviewAgain),
+                child: Text(l10n.reviewAgain, textAlign: TextAlign.center),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: FilledButton(
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(_answerHeight),
+                  padding: _answerPadding,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(_answerRadius),
+                  ),
+                ),
                 onPressed: _isSaving ? null : () => _markKnown(word),
-                child: Text(l10n.reviewKnown),
+                child: Text(l10n.reviewKnown, textAlign: TextAlign.center),
               ),
             ),
           ],
@@ -229,4 +274,38 @@ class _Done extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Contour en pointillés d'une pilule.
+class _DashedPillPainter extends CustomPainter {
+  const _DashedPillPainter(this.color);
+
+  static const _dash = 4.0;
+  static const _gap = 3.0;
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final outline = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Offset.zero & size,
+          Radius.circular(size.height / 2),
+        ),
+      );
+    for (final metric in outline.computeMetrics()) {
+      for (var start = 0.0; start < metric.length; start += _dash + _gap) {
+        canvas.drawPath(metric.extractPath(start, start + _dash), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedPillPainter oldDelegate) =>
+      oldDelegate.color != color;
 }

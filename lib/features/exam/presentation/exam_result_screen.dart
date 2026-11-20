@@ -27,6 +27,7 @@ class ExamResultScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final exams = ref.watch(examsProvider);
     return Scaffold(
       appBar: SoftAppBar(
         title: l10n.examTitle,
@@ -40,14 +41,34 @@ class ExamResultScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: AsyncView(
-          value: ref.watch(examsProvider),
+          value: exams,
           onRetry: () => ref.invalidate(examsProvider),
-          builder: (exams) {
-            final exam = exams.where((exam) => exam.id == examId).firstOrNull;
+          builder: (list) {
+            final exam = list.where((exam) => exam.id == examId).firstOrNull;
             final result = exam?.result;
-            return exam == null || result == null
-                ? const SizedBox.shrink()
-                : _Result(exam: exam, result: result);
+            if (exam != null && result != null) {
+              return _Result(exam: exam, result: result);
+            }
+            // Juste après la notation, la liste est encore relue.
+            if (exams.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(l10n.examGrading, textAlign: TextAlign.center),
+                    const SizedBox(height: AppSpacing.lg),
+                    OutlinedButton(
+                      onPressed: () => ref.invalidate(examsProvider),
+                      child: Text(l10n.actionRefresh),
+                    ),
+                  ],
+                ),
+              ),
+            );
           },
         ),
       ),

@@ -64,7 +64,8 @@
 | Textes légaux | Rédigés et affichés (Inc-9) : champs de l'éditeur à compléter, relecture par un juriste, publication à une adresse publique (`docs/manual-tasks.md`) |
 | Comptes inactifs | Conservés tant qu'ils existent : durée de conservation à décider avec le juriste (nécessiterait une tâche planifiée) |
 | Blocs de vidéos récompensées non déclarés | Sans `ADMOB_REWARDED_AD_UNITS`, une autre app AdMob pourrait viser `admob-reward` (gain limité à la récompense du jour) : secret à renseigner avant publication |
-| Limitation du débit des appels à `correct-entry` | Le quota du jour borne déjà le coût ; un utilisateur peut toutefois multiplier les demandes refusées. À traiter avant publication si l'usage le montre |
+| Limitation des appels à Claude | Traité (ADR-041) : envoi rejoué en cours → `busy`, tentatives qui rendent le quota plafonnées par 24 h (10 corrections, 5 notations d'examen), reformulations comptées refus compris. Reste : une rafale de reformulations simultanées (Premium, modèle économique), et les pannes de l'API, non comptées |
+| Achats de test (sandbox) | Acceptés en production, sans quoi Apple ne peut pas valider l'app ; les testeurs sont connus (ADR-041) |
 | Comportement réel du modèle face à un texte hostile | Non vérifiable sans clé API ; à tester à la main avec la vraie API |
 | Transfert d'achat entre comptes (`TRANSFER`) | Non traité : la notification est enregistrée sans effet. À traiter avec Inc-4b |
 | Épinglage de certificat | Non retenu : pas de donnée bancaire ni de santé ; à réévaluer si le besoin change |

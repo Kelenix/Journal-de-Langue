@@ -43,18 +43,23 @@ class ExamController extends Notifier<AsyncValue<void>> {
     Future<Exam> Function() action, {
     bool alsoReloadWallet = false,
   }) async {
-    state = const AsyncLoading();
-    final result = await AsyncValue.guard(action);
-    if (!ref.mounted) return !result.hasError;
-
-    if (result.hasError) {
-      state = AsyncError(result.error!, result.stackTrace!);
-      return false;
+    // Gardé jusqu'au bout : l'écran a pu être quitté pendant l'attente, les
+    // simulations et le portefeuille doivent quand même être relus.
+    final link = ref.keepAlive();
+    try {
+      state = const AsyncLoading();
+      final result = await AsyncValue.guard(action);
+      if (result.hasError) {
+        state = AsyncError(result.error!, result.stackTrace!);
+        return false;
+      }
+      ref.invalidate(examsProvider);
+      if (alsoReloadWallet) ref.invalidate(walletProvider);
+      state = const AsyncData(null);
+      return true;
+    } finally {
+      link.close();
     }
-    ref.invalidate(examsProvider);
-    if (alsoReloadWallet) ref.invalidate(walletProvider);
-    state = const AsyncData(null);
-    return true;
   }
 }
 

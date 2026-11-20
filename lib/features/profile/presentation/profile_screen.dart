@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/errors/failure.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/external_links.dart';
@@ -34,12 +33,8 @@ class ProfileScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final languages = ref.watch(activeLanguagesProvider).value ?? const [];
     final isBusy = ref.watch(accountControllerProvider).isLoading;
-    final isRestoring = ref.watch(paywallControllerProvider).isLoading;
     final wallet = ref.watch(walletProvider).value ?? const Wallet();
     final email = ref.watch(currentEmailProvider);
-    // Achats à l'unité : présentés après une première correction, ou à qui
-    // en a déjà.
-    final showsShop = watchHasCorrectedJournal(ref) || !wallet.isEmpty;
     // Choix de consentement aux publicités, là où la loi demande de pouvoir
     // les revoir (US-22).
     final showsAdPrivacy =
@@ -68,9 +63,9 @@ class ProfileScreen extends ConsumerWidget {
           SettingsGroup(
             children: [
               SettingsTile(
-                icon: Icons.translate,
-                title: l10n.profileLanguages(languages.length),
-                subtitle: languages.isEmpty
+                icon: Icons.language,
+                title: l10n.profileLanguagesTitle,
+                value: languages.isEmpty
                     ? null
                     : [
                         for (final language in languages)
@@ -78,53 +73,27 @@ class ProfileScreen extends ConsumerWidget {
                       ].join(', '),
                 onTap: () => _showLanguagePicker(context),
               ),
-              if (showsShop)
-                SettingsTile(
-                  icon: Icons.shopping_bag_outlined,
-                  warm: true,
-                  title: l10n.shopTitle,
-                  subtitle: wallet.isEmpty
-                      ? null
-                      : [
-                          if (wallet.correctionCredits > 0)
-                            l10n.shopCredits(wallet.correctionCredits),
-                          if (wallet.examCredits > 0)
-                            l10n.shopExamCredits(wallet.examCredits),
-                          if (wallet.adsRemoved) l10n.shopAdsRemoved,
-                        ].join(' · '),
-                  onTap: () => context.push(AppRoutes.shop),
-                ),
+              // Les achats à l'unité et leur restauration.
               SettingsTile(
-                icon: Icons.restore,
-                title: l10n.paywallRestore,
-                onTap: isRestoring ? null : () => _restore(context, ref),
+                icon: Icons.shopping_bag_outlined,
+                warm: true,
+                title: l10n.profilePurchases,
+                subtitle: wallet.isEmpty
+                    ? null
+                    : [
+                        if (wallet.correctionCredits > 0)
+                          l10n.shopCredits(wallet.correctionCredits),
+                        if (wallet.examCredits > 0)
+                          l10n.shopExamCredits(wallet.examCredits),
+                        if (wallet.adsRemoved) l10n.shopAdsRemoved,
+                      ].join(' · '),
+                onTap: () => context.push(AppRoutes.shop),
               ),
-              if (showsAdPrivacy)
-                SettingsTile(
-                  icon: Icons.privacy_tip_outlined,
-                  title: l10n.profileAdPrivacy,
-                  onTap: () =>
-                      ref.read(adsServiceProvider).showPrivacyOptions(),
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          SettingsGroup(
-            children: [
-              for (final document in LegalDocument.values)
-                SettingsTile(
-                  icon: legalIcon(document),
-                  title: legalTitle(l10n, document),
-                  onTap: () => context.push(AppRoutes.legalOf(document)),
-                ),
               SettingsTile(
-                icon: Icons.info_outline,
-                title: l10n.aboutApp,
-                onTap: () => showAboutDialog(
-                  context: context,
-                  applicationName: l10n.appTitle,
-                  children: [Text(l10n.appTagline)],
-                ),
+                icon: Icons.shield_outlined,
+                title: l10n.profilePrivacy,
+                onTap: () =>
+                    _showPrivacy(context, ref, showsAdPrivacy: showsAdPrivacy),
               ),
             ],
           ),
@@ -134,6 +103,7 @@ class ProfileScreen extends ConsumerWidget {
               SettingsTile(
                 icon: Icons.logout,
                 title: l10n.profileSignOut,
+                plain: true,
                 onTap: isBusy
                     ? null
                     : () => ref
@@ -143,6 +113,7 @@ class ProfileScreen extends ConsumerWidget {
               SettingsTile(
                 icon: Icons.delete_outline,
                 title: l10n.profileDeleteAccount,
+                plain: true,
                 isDestructive: true,
                 onTap: isBusy
                     ? null
@@ -155,27 +126,10 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _restore(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-    final isRestored = await ref
-        .read(paywallControllerProvider.notifier)
-        .restore();
-    final error = ref.read(paywallControllerProvider).error;
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          isRestored
-              ? l10n.paywallWelcome
-              : failureMessage(l10n, error ?? const UnexpectedFailure()),
-        ),
-      ),
-    );
-  }
-
   Future<void> _showLanguagePicker(BuildContext context) {
     return showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       isScrollControlled: true,
       builder: (sheetContext) => const SafeArea(
@@ -189,6 +143,81 @@ class ProfileScreen extends ConsumerWidget {
           child: _LanguageSheet(),
         ),
       ),
+    );
+  }
+
+  /// Textes légaux, choix publicitaires et informations sur l'app.
+  Future<void> _showPrivacy(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool showsAdPrivacy,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    return showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        // Ferme la feuille, puis ouvre la page choisie depuis le profil.
+        VoidCallback then(VoidCallback open) => () {
+          Navigator.of(sheetContext).pop();
+          open();
+        };
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xl,
+                    0,
+                    AppSpacing.xl,
+                    AppSpacing.sm,
+                  ),
+                  child: Semantics(
+                    header: true,
+                    child: Text(
+                      l10n.profilePrivacy,
+                      style: Theme.of(sheetContext).textTheme.titleMedium,
+                    ),
+                  ),
+                ),
+                for (final document in LegalDocument.values)
+                  ListTile(
+                    leading: Icon(legalIcon(document)),
+                    title: Text(legalTitle(l10n, document)),
+                    onTap: then(
+                      () => context.push(AppRoutes.legalOf(document)),
+                    ),
+                  ),
+                if (showsAdPrivacy)
+                  ListTile(
+                    leading: const Icon(Icons.privacy_tip_outlined),
+                    title: Text(l10n.profileAdPrivacy),
+                    onTap: then(
+                      () => ref.read(adsServiceProvider).showPrivacyOptions(),
+                    ),
+                  ),
+                ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: Text(l10n.aboutApp),
+                  onTap: then(
+                    () => showAboutDialog(
+                      context: context,
+                      applicationName: l10n.appTitle,
+                      children: [Text(l10n.appTagline)],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -282,29 +311,35 @@ class _Avatar extends StatelessWidget {
   }
 }
 
-/// Offre de l'utilisateur, sur l'aplat vert : découvrir Premium, ou gérer
-/// son abonnement.
+/// Offre de l'utilisateur, sur l'aplat vert : ce que Premium ajoute, ou
+/// l'abonnement en cours. Les offres ne s'ouvrent que si on les demande
+/// (ADR-040).
 class _PlanCard extends ConsumerWidget {
   const _PlanCard();
 
   static const _badgeSize = 40.0;
-  static const _actionHeight = 48.0;
+  static const _crownSize = 22.0;
+  static const _titleSize = 18.0;
+  static const _detailSize = 13.0;
+  static const _pitchSize = 14.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final subscription = watchActiveSubscription(ref);
-    // Les offres payantes ne sont jamais proposées avant une première
-    // correction (INTAKE §6).
-    final canDiscoverPremium =
-        subscription == null && watchHasCorrectedJournal(ref);
 
     return HeroCard(
-      onTap: canDiscoverPremium ? () => context.push(AppRoutes.paywall) : null,
       child: Builder(
         builder: (context) {
           final theme = Theme.of(context);
           final colors = theme.extension<AppColors>()!;
+          final muted = theme.colorScheme.onSurfaceVariant;
+          final (title, detail) = subscription == null
+              ? (l10n.profilePlanFreeTitle, l10n.profilePlanFreeDetail)
+              : (
+                  l10n.profilePlanPremium(planName(l10n, subscription.plan)),
+                  _deadline(context, subscription),
+                );
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -314,64 +349,64 @@ class _PlanCard extends ConsumerWidget {
                     child: Container(
                       width: _badgeSize,
                       height: _badgeSize,
+                      alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: colors.accent,
                         borderRadius: BorderRadius.circular(AppRadius.chip),
                       ),
-                      child: Icon(
-                        Icons.workspace_premium_outlined,
-                        color: colors.onAccent,
+                      child: CustomPaint(
+                        size: const Size.square(_crownSize),
+                        painter: _CrownPainter(colors.onAccent),
                       ),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.profilePlan,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        Text(
-                          _planDescription(context, subscription),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                    child: MergeSemantics(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontSize: _titleSize,
+                            ),
                           ),
-                        ),
-                      ],
+                          Text(
+                            detail,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontSize: _detailSize,
+                              color: muted,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
-              // Toute la carte ouvre les offres : ce rappel n'est pas un
-              // bouton de plus.
-              if (canDiscoverPremium) ...[
-                const SizedBox(height: AppSpacing.lg),
-                Container(
-                  height: _actionHeight,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: colors.onHero,
-                    borderRadius: BorderRadius.circular(AppRadius.button),
-                  ),
-                  child: Text(
-                    l10n.paywallDiscover,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: colors.hero,
-                      fontWeight: FontWeight.w600,
-                    ),
+              if (subscription == null) ...[
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  l10n.profilePremiumPitch,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: _pitchSize,
+                    color: muted,
                   ),
                 ),
               ],
-              if (subscription != null) ...[
-                const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.lg),
+              if (subscription == null)
+                FilledButton(
+                  onPressed: () => context.push(AppRoutes.paywall),
+                  child: Text(l10n.paywallDiscover),
+                )
+              else
                 FilledButton(
                   onPressed: () =>
                       ref.read(urlOpenerProvider)(subscriptionManagementUrl),
                   child: Text(l10n.profileManageSubscription),
                 ),
-              ],
             ],
           );
         },
@@ -379,19 +414,51 @@ class _PlanCard extends ConsumerWidget {
     );
   }
 
-  String _planDescription(BuildContext context, Subscription? subscription) {
+  String _deadline(BuildContext context, Subscription subscription) {
     final l10n = AppLocalizations.of(context);
-    if (subscription == null) return l10n.profilePlanFree;
-
     final date = MaterialLocalizations.of(
       context,
     ).formatShortDate(subscription.expiresAt.toLocal());
-    final plan = l10n.profilePlanPremium(planName(l10n, subscription.plan));
-    final deadline = subscription.inTrial
+    return subscription.inTrial
         ? l10n.profilePlanTrialUntil(date)
         : l10n.profilePlanUntil(date);
-    return '$plan\n$deadline';
   }
+}
+
+/// Couronne de l'offre, au trait comme les icônes « outlined ».
+class _CrownPainter extends CustomPainter {
+  const _CrownPainter(this.color);
+
+  // Tracé sur une grille de 24, comme les icônes Material.
+  static const _grid = 24.0;
+  static const _stroke = 1.8;
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.scale(size.width / _grid);
+    final crown = Path()
+      ..moveTo(4, 8)
+      ..lineTo(8, 11.5)
+      ..lineTo(12, 5)
+      ..lineTo(16, 11.5)
+      ..lineTo(20, 8)
+      ..lineTo(18.5, 18)
+      ..lineTo(5.5, 18)
+      ..close();
+    canvas.drawPath(
+      crown,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = _stroke
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CrownPainter oldDelegate) => oldDelegate.color != color;
 }
 
 /// Gratuit : une langue à la fois, choisie dans la liste. Premium : plusieurs
@@ -427,7 +494,8 @@ class _LanguageSheet extends ConsumerWidget {
           selected: current,
           onActivated: () => Navigator.of(context).pop(),
         ),
-        // Jamais d'offre payante avant une première correction (INTAKE §6).
+        // Rappel en contexte : seulement après une première correction
+        // (ADR-040).
         if (watchHasCorrectedJournal(ref)) ...[
           const SizedBox(height: AppSpacing.md),
           OutlinedButton(

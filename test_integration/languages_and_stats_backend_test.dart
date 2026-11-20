@@ -140,7 +140,7 @@ void main() {
       expect(premium.mistakesByCategory, [
         const CategoryCount(category: ErrorCategory.conjugation, count: 2),
       ]);
-      expect(premium.weeklyMistakeRate.single.mistakesPerSentence, 1.0);
+      expect(premium.weeklyJournals.single.journals, 1);
     });
   });
 }

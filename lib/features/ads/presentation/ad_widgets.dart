@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/errors/failure.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/presentation/failure_message.dart';
 import '../application/ads_providers.dart';
 import '../domain/ad_status.dart';
 
@@ -45,11 +47,21 @@ class _RewardedAdButtonState extends ConsumerState<RewardedAdButton> {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _isWatching = true);
-    final result = await ref
-        .read(adsControllerProvider.notifier)
-        .watchRewarded(widget.kind);
+    final RewardResult result;
+    try {
+      result = await ref
+          .read(adsControllerProvider.notifier)
+          .watchRewarded(widget.kind);
+    } on Failure catch (failure) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(failureMessage(l10n, failure))),
+      );
+      return;
+    } finally {
+      // Le bouton revient, même après un échec.
+      if (mounted) setState(() => _isWatching = false);
+    }
     if (!mounted) return;
-    setState(() => _isWatching = false);
 
     final message = switch (result) {
       RewardResult.granted => l10n.rewardGranted,

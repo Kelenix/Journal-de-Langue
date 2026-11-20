@@ -30,7 +30,12 @@ class SecureJournalDraftStore implements JournalDraftStore {
   @override
   Future<void> clearAll() async {
     final entries = await _storage.readAll();
-    for (final key in entries.keys.where((key) => key.startsWith(_keyPrefix))) {
+    // Liste fixée d'abord : chaque suppression peut modifier la table lue.
+    final drafts = [
+      for (final key in entries.keys)
+        if (key.startsWith(_keyPrefix)) key,
+    ];
+    for (final key in drafts) {
       await _storage.delete(key: key);
     }
   }

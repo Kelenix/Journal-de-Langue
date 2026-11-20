@@ -5,6 +5,8 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/widgets/badges.dart';
 import '../../../shared/widgets/surfaces.dart';
+import '../../languages/domain/learning_language.dart';
+import '../../voice/presentation/voice_buttons.dart';
 import '../domain/journal_entry.dart';
 import 'category_labels.dart';
 
@@ -14,17 +16,22 @@ class CorrectionItemCard extends StatelessWidget {
   const CorrectionItemCard({
     required this.item,
     this.showsCategory = false,
+    this.listen,
     super.key,
   });
 
   final CorrectionItem item;
   final bool showsCategory;
 
+  /// Phrase corrigée à lire à voix haute (Premium), sinon pas de bouton.
+  final ({String text, LearningLanguage language})? listen;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final colors = theme.extension<AppColors>()!;
+    final listen = this.listen;
 
     return SoftCard(
       radius: AppRadius.tile,
@@ -32,15 +39,22 @@ class CorrectionItemCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (showsCategory) ...[
-            Tag(errorCategoryName(l10n, item.category)),
-            const SizedBox(height: AppSpacing.md),
+          if (showsCategory || listen != null) ...[
+            Row(
+              children: [
+                if (showsCategory) Tag(errorCategoryName(l10n, item.category)),
+                const Spacer(),
+                if (listen != null)
+                  ListenButton(text: listen.text, language: listen.language),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
           ],
           Semantics(
             label: l10n.correctionItemLabel(item.original, item.corrected),
             excludeSemantics: true,
             child: Wrap(
-              spacing: AppSpacing.sm,
+              spacing: AppSpacing.md,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
@@ -51,11 +65,6 @@ class CorrectionItemCard extends StatelessWidget {
                     decoration: TextDecoration.lineThrough,
                     decorationColor: colors.mistake,
                   ),
-                ),
-                Icon(
-                  Icons.arrow_forward,
-                  size: 18,
-                  color: theme.colorScheme.onSurfaceVariant,
                 ),
                 Text(
                   item.corrected,

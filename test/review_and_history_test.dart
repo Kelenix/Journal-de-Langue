@@ -42,10 +42,10 @@ void main() {
       tapOn(tester, find.byIcon(icon));
 
   Future<void> openReview(WidgetTester tester) =>
-      openTab(tester, Icons.style_outlined);
+      openTab(tester, Icons.copy_outlined);
 
   Future<void> openHistory(WidgetTester tester) =>
-      openTab(tester, Icons.history_outlined);
+      openTab(tester, Icons.schedule_outlined);
 
   group('Réviser', () {
     testWidgets('sans journal corrigé, l\'écran explique comment obtenir des '
@@ -56,19 +56,25 @@ void main() {
       expect(find.text(english.reviewEmpty), findsOneWidget);
     });
 
-    testWidgets('chaque mot montre sa traduction et un exemple', (
-      tester,
-    ) async {
+    testWidgets('chaque mot montre sa traduction ; la carte du jour, un '
+        'exemple', (tester) async {
       vocabulary.items.add(sampleWord);
       await pump(tester);
       await openReview(tester);
 
+      expect(
+        find.descendant(
+          of: find.byType(DailyCard),
+          matching: find.text('The cat is sleeping.'),
+        ),
+        findsOne,
+      );
       final row = wordRow(sampleWord.id);
       await tester.scrollUntilVisible(row, 200);
-      for (final text in ['a cat', 'un chat', 'The cat is sleeping.']) {
+      for (final text in ['a cat', 'un chat']) {
         expect(find.descendant(of: row, matching: find.text(text)), findsOne);
       }
-      expect(find.text(english.reviewLearnedCount(0)), findsOneWidget);
+      expect(find.text(english.reviewLearnedOf(0, 1)), findsOneWidget);
     });
 
     testWidgets('marquer un mot comme appris le compte et se défait', (
@@ -81,7 +87,7 @@ void main() {
       await tester.scrollUntilVisible(wordRow(secondWord.id), 200);
       await tapOn(tester, find.byTooltip(english.reviewMarkLearned).first);
 
-      expect(find.text(english.reviewLearnedCount(1)), findsOneWidget);
+      expect(find.text(english.reviewLearnedOf(1, 2)), findsOneWidget);
       expect(vocabulary.items.first.learnedAt, isNotNull);
       // Le mot appris passe après celui qui reste à réviser.
       expect(
@@ -91,7 +97,7 @@ void main() {
 
       await tapOn(tester, find.byTooltip(english.reviewMarkToReview));
 
-      expect(find.text(english.reviewLearnedCount(0)), findsOneWidget);
+      expect(find.text(english.reviewLearnedOf(0, 2)), findsOneWidget);
       expect(vocabulary.items.first.learnedAt, isNull);
     });
 
@@ -102,10 +108,11 @@ void main() {
       await openReview(tester);
       vocabulary.failure = const NetworkFailure();
 
+      await tester.scrollUntilVisible(wordRow(sampleWord.id), 200);
       await tapOn(tester, find.byTooltip(english.reviewMarkLearned));
 
       expect(find.text(english.errorNetwork), findsOneWidget);
-      expect(find.text(english.reviewLearnedCount(0)), findsOneWidget);
+      expect(find.text(english.reviewLearnedOf(0, 1)), findsOneWidget);
     });
 
     testWidgets('un vocabulaire qui ne se charge pas propose de réessayer', (
@@ -138,7 +145,10 @@ void main() {
         await pump(tester);
         await openReview(tester);
 
-        expect(find.text(english.reviewCardOf(1, 2)), findsOneWidget);
+        expect(
+          find.text(english.reviewCardOf(1, 2).toUpperCase()),
+          findsOneWidget,
+        );
         expect(onCard('a cat'), findsOneWidget);
         expect(onCard('The cat is sleeping.'), findsOneWidget);
         expect(onCard('un chat'), findsNothing);
@@ -157,8 +167,11 @@ void main() {
         await tapOn(tester, find.text(english.reviewKnown));
 
         expect(vocabulary.items.first.learnedAt, isNotNull);
-        expect(find.text(english.reviewLearnedCount(1)), findsOneWidget);
-        expect(find.text(english.reviewCardOf(2, 2)), findsOneWidget);
+        expect(find.text(english.reviewLearnedOf(1, 2)), findsOneWidget);
+        expect(
+          find.text(english.reviewCardOf(2, 2).toUpperCase()),
+          findsOneWidget,
+        );
         expect(onCard('to sleep'), findsOneWidget);
 
         await tapOn(tester, find.text(english.reviewAgain));
@@ -168,7 +181,10 @@ void main() {
 
         await tapOn(tester, find.text(english.reviewDeckMore));
 
-        expect(find.text(english.reviewCardOf(1, 1)), findsOneWidget);
+        expect(
+          find.text(english.reviewCardOf(1, 1).toUpperCase()),
+          findsOneWidget,
+        );
         expect(onCard('to sleep'), findsOneWidget);
       });
 
@@ -182,7 +198,10 @@ void main() {
         await tapOn(tester, find.text(english.reviewKnown));
 
         expect(find.text(english.errorNetwork), findsOneWidget);
-        expect(find.text(english.reviewCardOf(1, 1)), findsOneWidget);
+        expect(
+          find.text(english.reviewCardOf(1, 1).toUpperCase()),
+          findsOneWidget,
+        );
         expect(vocabulary.items.single.learnedAt, isNull);
       });
 
@@ -216,7 +235,6 @@ void main() {
       await correctJournal(tester);
 
       await tester.ensureVisible(find.text('a cat'));
-      expect(find.text(english.correctionVocabularyTitle), findsOneWidget);
       expect(find.text('un chat'), findsOneWidget);
     });
 
@@ -228,12 +246,15 @@ void main() {
       await openHistory(tester);
       expect(find.text(english.historyEmpty), findsOneWidget);
 
-      await openTab(tester, Icons.edit_note_outlined);
+      await openTab(tester, Icons.edit_outlined);
       await correctJournal(tester);
       await tapOn(tester, find.text(english.correctionDone));
 
       await openReview(tester);
-      expect(find.text(english.reviewCardOf(1, 1)), findsOneWidget);
+      expect(
+        find.text(english.reviewCardOf(1, 1).toUpperCase()),
+        findsOneWidget,
+      );
       await tester.scrollUntilVisible(wordRow(sampleWord.id), 200);
 
       await openHistory(tester);

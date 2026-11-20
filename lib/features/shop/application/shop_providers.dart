@@ -58,20 +58,24 @@ class ShopController extends Notifier<AsyncValue<void>> {
     ref
       ..invalidate(walletProvider)
       ..invalidate(journalDayProvider)
-      ..invalidate(adStatusProvider)
-      ..invalidate(activeLanguagesProvider);
-    await ref.read(activeLanguagesProvider.future);
+      ..invalidate(adStatusProvider);
+    await ref.read(activeLanguagesProvider.notifier).reload();
   }
 
   Future<bool> _run(Future<bool> Function() action) async {
-    state = const AsyncLoading();
-    final result = await AsyncValue.guard(action);
-    if (!ref.mounted) return result.value ?? false;
-
-    state = result.hasError
-        ? AsyncError(result.error!, result.stackTrace!)
-        : const AsyncData(null);
-    return result.value ?? false;
+    // Gardé jusqu'au bout : la boutique a pu être refermée pendant l'achat,
+    // les achats doivent quand même être relus.
+    final link = ref.keepAlive();
+    try {
+      state = const AsyncLoading();
+      final result = await AsyncValue.guard(action);
+      state = result.hasError
+          ? AsyncError(result.error!, result.stackTrace!)
+          : const AsyncData(null);
+      return result.value ?? false;
+    } finally {
+      link.close();
+    }
   }
 }
 

@@ -124,15 +124,26 @@ class AdmobAdsService implements AdsService {
     final ad = _interstitial;
     if (ad == null) return false;
     _interstitial = null;
+    // Montré ou non, d'après AdMob : un affichage raté (annonce expirée en
+    // arrière-plan) ne compte pas comme l'interstitiel de la session, et une
+    // autre annonce est préparée pour la prochaine correction.
+    final isShown = Completer<bool>();
     ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (_) {
+        if (!isShown.isCompleted) isShown.complete(true);
+      },
       onAdDismissedFullScreenContent: (ad) => ad.dispose(),
-      onAdFailedToShowFullScreenContent: (ad, _) => ad.dispose(),
+      onAdFailedToShowFullScreenContent: (ad, _) {
+        ad.dispose();
+        if (!isShown.isCompleted) isShown.complete(false);
+        _loadInterstitial();
+      },
     );
     await ad.show();
-    // Le suivant est préparé pour une prochaine session de l'app.
-    _loadInterstitial();
-    return true;
+    return isShown.future.timeout(_showTimeout, onTimeout: () => false);
   }
+
+  static const _showTimeout = Duration(seconds: 10);
 
   @override
   Future<RewardedOutcome> showRewarded({

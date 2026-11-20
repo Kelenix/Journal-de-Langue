@@ -81,18 +81,18 @@ void main() {
   }
 
   group('avant la première correction', () {
-    testWidgets('aucune offre n\'est proposée, même depuis le profil', (
-      tester,
-    ) async {
+    testWidgets('les offres ne s\'ouvrent pas d\'elles-mêmes ; le profil '
+        'permet de les découvrir', (tester) async {
       await pump(tester);
       expect(find.textContaining('Premium'), findsNothing);
 
       await openTab(tester, Icons.person_outline);
-      expect(find.text(english.profilePlanFree), findsOneWidget);
-
-      await tapText(tester, english.profilePlan);
-
+      expect(find.text(english.profilePlanFreeTitle), findsOneWidget);
       expect(find.text(english.paywallTitle), findsNothing);
+
+      await tapText(tester, english.paywallDiscover);
+
+      expect(find.text(english.paywallTitle), findsOneWidget);
     });
   });
 
@@ -252,25 +252,32 @@ void main() {
   });
 
   group('restauration', () {
+    /// Les offres, ouvertes depuis le profil.
+    Future<void> openOffers(WidgetTester tester) async {
+      await pump(tester);
+      await openTab(tester, Icons.person_outline);
+      await tapText(tester, english.paywallDiscover);
+    }
+
     testWidgets('sans achat à retrouver, l\'utilisateur en est informé', (
       tester,
     ) async {
-      await pump(tester);
-      await openTab(tester, Icons.person_outline);
+      await openOffers(tester);
 
       // Trois lectures espacées de 2 secondes avant de conclure.
       await tapAndWait(tester, find.text(english.paywallRestore), seconds: 5);
 
       expect(find.text(english.errorNothingToRestore), findsOneWidget);
-      expect(find.text(english.profilePlanFree), findsOneWidget);
+      expect(find.text(english.paywallTitle), findsOneWidget);
     });
 
     testWidgets('un abonnement existant est retrouvé', (tester) async {
       billing.restorablePlan = SubscriptionPlan.monthly;
-      await pump(tester);
-      await openTab(tester, Icons.person_outline);
+      await openOffers(tester);
 
       await tapAndWait(tester, find.text(english.paywallRestore), seconds: 1);
+      // Les offres se referment sur le profil.
+      await tester.pumpAndSettle();
 
       expect(find.text(english.paywallWelcome), findsOneWidget);
       expect(
@@ -331,7 +338,7 @@ void main() {
         ..seedPast(sampleEntry())
         ..lockedEntries = 3;
       await pump(tester);
-      await openTab(tester, Icons.history_outlined);
+      await openTab(tester, Icons.schedule_outlined);
 
       expect(find.text(english.historyUnlock), findsNothing);
     });
@@ -344,7 +351,7 @@ void main() {
         ..seedPast(sampleEntry())
         ..lockedEntries = 3;
       await pump(tester);
-      await openTab(tester, Icons.history_outlined);
+      await openTab(tester, Icons.schedule_outlined);
 
       await tapText(tester, english.historyUnlock);
 
@@ -362,7 +369,7 @@ void main() {
     await pump(tester);
     await openTab(tester, Icons.person_outline);
 
-    expect(find.text(english.profilePlanFree), findsOneWidget);
+    expect(find.text(english.profilePlanFreeTitle), findsOneWidget);
     expect(find.text(english.profileManageSubscription), findsNothing);
   });
 }

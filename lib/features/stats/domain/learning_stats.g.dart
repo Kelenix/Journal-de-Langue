@@ -23,13 +23,11 @@ _LearningStats _$LearningStatsFromJson(Map<String, dynamic> json) =>
               ?.map((e) => CategoryCount.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const <CategoryCount>[],
-      weeklyMistakeRate:
-          (json['weekly_mistake_rate'] as List<dynamic>?)
-              ?.map(
-                (e) => WeeklyMistakeRate.fromJson(e as Map<String, dynamic>),
-              )
+      weeklyJournals:
+          (json['weekly_journals'] as List<dynamic>?)
+              ?.map((e) => WeeklyJournals.fromJson(e as Map<String, dynamic>))
               .toList() ??
-          const <WeeklyMistakeRate>[],
+          const <WeeklyJournals>[],
     );
 
 Map<String, dynamic> _$LearningStatsToJson(_LearningStats instance) =>
@@ -41,7 +39,7 @@ Map<String, dynamic> _$LearningStatsToJson(_LearningStats instance) =>
       'words_learned': instance.wordsLearned,
       'words_total': instance.wordsTotal,
       'mistakes_by_category': instance.mistakesByCategory,
-      'weekly_mistake_rate': instance.weeklyMistakeRate,
+      'weekly_journals': instance.weeklyJournals,
     };
 
 _CategoryCount _$CategoryCountFromJson(Map<String, dynamic> json) =>
@@ -66,14 +64,14 @@ const _$ErrorCategoryEnumMap = {
   ErrorCategory.punctuation: 'punctuation',
 };
 
-_WeeklyMistakeRate _$WeeklyMistakeRateFromJson(Map<String, dynamic> json) =>
-    _WeeklyMistakeRate(
+_WeeklyJournals _$WeeklyJournalsFromJson(Map<String, dynamic> json) =>
+    _WeeklyJournals(
       weekStart: DateTime.parse(json['week_start'] as String),
-      mistakesPerSentence: (json['mistakes_per_sentence'] as num).toDouble(),
+      journals: (json['journals'] as num).toInt(),
     );
 
-Map<String, dynamic> _$WeeklyMistakeRateToJson(_WeeklyMistakeRate instance) =>
+Map<String, dynamic> _$WeeklyJournalsToJson(_WeeklyJournals instance) =>
     <String, dynamic>{
       'week_start': instance.weekStart.toIso8601String(),
-      'mistakes_per_sentence': instance.mistakesPerSentence,
+      'journals': instance.journals,
     };

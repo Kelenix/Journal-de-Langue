@@ -27,22 +27,29 @@ class VocabularyNotifier extends AsyncNotifier<List<VocabularyItem>> {
     VocabularyItem item, {
     required bool isLearned,
   }) async {
-    final previous = state.requireValue;
     final updated = item.copyWith(
       learnedAt: isLearned ? ref.read(clockProvider)() : null,
     );
-    state = AsyncData([
-      for (final other in previous) other.id == item.id ? updated : other,
-    ]);
+    _replace(updated);
 
     try {
       await ref
           .read(vocabularyRepositoryProvider)
           .setLearned(item.id, isLearned: isLearned);
     } catch (_) {
-      if (ref.mounted) state = AsyncData(previous);
+      // Seul ce mot revient en arrière : un autre mot changé entre-temps
+      // garde son nouvel état.
+      if (ref.mounted) _replace(item);
       rethrow;
     }
+  }
+
+  void _replace(VocabularyItem item) {
+    final words = state.value;
+    if (words == null) return;
+    state = AsyncData([
+      for (final other in words) other.id == item.id ? item : other,
+    ]);
   }
 }
 

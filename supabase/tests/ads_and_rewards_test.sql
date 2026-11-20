@@ -1,7 +1,7 @@
 -- Règles de l'incrément 8 : publicités et récompenses des vidéos.
 -- Lancer : supabase test db
 begin;
-select plan(24);
+select plan(27);
 
 insert into auth.users (id, email)
 values
@@ -105,14 +105,16 @@ select is(public.ad_reward_left('00000000-0000-0000-0000-00000000000a', 'correct
   'la correction offerte est utilisée');
 
 -- ── Exercices offerts ───────────────────────────────────────────────────────
+-- Cinq exercices : e2 à e4 faits avec la limite du jour, e1 et e5 avec la vidéo.
 insert into public.exercises (id, language, category, ui_locale, question, options,
                               answer_index, explanation)
-values ('00000000-0000-0000-0000-0000000000e1', 'de', 'grammar', 'fr', 'Frage',
-        '["a", "b", "c", "d"]', 1, 'Erklärung');
+select ('00000000-0000-0000-0000-0000000000e' || n)::uuid, 'de', 'grammar', 'fr', 'Frage ' || n,
+       '["a", "b", "c", "d"]', 1, 'Erklärung'
+  from generate_series(1, 5) as n;
 insert into public.exercise_attempts (user_id, exercise_id, attempt_date, choice, is_correct)
-select '00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000e1',
+select '00000000-0000-0000-0000-00000000000a', ('00000000-0000-0000-0000-0000000000e' || n)::uuid,
        current_date, 1, true
-  from generate_series(1, 3);
+  from generate_series(2, 4) as n;
 
 select isnt(
   public.pick_exercises('00000000-0000-0000-0000-00000000000a', 'de', 'fr', current_date, 3)
@@ -126,6 +128,21 @@ select is(
   '2', 'un exercice offert est utilisé');
 select is(
   (public.get_ad_status() ->> 'reward_exercises'), '2', 'il reste 2 exercices offerts');
+select is(
+  (select row(a ->> 'status', a ->> 'left', public.get_ad_status() ->> 'reward_exercises')::text
+     from public.answer_exercise('00000000-0000-0000-0000-0000000000e1', 1, current_date) as a),
+  '(ok,2,2)',
+  'une réponse renvoyée rend son résultat sans utiliser un autre exercice offert');
+select is(
+  public.answer_exercise('00000000-0000-0000-0000-0000000000e5', 1, current_date) ->> 'left',
+  '1', 'un deuxième exercice offert est utilisé');
+
+reset role;
+select isnt(
+  public.pick_exercises('00000000-0000-0000-0000-00000000000a', 'de', 'fr', current_date, 3)
+    ->> 'status',
+  'limit', 'deux exercices offerts faits : le troisième reste proposé');
+set local role authenticated;
 
 -- ── Accès ───────────────────────────────────────────────────────────────────
 select throws_ok($$ select count(*) from public.ad_rewards $$, '42501', null,

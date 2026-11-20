@@ -5,7 +5,6 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../routing/session_gate.dart';
 import '../../../shared/widgets/surfaces.dart';
-import '../../auth/application/auth_providers.dart';
 import '../../languages/application/language_providers.dart';
 
 /// Affiché pendant le chargement du compte, ou si ce chargement a échoué :
@@ -38,10 +37,11 @@ class StartupScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: AppSpacing.lg),
                           FilledButton(
-                            onPressed: () {
-                              ref.invalidate(currentUserIdProvider);
-                              ref.invalidate(activeLanguagesProvider);
-                            },
+                            // Seules les langues sont relues : un nouvel
+                            // abonnement à la session rejouerait tout son
+                            // historique.
+                            onPressed: () =>
+                                ref.invalidate(activeLanguagesProvider),
                             child: Text(l10n.actionRetry),
                           ),
                         ],

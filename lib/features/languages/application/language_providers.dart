@@ -25,18 +25,22 @@ class ActiveLanguagesNotifier extends AsyncNotifier<List<LearningLanguage>> {
 
   Future<void> activate(LearningLanguage language) async {
     await ref.read(languageRepositoryProvider).activate(language);
-    await _reload();
+    await reload();
   }
 
   Future<void> deactivate(LearningLanguage language) async {
     await ref.read(languageRepositoryProvider).deactivate(language);
-    await _reload();
+    await reload();
   }
 
-  /// Rechargé tout de suite : d'autres providers en dépendent (ADR-022).
-  Future<void> _reload() async {
-    ref.invalidateSelf();
-    await future;
+  /// Relit les langues tout de suite, d'autres providers en dépendent
+  /// (ADR-022). Sans repasser par le chargement : si la lecture échoue, la
+  /// liste précédente reste et l'erreur revient à l'appelant, au lieu de
+  /// renvoyer la navigation vers l'écran de démarrage (`sessionGate`).
+  Future<void> reload() async {
+    state = AsyncData(
+      await ref.read(languageRepositoryProvider).activeLanguages(),
+    );
   }
 }
 
@@ -56,7 +60,15 @@ class LanguageSelectionController extends ActionController {
   );
 }
 
-final languageSelectionControllerProvider =
+typedef _LanguageSelectionControllerProvider =
+    NotifierProvider<LanguageSelectionController, AsyncValue<void>>;
+
+_LanguageSelectionControllerProvider _languageSelectionController() =>
     NotifierProvider.autoDispose<LanguageSelectionController, AsyncValue<void>>(
       LanguageSelectionController.new,
     );
+
+/// Choix des langues (onboarding, profil). Le journal a le sien : un échec sur
+/// l'un ne s'affiche pas sur l'autre.
+final languageSelectionControllerProvider = _languageSelectionController();
+final journalLanguageControllerProvider = _languageSelectionController();

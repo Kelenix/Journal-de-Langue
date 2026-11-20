@@ -92,7 +92,10 @@ Deno.serve(async (request) => {
     p_output_tokens: usage.outputTokens,
   });
   // La reformulation est quand même rendue : seul son enregistrement a échoué.
-  if (saveError) console.error("Reformulation non conservée", saveError.message);
+  if (saveError) {
+    console.error("Reformulation non conservée", saveError.message);
+    await recordUsage(userId, FEATURE, usage);
+  }
 
   return json(200, rewrite);
 });

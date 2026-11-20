@@ -228,7 +228,7 @@ void main() {
         );
       }
       await pump(tester);
-      await tapOn(tester, find.byIcon(Icons.style_outlined));
+      await tapOn(tester, find.byIcon(Icons.copy_outlined));
       await tapText(tester, english.exercisesTitle);
 
       expect(find.text(english.exercisesLimitFree), findsOneWidget);
@@ -248,6 +248,7 @@ void main() {
     ads.privacyOptionsRequired = true;
     await pump(tester);
     await tapOn(tester, find.byIcon(Icons.person_outline));
+    await tapText(tester, english.profilePrivacy);
 
     await tapText(tester, english.profileAdPrivacy);
 

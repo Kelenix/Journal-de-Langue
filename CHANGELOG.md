@@ -31,3 +31,23 @@ Première version.
 - Interface moderne : écran d'accueil, en-têtes sur aplat vert, cartes arrondies à l'ombre douce, barre
   d'onglets flottante, semaine d'écriture sur l'écran Journal, cartes du jour pour
   réviser ses mots, e-mail du compte dans le Profil.
+- Progrès Premium : journaux écrits par semaine sur les 8 dernières semaines.
+- Profil : carte de l'offre, langues, achats et confidentialité regroupés ; l'app reste
+  en mode clair.
+
+### Corrigé (phase 5, qualité et performance)
+
+- Une coupure réseau pendant le renouvellement de la session ne bloque plus l'app sur
+  l'écran d'erreur.
+- L'app restée ouverte d'un jour à l'autre propose le journal du nouveau jour.
+- Un envoi renvoyé pendant sa correction n'appelle plus Claude une seconde fois ; les
+  textes refusés à répétition sont plafonnés par jour.
+- Corrections avancées et notation d'examen : plus de temps accordé à Claude.
+- Exercices offerts par une vidéo comptés correctement ; une réponse renvoyée après une
+  coupure ne coûte plus un exercice.
+- Examen : le dernier texte est enregistré en quittant, une copie en cours de notation
+  ne se modifie plus, le résultat ne s'affiche plus vide.
+- Export PDF : un long journal ne bloque plus l'export, construit sans figer l'écran.
+- Dictée sur Android 13 et plus, lecture à voix haute avec plusieurs boutons, vidéo
+  récompensée en échec, achats non encore lus, changement de langue raté : comportements
+  corrigés.

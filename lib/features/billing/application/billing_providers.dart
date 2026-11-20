@@ -104,14 +104,19 @@ class PaywallController extends Notifier<AsyncValue<void>> {
   });
 
   Future<bool> _run(Future<bool> Function() action) async {
-    state = const AsyncLoading();
-    final result = await AsyncValue.guard(action);
-    if (!ref.mounted) return result.value ?? false;
-
-    state = result.hasError
-        ? AsyncError(result.error!, result.stackTrace!)
-        : const AsyncData(null);
-    return result.value ?? false;
+    // Gardé jusqu'au bout : les offres ont pu être refermées pendant la
+    // confirmation, l'offre et les langues doivent quand même être relues.
+    final link = ref.keepAlive();
+    try {
+      state = const AsyncLoading();
+      final result = await AsyncValue.guard(action);
+      state = result.hasError
+          ? AsyncError(result.error!, result.stackTrace!)
+          : const AsyncData(null);
+      return result.value ?? false;
+    } finally {
+      link.close();
+    }
   }
 
   Future<bool> _isPremiumConfirmed(int attempts) async {
@@ -124,12 +129,10 @@ class PaywallController extends Notifier<AsyncValue<void>> {
       if (subscription != null && subscription.isActiveAt(now)) {
         // Tout ce qui dépend de l'offre se recharge. L'offre est relue tout de
         // suite, avant le retour à l'écran précédent (ADR-022).
-        ref
-          ..invalidate(subscriptionProvider)
-          // L'offre fixe aussi le nombre de langues utilisables.
-          ..invalidate(activeLanguagesProvider);
+        ref.invalidate(subscriptionProvider);
         await ref.read(subscriptionProvider.future);
-        await ref.read(activeLanguagesProvider.future);
+        // L'offre fixe aussi le nombre de langues utilisables.
+        await ref.read(activeLanguagesProvider.notifier).reload();
         return true;
       }
     }

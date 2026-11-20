@@ -38,7 +38,10 @@ enum CorrectionDenial {
   languageNotActive('language_not_active'),
   invalidDate('invalid_date'),
   wrongLanguage('wrong_language'),
-  contentRefused('content_refused');
+  contentRefused('content_refused'),
+
+  /// Trop de textes refusés ou sans correction en 24 h (ADR-041).
+  tooManyAttempts('too_many_attempts');
 
   const CorrectionDenial(this.code);
 
@@ -58,6 +61,12 @@ final class CorrectionDeniedFailure extends Failure {
 /// être retenté.
 final class AiUnavailableFailure extends Failure {
   const AiUnavailableFailure();
+}
+
+/// La même demande est encore traitée par le serveur (envoi renvoyé après une
+/// coupure) : elle peut être retentée dans un instant, rien n'est débité.
+final class RequestInProgressFailure extends Failure {
+  const RequestInProgressFailure();
 }
 
 /// Les achats ne sont pas disponibles sur cet appareil ou dans cette version.
