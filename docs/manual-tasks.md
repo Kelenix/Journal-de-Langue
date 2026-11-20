@@ -11,15 +11,12 @@
       (ignoré par Git), y mettre la clé, puis `supabase stop` et `supabase start`.
 - [ ] Relire quelques corrections dans les 4 langues : la qualité pédagogique du modèle
       n'a pas pu être évaluée sans clé (seule la chaîne technique est testée).
-- [ ] En production : créer un projet **Supabase** (offre gratuite suffisante au départ),
-      me communiquer son URL et sa clé publique (`publishable` ou `anon`, non secrètes),
-      puis :
+- [ ] En production : le projet est relié et ses fonctions sont déployées (2026-11-20).
+      Reste à y mettre la clé, depuis la racine du projet :
 
       supabase secrets set ANTHROPIC_API_KEY=<ta clé>
-      supabase functions deploy correct-entry
-      supabase functions deploy rewrite-sentence
-      supabase functions deploy next-exercises
-      supabase functions deploy exam
+
+      Sans elle, chaque correction en ligne échoue (« indisponible ») sans rien débiter.
 
 - [ ] Fixer une limite de dépense mensuelle dans la console Anthropic.
 - [ ] Avec la clé, mesurer la durée d'une correction avancée longue (40 phrases) et d'une
@@ -42,14 +39,14 @@
 ## Avant toute inscription réelle (projet Supabase de production)
 
 - [ ] Brancher un service SMTP (Authentication → Emails → SMTP Settings). L'envoi intégré
-      de Supabase est limité à quelques e-mails par heure : sans SMTP, les codes de
-      confirmation n'arrivent pas. Des offres gratuites existent (Resend, Brevo…).
-- [ ] Activer « Confirm email » et reporter les deux modèles d'e-mail de
-      `supabase/templates/` (confirmation et réinitialisation) : ils doivent contenir
-      `{{ .Token }}`, pas un lien.
-- [ ] Régler la longueur minimale du mot de passe à 8 et la durée du code à 900 secondes,
-      comme dans `supabase/config.toml`.
-- [ ] Appliquer les migrations : `supabase link` puis `supabase db push`.
+      de Supabase n'écrit qu'aux membres de l'organisation, quelques e-mails par heure :
+      sans SMTP, les autres utilisateurs ne reçoivent pas leur code. Des offres gratuites
+      existent (Resend, Brevo…).
+- [x] Fait le 2026-11-20 (`supabase config push`) : confirmation de l'e-mail, modèles de
+      `supabase/templates/` avec le code, mot de passe de 8 caractères au moins, code
+      valable 15 minutes. Les réglages propres au projet en ligne sont dans
+      `[remotes.production]` de `supabase/config.toml`.
+- [x] Fait le 2026-11-20 : `supabase link` et `supabase db push` (14 migrations).
 
 ## Pour Inc-4b (achat réel)
 
@@ -138,14 +135,20 @@ rien.
 
 ### 2. Projet Supabase de production
 
-1. [ ] Le créer dans une région de l'Union européenne (Francfort ou Paris), comme
-       l'annonce la politique de confidentialité.
-2. [ ] Appliquer « Avant toute inscription réelle » ci-dessus (SMTP, e-mails, mot de passe).
-3. [ ] `supabase link`, puis `supabase db push`, puis les secrets et le déploiement des six
-       fonctions : `correct-entry`, `rewrite-sentence`, `next-exercises`, `exam`,
-       `revenuecat-webhook`, `admob-reward`.
-4. [ ] Créer `env/prod.json` sur le modèle de `env/example.json` (adresse et clé publique
-       du projet, blocs AdMob). Ce fichier n'est pas versionné.
+1. [x] Fait le 2026-11-20 : projet « Journal de Langue », organisation « Application
+       Mobile », région Paris (`eu-west-3`), référence `hdkqjzermucxevhritkk`
+       (https://hdkqjzermucxevhritkk.supabase.co). Mot de passe de la base choisi par toi,
+       inconnu de Claude : garde-le dans ton gestionnaire de mots de passe.
+2. [ ] Appliquer « Avant toute inscription réelle » ci-dessus : e-mails et mot de passe
+       faits, reste le SMTP.
+3. [x] Fait le 2026-11-20, à ta demande, avant les tests de la phase 5 : projet relié,
+       14 migrations appliquées, six fonctions déployées (`correct-entry`,
+       `rewrite-sentence`, `next-exercises`, `exam`, `revenuecat-webhook`,
+       `admob-reward`). Une migration en ligne ne se modifie plus : toute correction passe
+       par une nouvelle. Restent les secrets : `ANTHROPIC_API_KEY` (plus haut),
+       `REVENUECAT_WEBHOOK_AUTHORIZATION` (Inc-4b) et `ADMOB_REWARDED_AD_UNITS` (AdMob).
+4. [x] Fait le 2026-11-20 : `env/prod.json` (non versionné), avec l'adresse et la clé
+       publique du projet ; blocs AdMob vides jusqu'au compte AdMob.
 
 ### 3. Clé d'envoi Android — sur ton ordinateur de publication, jamais sur ce PC
 

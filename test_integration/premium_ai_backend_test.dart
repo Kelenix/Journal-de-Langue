@@ -200,6 +200,16 @@ void main() {
         expect(batch.exercises, hasLength(3));
         expect(batch.exercises.first.options, hasLength(4));
 
+        // Exercices de l'interface dans l'autre langue, jamais faits : la limite du jour
+        // vaut pour eux aussi.
+        final otherLocale =
+            await exercises.next(
+                  language: LearningLanguage.english,
+                  uiLocale: 'en',
+                  day: today,
+                )
+                as AvailableExercises;
+
         final first = await exercises.answer(
           exerciseId: batch.exercises[0].id,
           choice: 1,
@@ -227,9 +237,19 @@ void main() {
           await nextExercises(),
           const ExerciseBatch.limitReached(isPremium: false),
         );
+
+        // Réponse renvoyée après une coupure : rendue telle quelle, sans décompte.
+        final replay = await exercises.answer(
+          exerciseId: batch.exercises[0].id,
+          choice: 1,
+          day: today,
+        );
+        expect(replay.isCorrect, isTrue);
+        expect(replay.left, 0);
+
         await expectLater(
           exercises.answer(
-            exerciseId: batch.exercises[0].id,
+            exerciseId: otherLocale.exercises[0].id,
             choice: 1,
             day: today,
           ),

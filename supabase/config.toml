@@ -446,3 +446,16 @@ verify_jwt = false
 # AdMob s'authentifie par une signature ECDSA vérifiée dans la fonction.
 [functions.admob-reward]
 verify_jwt = false
+
+# Projet hébergé (production, Paris) : ce qui y diffère du développement local, appliqué
+# par `supabase config push`. Le reste de ce fichier vaut pour les deux.
+[remotes.production]
+project_id = "hdkqjzermucxevhritkk"
+
+[remotes.production.auth]
+# Aucune redirection vers le poste de développement.
+additional_redirect_urls = []
+
+[remotes.production.auth.email]
+# Un e-mail par minute au plus pour une même adresse (1 s en local, pour les tests).
+max_frequency = "60s"

@@ -69,7 +69,10 @@ Optimisations issues de la relecture du code (ADR-041) :
 | Appel long sur une connexion morte | attente sans fin | abandon après 150 s (correction, examen), 60 s (reformulation, exercices) |
 | Bannière, interstitiel | annonce préchargée après l'interstitiel, jamais montrée dans la session | plus de préchargement inutile |
 
-Démarrage à froid : à mesurer sur le téléphone de l'utilisateur, en mode « profile »
-(`flutter run --profile --trace-startup`, résultat dans `build/start_up_info.json`).
+Démarrage à froid : à mesurer sur le téléphone de l'utilisateur avec l'APK de test en
+version publiée (`README.md`, « Tester sur un téléphone »), téléphone branché en USB :
+`adb shell am force-stop com.journaldelangue.journal_de_langue`, puis
+`adb shell am start -W -n com.journaldelangue.journal_de_langue/.MainActivity` ; la
+ligne `TotalTime` donne le temps jusqu'à la première image de l'app.
 Fluidité : listes construites à la demande ; pas de travail lourd dans les `build`
 relevé par la revue.

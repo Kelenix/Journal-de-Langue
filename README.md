@@ -109,12 +109,15 @@ Le téléphone doit être sur le même Wi-Fi que le poste, qui garde Supabase d�
 sur le Wi-Fi (`ipconfig`), puis :
 
 ```powershell
-flutter build apk --profile --dart-define-from-file=env/phone.json
+flutter build apk --release --dart-define-from-file=env/phone.json -PADMOB_APP_ID=ca-app-pub-3940256099942544~3347511713
 ```
 
-Copier `build/app/outputs/flutter-apk/app-profile.apk` (un seul APK, valable pour tous
+Copier `build/app/outputs/flutter-apk/app-release.apk` (un seul APK, valable pour tous
 les téléphones) sur le téléphone et l'ouvrir, en autorisant l'installation
-d'applications inconnues. Mode « profile » : vitesse proche de la version publiée.
+d'applications inconnues. C'est la version publiée, signée avec la clé de test d'Android
+car aucune clé d'envoi n'existe sur ce poste : installable, refusée par Google Play.
+Identifiant AdMob de démonstration, comme la CI ; sans bloc d'annonce, aucune publicité.
+Avec le projet Supabase en ligne, remplacer `env/phone.json` par `env/prod.json`.
 
 Vérification depuis le navigateur du téléphone : `http://<IP du poste>:55321/auth/v1/health`
 doit afficher « No API key found in request ». Sinon, le téléphone ne joint pas le poste

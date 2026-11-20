@@ -23,10 +23,15 @@
   **Phase 5** (feu vert du 2026-11-20) : taille mesurée, trois relectures complètes,
   corrections et tests faits (ADR-041). Reste : relancer les tests SQL, d'intégration
   et Deno quand la base locale sera recréée (Docker Desktop a été réinitialisé :
-  images et volumes disparus ; recréation reportée par l'utilisateur), **avant**
-  d'envoyer la migration `20261121140000` au projet Supabase hébergé (une migration
-  envoyée ne se corrige plus que par une nouvelle) ; mesurer le démarrage sur le
-  téléphone.
+  images et volumes disparus ; recréation reportée par l'utilisateur) ; mesurer le
+  démarrage sur le téléphone. **Projet Supabase hébergé** (Paris, organisation
+  « Application Mobile », `hdkqjzermucxevhritkk`) créé et rempli le 2026-11-20, à la
+  demande de l'utilisateur avant ces tests : 14 migrations, six fonctions, réglages
+  d'auth, `env/prod.json`. Le dépôt y est relié : `supabase db push` vise la production ;
+  pour la base locale, toujours `--local`. Une migration en ligne ne se modifie plus
+  (toute correction SQL passe par une nouvelle) et une fonction modifiée est à
+  redéployer. Reste côté utilisateur : secret `ANTHROPIC_API_KEY`, SMTP
+  (`docs/manual-tasks.md`, § 2).
   En attente côté utilisateur : comptes stores, RevenueCat (Inc-4b) et AdMob, clé API
   Anthropic, textes légaux à compléter (voir `docs/manual-tasks.md`).
 - **Règle de l'utilisateur (2026-11-19)** : rien n'est signé sur ce PC ; clé d'envoi et
@@ -76,6 +81,7 @@
 | `flutter analyze`, `dart format` (hôte) | 0 problème |
 | `flutter test` (hôte) | 194 tests verts (phase 5) |
 | Phase 5 : `supabase test db`, tests d'intégration, Deno après la migration `20261121140000` | `deno check` des 6 fonctions et 5 tests Deno verts avant la réinitialisation de Docker ; tests SQL et d'intégration à relancer (base locale à recréer) |
+| Projet hébergé `hdkqjzermucxevhritkk` (vérifié par la session d'origine, 2026-11-20) | 14 migrations identiques en ligne et en local ; `profiles` refusé sans compte (42501) ; `correct-entry` 401 sans jeton ; `admob-reward` 200 à la requête de la console |
 | `flutter test test_integration --concurrency=1` (Supabase local, fonctions de correction, d'achat, de reformulation, d'exercices, d'examen et de récompense, langues, statistiques, achats à l'unité, faux Claude) | 52 tests verts |
 | `supabase test db` (RLS et fonctions) | 244 tests verts |
 | Tests Deno (vérification des signatures AdMob) et `deno check` des 6 fonctions | 5 tests verts, types corrects |
@@ -136,6 +142,8 @@
 - Windows 11, Flutter 3.41.7 (Dart 3.11.5), Git 2.54, Supabase CLI 2.121, Docker 29.9.3.
 - Supabase local sur les ports 5532x (ADR-011) ; un autre projet local (`flirt-coach`)
   occupe 5432x et n'a pas été touché.
+- Dépôt relié au projet Supabase de production `hdkqjzermucxevhritkk` (`supabase/.temp`,
+  non versionné) : `--local` pour toute commande visant la base locale.
 - Émulateur Android `emulator-5554` (API 35).
 
 ## Tâches manuelles utilisateur en attente
@@ -143,6 +151,13 @@
 - voir `docs/manual-tasks.md`
 
 ## Journal de session (résumé court, le plus récent en haut)
+
+- 2026-11-20 — Projet Supabase hébergé créé et rempli par la session d'origine, à la
+  demande de l'utilisateur : « Journal de Langue », organisation « Application Mobile »,
+  Paris, `hdkqjzermucxevhritkk` ; 14 migrations, six fonctions, réglages d'auth
+  (`supabase config push`, `[remotes.production]`), `env/prod.json`. Les tests de la
+  phase 5 restent à faire. L'APK de test passe en version publiée (`--release`, clé de
+  test d'Android) au lieu de « profile ».
 
 - 2026-11-20 — Phase 5 : téléchargement estimé à 23,3 Mo au plus sur arm64 (budget
   30 Mo) ; CI rouge expliquée (test SQL daté, déjà corrigé) ; couverture 92,7 % ;
