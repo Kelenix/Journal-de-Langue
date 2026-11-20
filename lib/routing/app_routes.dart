@@ -9,6 +9,7 @@ abstract final class AppRoutes {
   static const profile = '/profile';
 
   static const startup = '/startup';
+  static const welcome = '/welcome';
   static const signIn = '/sign-in';
   static const signUp = '/sign-up';
   static const verifyEmail = '/verify-email';
@@ -35,7 +36,13 @@ abstract final class AppRoutes {
 
   static String legalOf(LegalDocument document) => '/legal/${document.name}';
 
-  static const _signedOutRoutes = {signIn, signUp, verifyEmail, forgotPassword};
+  static const _signedOutRoutes = {
+    welcome,
+    signIn,
+    signUp,
+    verifyEmail,
+    forgotPassword,
+  };
   static const _entryRoutes = {..._signedOutRoutes, startup, onboarding};
 
   /// Textes légaux : lisibles aussi sans compte, depuis l'inscription.
@@ -49,9 +56,10 @@ abstract final class AppRoutes {
       case SessionGate.failed:
         return location == startup ? null : startup;
       case SessionGate.signedOut:
+        // Sans compte, l'app s'ouvre sur l'accueil.
         return _signedOutRoutes.contains(location) || _isLegal(location)
             ? null
-            : signIn;
+            : welcome;
       case SessionGate.needsLanguage:
         return location == onboarding ? null : onboarding;
       case SessionGate.ready:

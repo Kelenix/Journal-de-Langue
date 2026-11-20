@@ -86,9 +86,12 @@ Espacements : 4, 8, 12, 16, 24, 32 (`AppSpacing`). Rayons : 12, 18, 20, 24, 28
 - **Écrans ouverts par-dessus** (correction, exercices, examen, boutique, offres, textes
   légaux) : titre centré, retour ou fermeture et actions en boutons ronds (`SoftAppBar`).
   L'action qui termine l'écran reste visible en bas (« Terminer » de la correction).
-- **Compte** (connexion, inscription, code, mot de passe, langue) : en-tête vert arrondi,
-  avec logo et signature à la connexion et à l'inscription ; formulaire sur l'ivoire
-  (`FormPage`). Le chargement du compte se fait sur l'aplat vert.
+- **Accueil** (première page sans compte) : logo, nom et signature sur l'aplat vert,
+  puis une feuille ivoire aux coins arrondis : « Apprends en écrivant », trois atouts,
+  « Créer mon compte » et « J'ai déjà un compte ».
+- **Compte** (connexion, inscription, code, mot de passe, langue) : titre sur un en-tête
+  vert arrondi, formulaire sur l'ivoire (`FormPage`). Le chargement du compte se fait
+  sur l'aplat vert.
 
 ## Logo et icône
 
@@ -99,7 +102,7 @@ texte. Il est dessiné une seule fois, dans `tool/generate_app_icons.py`, qui pr
 |---------|-------|
 | `android/…/mipmap-*/ic_launcher_foreground.png` | Icône adaptative Android 8+ (fond `#174D43`), aussi utilisée en silhouette monochrome |
 | `android/…/mipmap-*/ic_launcher.png` | Icône pleine, Android 7 |
-| `assets/brand/logo.png` | Logo affiché dans l'app (en-tête de la connexion et de l'inscription) |
+| `assets/brand/logo.png` | Logo affiché dans l'app (accueil), sur un vert plus foncé `#0E332C` qui le détache de l'aplat |
 | `ios/…/AppIcon.appiconset/*.png` | Icône iOS, toutes tailles (non contrôlée sur appareil) |
 | `design/app_icon_1024.png` | Original 1024 × 1024 pour les fiches des stores (Inc-9) |
 

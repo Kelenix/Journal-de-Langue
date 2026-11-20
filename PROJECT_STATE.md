@@ -14,8 +14,10 @@
   configuration iOS, fiches et déclarations des stores, image de présentation, tests
   d'intégration relancés (52). Demande du 2026-11-20 : **interface entièrement refaite**
   d'après la maquette validée, carte du jour comprise (ADR-038), à essayer sur le téléphone avec un APK
-  « profile » (`build/app/outputs/flutter-apk/`). Reste : captures des stores avec la
-  nouvelle interface.
+  « profile » (`build/app/outputs/flutter-apk/`). Sans compte, l'app s'ouvre sur
+  l'accueil de la maquette. Captures des stores refaites avec la nouvelle interface, en
+  français et en anglais (ADR-039). Inc-9 est terminé pour tout ce qui ne dépend pas
+  des comptes des stores.
   En attente côté utilisateur : comptes stores, RevenueCat (Inc-4b) et AdMob, clé API
   Anthropic, textes légaux à compléter (voir `docs/manual-tasks.md`).
 - **Règle de l'utilisateur (2026-11-19)** : rien n'est signé sur ce PC ; clé d'envoi et
@@ -56,7 +58,7 @@
 | Inc-6 | Voix, statistiques, PDF, multi-langues | US-04, 15, 16, 17 | ✅ | dictée et lecture à essayer sur un vrai téléphone ; « langue 30 jours » avec Inc-7 (ADR-025 à 027) |
 | Inc-7 | Achats ponctuels : crédits, accès langue, Pack Examinateur, sans publicité | US-18 à 21 | ✅ | achats réels avec Inc-4b ; sujets et notes d'examen à relire avec une clé API (ADR-028, ADR-029) |
 | Inc-8 | Publicités : bannière, interstitiel, vidéo récompensée, consentement | US-22, 23 | ✅ | testé avec les publicités de démonstration de Google ; rappel de récompense simulé en local (ADR-030, ADR-031) ; vrais blocs avec le compte AdMob |
-| Inc-9 | Qualité, publication, documentation, textes légaux | US-24 | 🔄 | ADR-032 à 038 (refonte de l'interface comprise) ; reste captures des stores |
+| Inc-9 | Qualité, publication, documentation, textes légaux | US-24 | ✅ | ADR-032 à 039 (refonte de l'interface et captures des stores comprises) ; mise en ligne avec les comptes des stores |
 
 ## Ce qui est vérifié (2026-11-19)
 

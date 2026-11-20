@@ -5,6 +5,28 @@
 
 ---
 
+## ADR-039 — Captures des stores rendues par l'app
+
+- **Date** : 2026-11-20
+- **Statut** : Accepté
+- **Décideur** : Claude (rôle : playstore-appstore-engineer), à la demande de l'utilisateur
+- **Contexte** : les fiches demandent des captures en français et en anglais, à refaire
+  après la refonte. Les prendre sur l'émulateur demande un build et un émulateur à côté
+  de Docker : sur ce PC de 16 Go, cette combinaison a déjà fait tomber Docker Desktop
+  (2026-11-19), et un vrai compte ne montre pas toutes les fonctions.
+- **Décision** : `tool/store_captures_test.dart` lance l'app complète sur des données en
+  mémoire (abonné Premium, journal, correction avancée, vocabulaire, statistiques et
+  simulation d'examen d'exemple), avec les polices de l'app et les vraies ombres, et
+  enregistre cinq écrans par langue (1080 × 2400). `tool/generate_store_visuals.py` les
+  met en page sous une légende, dans un contour de téléphone. Le fichier est hors de
+  `test/` : il ne fait partie ni de la suite de tests ni de la CI.
+- **Alternatives écartées** : captures sur l'émulateur (mémoire, barres du système à
+  retirer, données à préparer à la main) ; maquettes dessinées (ne montreraient pas
+  l'app réelle).
+- **Conséquences** : captures reproductibles en deux commandes (README) ; pas de barre
+  d'état du téléphone sur les captures.
+- **Impact** : technique (réversible).
+
 ## ADR-038 — Refonte de l'interface d'après une maquette validée
 
 - **Date** : 2026-11-20
@@ -25,8 +47,12 @@
   à réviser, fixé à son ouverture et gardé tant que l'app est ouverte, sans nouvelle
   donnée serveur ; « Je sais » enregistre le mot comme appris (même enregistrement que
   la liste), « À revoir » passe au suivant.
-- **Écarts avec la maquette** : pas d'écran d'accueil séparé : la connexion en reprend
-  l'en-tête ; le graphique de Progrès montre les fautes par phrase (donnée
+- **Accueil** (à la demande de l'utilisateur) : première page sans compte, comme sur
+  la maquette (logo, signature, ce que l'app apporte, « Créer mon compte » et « J'ai
+  déjà un compte ») ; la déconnexion y ramène. Connexion et inscription se remplacent
+  l'une l'autre, le retour ramène à l'accueil. Le logo de l'app passe sur un vert plus
+  foncé pour se détacher de l'aplat.
+- **Écarts avec la maquette** : le graphique de Progrès montre les fautes par phrase (donnée
   existante) au lieu des journaux par semaine ; le contenu s'arrête au-dessus de la barre
   d'onglets au lieu de passer dessous, pour qu'aucun bouton ne soit caché.
 - **Alternatives écartées** : retouches du thème seul (n'aurait pas changé la structure

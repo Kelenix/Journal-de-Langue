@@ -6,6 +6,7 @@ import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/auth/presentation/verify_email_screen.dart';
+import '../features/auth/presentation/welcome_screen.dart';
 import '../features/billing/presentation/paywall_screen.dart';
 import '../features/exam/presentation/exam_result_screen.dart';
 import '../features/exam/presentation/exam_screen.dart';
@@ -37,6 +38,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         AppRoutes.redirectFor(gate.value, state.matchedLocation),
     routes: [
       _route(AppRoutes.startup, const StartupScreen()),
+      _route(AppRoutes.welcome, const WelcomeScreen()),
       _route(AppRoutes.signIn, const SignInScreen()),
       _route(AppRoutes.signUp, const SignUpScreen()),
       _route(AppRoutes.forgotPassword, const ForgotPasswordScreen()),

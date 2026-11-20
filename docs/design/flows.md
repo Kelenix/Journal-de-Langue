@@ -135,10 +135,16 @@ compte (double confirmation).
 ```
 Les prix affichés sont ceux renvoyés par le store. La croix de fermeture est toujours visible.
 
+### Accueil
+Première page sans compte, et après une déconnexion : logo, « Journal de Langue » et la
+signature sur l'aplat vert ; dessous, « Apprends en écrivant » et trois atouts (quelques
+phrases par jour, chaque faute corrigée et expliquée, les mots du jour à réviser), puis
+**Créer mon compte** et **J'ai déjà un compte**.
+
 ### Authentification
-Connexion, inscription, saisie du code reçu par e-mail, mot de passe oublié. En-tête vert
-arrondi (logo, nom et signature à la connexion et à l'inscription), formulaire sur
-l'ivoire. Google et Apple en Inc-1b ; liens vers les textes légaux à l'inscription.
+Connexion, inscription, saisie du code reçu par e-mail, mot de passe oublié : titre sur un
+en-tête vert arrondi, formulaire sur l'ivoire. Connexion et inscription se remplacent
+l'une l'autre ; le retour ramène à l'accueil. Google et Apple en Inc-1b ; liens vers les textes légaux à l'inscription.
 L'interface suit la langue du téléphone (français ou anglais).
 
 ### Onboarding

@@ -2,11 +2,14 @@
 
 - Icône Google Play 512 × 512, depuis design/app_icon_1024.png.
 - Image de présentation Google Play 1024 × 500, en français et en anglais.
-- Captures commentées, depuis les captures brutes de l'émulateur rangées dans
-  docs/store/captures/<langue>/<numéro>-<écran>.png : téléphone Android 1080 × 1920 et
+- Captures commentées, depuis les écrans rendus par l'app dans
+  docs/store/captures/<langue>/<numéro>-<écran>.png (1080 × 2400, sans barres du
+  système ; voir tool/store_captures_test.dart) : téléphone Android 1080 × 1920 et
   iPhone 6,9" 1320 × 2868.
 
-Usage, depuis la racine du projet :  python tool/generate_store_visuals.py
+Usage, depuis la racine du projet :
+  flutter test tool/store_captures_test.dart --update-goldens
+  python tool/generate_store_visuals.py
 Prérequis : Pillow (pip install pillow).
 """
 from pathlib import Path
@@ -16,6 +19,8 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 GREEN = (0x17, 0x4D, 0x43)
 IVORY = (0xF7, 0xF4, 0xEA)
 CORAL = (0xF2, 0xA3, 0x8A)
+# Contour du téléphone : détache l'écran du fond, même quand son en-tête est vert.
+BEZEL = (0x0E, 0x33, 0x2C)
 
 ROOT = Path(__file__).resolve().parent.parent
 ICON = ROOT / "design" / "app_icon_1024.png"
@@ -49,10 +54,6 @@ CAPTIONS = {
 
 # Formats demandés par les stores : (nom, largeur, hauteur).
 SCREEN_FORMATS = (("android", 1080, 1920), ("iphone69", 1320, 2868))
-
-# Barres du système à retirer des captures brutes de l'émulateur (1080 × 2400).
-STATUS_BAR = 120
-NAVIGATION_BAR = 126
 
 
 def font(path, size, weight):
@@ -125,21 +126,24 @@ def screenshot(capture, caption, size):
     )[3]
 
     raw = Image.open(capture).convert("RGB")
-    raw = raw.crop((0, STATUS_BAR, raw.width, raw.height - NAVIGATION_BAR))
-    available = height - caption_bottom - round(height * 0.04) - margin
-    scale = min((width - 2 * margin) / raw.width, available / raw.height)
+    bezel = round(width * 0.018)
+    available = height - caption_bottom - round(height * 0.04) - margin - 2 * bezel
+    scale = min((width - 2 * margin - 2 * bezel) / raw.width, available / raw.height)
     phone = raw.resize((round(raw.width * scale), round(raw.height * scale)), Image.LANCZOS)
-    phone = rounded(phone, round(phone.width * 0.06))
+    radius = round(phone.width * 0.06)
+    phone = rounded(phone, radius)
     x = (width - phone.width) // 2
-    y = caption_bottom + round(height * 0.04)
+    y = caption_bottom + round(height * 0.04) + bezel
+    frame = (x - bezel, y - bezel, x + phone.width + bezel, y + phone.height + bezel)
 
     shadow = Image.new("RGBA", size, (0, 0, 0, 0))
     ImageDraw.Draw(shadow).rounded_rectangle(
-        (x, y + 12, x + phone.width, y + phone.height + 12), round(phone.width * 0.06),
+        (frame[0], frame[1] + 12, frame[2], frame[3] + 12), radius + bezel,
         fill=(0, 0, 0, 90),
     )
-    canvas.paste(shadow.filter(ImageFilter.GaussianBlur(18)), (0, 0), shadow.filter(
-        ImageFilter.GaussianBlur(18)))
+    blurred = shadow.filter(ImageFilter.GaussianBlur(18))
+    canvas.paste(blurred, (0, 0), blurred)
+    ImageDraw.Draw(canvas).rounded_rectangle(frame, radius + bezel, fill=BEZEL)
     canvas.paste(phone, (x, y), phone)
     return canvas
 

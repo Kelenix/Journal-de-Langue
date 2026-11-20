@@ -48,11 +48,7 @@ class ProgressScreen extends ConsumerWidget {
                 icon: Icons.local_fire_department_outlined,
                 message: l10n.progressEmpty,
               )
-            : _Progress(
-                stats: stats,
-                language: language,
-                today: ref.watch(clockProvider)(),
-              ),
+            : _Progress(stats: stats, today: ref.watch(clockProvider)()),
       ),
     );
   }
@@ -88,14 +84,9 @@ class _LanguageChip extends StatelessWidget {
 }
 
 class _Progress extends StatelessWidget {
-  const _Progress({
-    required this.stats,
-    required this.language,
-    required this.today,
-  });
+  const _Progress({required this.stats, required this.today});
 
   final LearningStats stats;
-  final LearningLanguage language;
   final DateTime today;
 
   @override
@@ -114,7 +105,8 @@ class _Progress extends StatelessWidget {
           children: [
             Expanded(
               child: _StatTile(
-                label: l10n.progressJournals(languageName(l10n, language)),
+                // La langue figure déjà en tête de l'écran.
+                label: l10n.progressJournals,
                 value: '${stats.journals}',
               ),
             ),

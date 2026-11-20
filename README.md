@@ -184,12 +184,20 @@ Le symbole est dessiné une seule fois dans `tool/generate_app_icons.py` (Pillow
 python tool/generate_app_icons.py
 ```
 
-Visuels des fiches des stores (icône 512, image de présentation, captures commentées
-depuis `docs/store/captures/`) :
+Visuels des fiches des stores : icône 512, image de présentation, et captures
+commentées (Android 1080 × 1920, iPhone 6,9" 1320 × 2868) dans `docs/store/assets/`.
+Les écrans sont d'abord rendus par l'app avec des données d'exemple, en français et en
+anglais, dans `docs/store/captures/` (sans émulateur), puis mis en page :
+
+```powershell
+flutter test tool/store_captures_test.dart --update-goldens
+```
 
 ```powershell
 python tool/generate_store_visuals.py
 ```
+
+À relancer après chaque changement visible de l'interface.
 
 ## Régénérer le code
 

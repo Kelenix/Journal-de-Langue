@@ -48,7 +48,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
     return FormPage(
       title: l10n.authSignInTitle,
-      withBrand: true,
       children: [
         Form(
           key: _formKey,
@@ -92,8 +91,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           child: Text(l10n.authForgotPassword),
         ),
         TextButton(
-          onPressed: () => context.push(AppRoutes.signUp),
-          child: Text(l10n.authNoAccount),
+          // Remplace la connexion : le retour ramène à l'accueil.
+          onPressed: () => context.pushReplacement(AppRoutes.signUp),
+          child: Text(l10n.authNoAccount, textAlign: TextAlign.center),
         ),
       ],
     );

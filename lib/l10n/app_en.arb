@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
   "appTitle": "Journal de Langue",
-  "appTagline": "Write every day. Improve with every sentence.",
+  "appTagline": "Write every day.\nImprove with every sentence.",
   "tabJournal": "Journal",
   "tabHistory": "History",
   "tabReview": "Review",
@@ -174,7 +174,7 @@
   "progressStreakUnit": "{count, plural, =1{day} other{days}}",
   "progressStreakStart": "Write a journal entry today to start your streak.",
   "progressStreakKeep": "Write every day to keep it going.",
-  "progressJournals": "Entries in {language}",
+  "progressJournals": "Entries written",
   "progressWordsLearned": "Words learned",
   "progressWordsOf": "out of {total}",
   "progressMistakesTitle": "Mistakes by type",
@@ -280,5 +280,10 @@
   "reviewAgain": "Not yet",
   "reviewKnown": "I know it",
   "reviewDeckDone": "Today's cards are done. Well done!",
-  "reviewDeckMore": "Review more cards"
+  "reviewDeckMore": "Review more cards",
+  "welcomeTitle": "Learn by writing",
+  "welcomeFeatureWrite": "A few sentences a day, in the language you're learning",
+  "welcomeFeatureCorrect": "Every mistake corrected and explained",
+  "welcomeFeatureReview": "Your words of the day to review",
+  "welcomeHaveAccount": "I already have an account"
 }

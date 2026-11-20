@@ -28,6 +28,6 @@ Première version.
   vidéo récompensée pour une correction ou trois exercices de plus.
 - Textes légaux dans l'app, signalement des contenus produits par l'IA.
 - Suivi interne du coût de l'IA par utilisateur et de la rétention à 7 jours.
-- Interface moderne : en-têtes sur aplat vert, cartes arrondies à l'ombre douce, barre
+- Interface moderne : écran d'accueil, en-têtes sur aplat vert, cartes arrondies à l'ombre douce, barre
   d'onglets flottante, semaine d'écriture sur l'écran Journal, cartes du jour pour
   réviser ses mots, e-mail du compte dans le Profil.

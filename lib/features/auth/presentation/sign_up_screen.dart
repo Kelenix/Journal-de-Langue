@@ -52,7 +52,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
     return FormPage(
       title: l10n.authSignUpTitle,
-      withBrand: true,
       children: [
         Form(
           key: _formKey,
@@ -93,8 +92,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         const LegalLinks(),
         const SizedBox(height: AppSpacing.sm),
         TextButton(
-          onPressed: () => context.go(AppRoutes.signIn),
-          child: Text(l10n.authHaveAccount),
+          // Remplace l'inscription : le retour ramène à l'accueil.
+          onPressed: () => context.pushReplacement(AppRoutes.signIn),
+          child: Text(l10n.authHaveAccount, textAlign: TextAlign.center),
         ),
       ],
     );

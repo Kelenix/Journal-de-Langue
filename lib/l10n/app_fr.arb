@@ -1,7 +1,7 @@
 {
   "@@locale": "fr",
   "appTitle": "Journal de Langue",
-  "appTagline": "Écris chaque jour. Progresse à chaque phrase.",
+  "appTagline": "Écris chaque jour.\nProgresse à chaque phrase.",
   "tabJournal": "Journal",
   "tabHistory": "Historique",
   "tabReview": "Réviser",
@@ -364,14 +364,7 @@
   },
   "progressStreakStart": "Écris un journal aujourd'hui pour lancer ta série.",
   "progressStreakKeep": "Écris chaque jour pour la prolonger.",
-  "progressJournals": "Journaux en {language}",
-  "@progressJournals": {
-    "placeholders": {
-      "language": {
-        "type": "String"
-      }
-    }
-  },
+  "progressJournals": "Journaux écrits",
   "progressWordsLearned": "Mots appris",
   "progressWordsOf": "sur {total}",
   "@progressWordsOf": {
@@ -628,5 +621,10 @@
   "reviewAgain": "À revoir",
   "reviewKnown": "Je sais",
   "reviewDeckDone": "Cartes du jour revues. Bravo !",
-  "reviewDeckMore": "Revoir d'autres cartes"
+  "reviewDeckMore": "Revoir d'autres cartes",
+  "welcomeTitle": "Apprends en écrivant",
+  "welcomeFeatureWrite": "Quelques phrases par jour, dans ta langue cible",
+  "welcomeFeatureCorrect": "Chaque faute corrigée et expliquée",
+  "welcomeFeatureReview": "Tes mots du jour à réviser",
+  "welcomeHaveAccount": "J'ai déjà un compte"
 }

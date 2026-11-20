@@ -15,17 +15,18 @@ void main() {
       }
     });
 
-    test('déconnecté : seules les routes de compte et les textes légaux sont '
-        'accessibles', () {
+    test('déconnecté : l\'accueil, les routes de compte et les textes légaux '
+        'sont accessibles ; le reste mène à l\'accueil', () {
       const gate = SessionGate.signedOut;
 
-      expect(AppRoutes.redirectFor(gate, AppRoutes.journal), AppRoutes.signIn);
-      expect(AppRoutes.redirectFor(gate, AppRoutes.profile), AppRoutes.signIn);
+      expect(AppRoutes.redirectFor(gate, AppRoutes.journal), AppRoutes.welcome);
+      expect(AppRoutes.redirectFor(gate, AppRoutes.profile), AppRoutes.welcome);
       expect(
         AppRoutes.redirectFor(gate, AppRoutes.onboarding),
-        AppRoutes.signIn,
+        AppRoutes.welcome,
       );
       for (final route in [
+        AppRoutes.welcome,
         AppRoutes.signIn,
         AppRoutes.signUp,
         AppRoutes.verifyEmail,
@@ -55,6 +56,7 @@ void main() {
       const gate = SessionGate.ready;
 
       for (final route in [
+        AppRoutes.welcome,
         AppRoutes.signIn,
         AppRoutes.signUp,
         AppRoutes.verifyEmail,

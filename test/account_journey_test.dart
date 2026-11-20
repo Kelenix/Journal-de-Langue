@@ -28,13 +28,36 @@ void main() {
   Future<void> tapButton(WidgetTester tester, String label) =>
       tapOn(tester, find.widgetWithText(FilledButton, label));
 
-  testWidgets('sans session, l\'app ouvre la connexion et aucune offre', (
-    tester,
-  ) async {
+  /// Depuis l'accueil, première page sans compte.
+  Future<void> openSignIn(WidgetTester tester) =>
+      tapText(tester, english.welcomeHaveAccount);
+
+  Future<void> openSignUp(WidgetTester tester) =>
+      tapButton(tester, english.authSignUpAction);
+
+  testWidgets('sans session, l\'app ouvre l\'accueil, sans offre, puis la '
+      'connexion', (tester) async {
     await pumpApp(tester, auth: auth, languages: languages);
 
-    expect(find.text(english.authSignInAction), findsWidgets);
+    expect(find.text(english.welcomeTitle), findsOneWidget);
+    expect(find.text(english.welcomeFeatureCorrect), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
+
+    await openSignIn(tester);
+
+    expect(find.text(english.authSignInAction), findsWidgets);
+  });
+
+  testWidgets('l\'inscription et la connexion se remplacent ; le retour '
+      'ramène à l\'accueil', (tester) async {
+    await pumpApp(tester, auth: auth, languages: languages);
+    await openSignUp(tester);
+
+    await tapText(tester, english.authHaveAccount);
+    expect(find.text(english.authForgotPassword), findsOneWidget);
+
+    await tapOn(tester, find.byType(BackButton));
+    expect(find.text(english.welcomeTitle), findsOneWidget);
   });
 
   testWidgets('inscription, code, choix de la langue, puis journal', (
@@ -42,7 +65,7 @@ void main() {
   ) async {
     await pumpApp(tester, auth: auth, languages: languages);
 
-    await tapText(tester, english.authNoAccount);
+    await openSignUp(tester);
     await enter(tester, english.authEmailLabel, email);
     await enter(tester, english.authPasswordLabel, password);
     await tapButton(tester, english.authSignUpAction);
@@ -64,7 +87,7 @@ void main() {
   testWidgets('l\'inscription refuse un e-mail invalide et un mot de passe '
       'trop court sans appeler le serveur', (tester) async {
     await pumpApp(tester, auth: auth, languages: languages);
-    await tapText(tester, english.authNoAccount);
+    await openSignUp(tester);
 
     await enter(tester, english.authEmailLabel, 'pas-un-email');
     await enter(tester, english.authPasswordLabel, 'court');
@@ -79,6 +102,7 @@ void main() {
       'si le compte existe', (tester) async {
     auth.failure = const InvalidCredentialsFailure();
     await pumpApp(tester, auth: auth, languages: languages);
+    await openSignIn(tester);
 
     await enter(tester, english.authEmailLabel, email);
     await enter(tester, english.authPasswordLabel, password);
@@ -93,6 +117,7 @@ void main() {
   ) async {
     auth.failure = const EmailNotConfirmedFailure();
     await pumpApp(tester, auth: auth, languages: languages);
+    await openSignIn(tester);
 
     await enter(tester, english.authEmailLabel, email);
     await enter(tester, english.authPasswordLabel, password);
@@ -107,6 +132,7 @@ void main() {
   ) async {
     languages = FakeLanguageRepository([LearningLanguage.english]);
     await pumpApp(tester, auth: auth, languages: languages);
+    await openSignIn(tester);
 
     await tapText(tester, english.authForgotPassword);
     await enter(tester, english.authEmailLabel, email);
@@ -148,13 +174,13 @@ void main() {
       expect(await languages.activeLanguages(), [LearningLanguage.french]);
     });
 
-    testWidgets('se déconnecter ramène à la connexion', (tester) async {
+    testWidgets('se déconnecter ramène à l\'accueil', (tester) async {
       await openProfile(tester);
 
       await tapText(tester, english.profileSignOut);
 
       expect(find.byType(NavigationBar), findsNothing);
-      expect(find.text(english.authForgotPassword), findsOneWidget);
+      expect(find.text(english.welcomeHaveAccount), findsOneWidget);
     });
 
     testWidgets('supprimer son compte exige deux confirmations', (
@@ -171,7 +197,7 @@ void main() {
       await tapText(tester, english.deleteAccountConfirm);
 
       expect(auth.calls, ['deleteAccount']);
-      expect(find.text(english.authForgotPassword), findsOneWidget);
+      expect(find.text(english.welcomeHaveAccount), findsOneWidget);
     });
 
     testWidgets('annuler la suppression ne supprime rien', (tester) async {

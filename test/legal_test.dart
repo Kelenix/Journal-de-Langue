@@ -79,7 +79,11 @@ void main() {
       auth: FakeAuthRepository(),
       languages: FakeLanguageRepository(),
     );
-    await tapOn(tester, find.text(english.authNoAccount));
+    // Depuis l'accueil, « Créer mon compte ».
+    await tapOn(
+      tester,
+      find.widgetWithText(FilledButton, english.authSignUpAction),
+    );
 
     expect(find.text(english.legalSignUpNotice), findsOneWidget);
 

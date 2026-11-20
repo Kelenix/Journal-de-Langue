@@ -2,43 +2,22 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
-import 'brand_header.dart';
 import 'surfaces.dart';
 
-/// Mise en page des écrans de compte : en-tête sur l'aplat vert, contenu
+/// Mise en page des écrans de compte : titre sur l'aplat vert, contenu
 /// défilant (le clavier ne masque rien), largeur bornée sur grand écran.
 class FormPage extends StatelessWidget {
-  const FormPage({
-    required this.title,
-    required this.children,
-    this.withBrand = false,
-    super.key,
-  });
+  const FormPage({required this.title, required this.children, super.key});
 
   static const _maxContentWidth = 480.0;
   static const _headerRadius = Radius.circular(32);
 
   final String title;
-
-  /// Logo, nom et signature de l'app en tête : écrans d'accueil. Le titre
-  /// passe alors au-dessus du formulaire.
-  final bool withBrand;
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
-    final heading = Builder(
-      builder: (context) => Semantics(
-        header: true,
-        child: Text(
-          title,
-          style: withBrand
-              ? Theme.of(context).textTheme.titleLarge
-              : Theme.of(context).textTheme.headlineMedium,
-        ),
-      ),
-    );
 
     return Scaffold(
       appBar: AppBar(
@@ -57,7 +36,17 @@ class FormPage extends StatelessWidget {
                 AppSpacing.xl,
                 AppSpacing.xxl,
               ),
-              child: _Bounded(child: withBrand ? const BrandHeader() : heading),
+              child: _Bounded(
+                child: Builder(
+                  builder: (context) => Semantics(
+                    header: true,
+                    child: Text(
+                      title,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                  ),
+                ),
+              ),
             ),
             SafeArea(
               top: false,
@@ -66,13 +55,7 @@ class FormPage extends StatelessWidget {
                   padding: const EdgeInsets.all(AppSpacing.xl),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (withBrand) ...[
-                        heading,
-                        const SizedBox(height: AppSpacing.xl),
-                      ],
-                      ...children,
-                    ],
+                    children: children,
                   ),
                 ),
               ),

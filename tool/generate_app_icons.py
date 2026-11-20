@@ -12,6 +12,8 @@ GREEN = (0x17, 0x4D, 0x43, 255)
 IVORY = (0xF7, 0xF4, 0xEA, 255)
 CORAL = (0xF2, 0xA3, 0x8A, 255)
 SOFT_GREEN = (0x7C, 0x98, 0x8E, 255)  # lignes d'écriture : vert à 55 % sur ivoire
+# Fond du logo affiché dans l'app : plus foncé, il se détache de l'aplat vert profond.
+DEEP_GREEN = (0x0E, 0x33, 0x2C, 255)
 
 CANVAS = 108  # unités du canevas d'icône adaptative Android ; le symbole tient dans la zone sûre
 SUPERSAMPLING = 4
@@ -83,6 +85,10 @@ def rounded(image, radius_ratio=0.22):
     return image
 
 
+def in_app_logo():
+    return draw_symbol(256, background=DEEP_GREEN, zoom=FULL_ICON_ZOOM)
+
+
 def save(image, path):
     path.parent.mkdir(parents=True, exist_ok=True)
     image.save(path, optimize=True)
@@ -104,8 +110,8 @@ def main():
         for scale in scales:
             icon = draw_symbol(round(points * scale), **full_icon).convert("RGB")
             save(icon, IOS_ICONS / f"Icon-App-{points}x{points}@{scale}x.png")
-    # Logo affiché dans l'application.
-    save(draw_symbol(256, **full_icon), ROOT / "assets" / "brand" / "logo.png")
+    # Logo affiché dans l'application, sur l'aplat vert de l'accueil.
+    save(in_app_logo(), ROOT / "assets" / "brand" / "logo.png")
     # Original pour les fiches des stores et l'icône iOS (non embarqué dans l'app).
     save(draw_symbol(1024, **full_icon), ROOT / "design" / "app_icon_1024.png")
 

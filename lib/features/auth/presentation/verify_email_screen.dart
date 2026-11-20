@@ -83,7 +83,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
         ),
         TextButton(
           onPressed: () => context.go(AppRoutes.signIn),
-          child: Text(l10n.authHaveAccount),
+          child: Text(l10n.authHaveAccount, textAlign: TextAlign.center),
         ),
       ],
     );

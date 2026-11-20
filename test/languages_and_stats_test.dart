@@ -239,10 +239,7 @@ void main() {
       expect(find.text(english.progressWordsOf(1)), findsOneWidget);
       expect(find.text(english.categoryConjugation), findsOneWidget);
       expect(find.text(english.progressPremiumTitle), findsNothing);
-      expect(
-        find.text(english.progressJournals(english.languageEnglish)),
-        findsOneWidget,
-      );
+      expect(find.text(english.progressJournals), findsOneWidget);
       // L'axe couvre toujours 8 semaines, même sans journal les premières.
       expect(find.text('Sep 28'), findsOneWidget);
       expect(find.text('Nov 16'), findsOneWidget);

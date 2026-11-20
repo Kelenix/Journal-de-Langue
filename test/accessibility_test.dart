@@ -116,6 +116,8 @@ void main() {
       auth: FakeAuthRepository(),
       languages: FakeLanguageRepository(),
     );
+    await expectAccessible(tester, 'Accueil');
+    await tapOn(tester, find.text(english.welcomeHaveAccount));
     await expectAccessible(tester, 'Connexion');
     await tapOn(tester, find.text(english.authNoAccount));
     await expectAccessible(tester, 'Inscription');
