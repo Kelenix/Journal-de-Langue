@@ -3,11 +3,14 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:journal_de_langue/core/errors/failure.dart';
 import 'package:journal_de_langue/core/utils/uuid.dart';
 import 'package:journal_de_langue/features/journal/data/supabase_journal_repository.dart';
 import 'package:journal_de_langue/features/journal/domain/journal_entry.dart';
 import 'package:journal_de_langue/features/languages/data/supabase_language_repository.dart';
 import 'package:journal_de_langue/features/languages/domain/learning_language.dart';
+import 'package:journal_de_langue/features/reports/data/supabase_content_report_repository.dart';
+import 'package:journal_de_langue/features/reports/domain/content_report_repository.dart';
 import 'package:journal_de_langue/features/vocabulary/data/supabase_vocabulary_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -120,18 +123,47 @@ void main() {
     expect(await vocabulary.list(LearningLanguage.spanish), isEmpty);
   });
 
-  test(
-    'l\'historique contient le journal du jour et rien de verrouillé',
-    () async {
-      expect(await journal.recentEntries(), isEmpty);
+  test('une correction se signale, mais pas comme un autre contenu', () async {
+    final entry = await submit();
+    final reports = SupabaseContentReportRepository(client);
 
-      final entry = await submit();
+    await reports.report(
+      ReportedContent.correction,
+      entry.id,
+      comment: 'Faux.',
+    );
+    await expectLater(
+      reports.report(ReportedContent.exam, entry.id),
+      throwsA(isA<Failure>()),
+    );
+  });
 
-      expect(await journal.recentEntries(), [entry]);
-      expect(
-        await journal.historyOverview(),
-        const HistoryOverview(historyDays: 4, lockedEntries: 0),
-      );
-    },
-  );
+  test('l\'historique se lit par pages, sans le vocabulaire, et l\'export '
+      'reprend les journaux de la langue', () async {
+    expect(await journal.historyPage(offset: 0, limit: 20), isEmpty);
+
+    final entry = await submit();
+
+    final page = await journal.historyPage(offset: 0, limit: 20);
+    expect(page.single.id, entry.id);
+    expect(page.single.items, entry.items);
+    expect(page.single.vocabulary, isEmpty);
+    expect(await journal.historyPage(offset: 1, limit: 20), isEmpty);
+    expect(await journal.entriesSince(LearningLanguage.english), [entry]);
+    expect(
+      await journal.entriesSince(
+        LearningLanguage.english,
+        firstDay: today.add(const Duration(days: 1)),
+      ),
+      isEmpty,
+    );
+    expect(
+      await journal.historyOverview(),
+      const HistoryOverview(
+        historyDays: 4,
+        lockedEntries: 0,
+        correctedEntries: 1,
+      ),
+    );
+  });
 }

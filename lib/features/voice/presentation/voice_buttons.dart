@@ -95,6 +95,7 @@ class _DictationButtonState extends ConsumerState<DictationButton> {
 
     return IconButton(
       tooltip: _isListening ? l10n.voiceStopDictation : l10n.voiceDictate,
+      style: _tonalStyle(Theme.of(context)),
       isSelected: _isListening,
       icon: const Icon(Icons.mic_none),
       selectedIcon: const Icon(Icons.stop_circle_outlined),
@@ -149,6 +150,7 @@ class _ListenButtonState extends ConsumerState<ListenButton> {
 
     return IconButton(
       tooltip: _isSpeaking ? l10n.voiceStopListening : l10n.voiceListen,
+      style: _tonalStyle(Theme.of(context)),
       isSelected: _isSpeaking,
       icon: const Icon(Icons.volume_up_outlined),
       selectedIcon: const Icon(Icons.stop_circle_outlined),
@@ -156,3 +158,9 @@ class _ListenButtonState extends ConsumerState<ListenButton> {
     );
   }
 }
+
+/// Bouton rond teinté de vert, posé sur les cartes.
+ButtonStyle _tonalStyle(ThemeData theme) => IconButton.styleFrom(
+  backgroundColor: theme.colorScheme.primaryContainer,
+  foregroundColor: theme.colorScheme.onPrimaryContainer,
+);

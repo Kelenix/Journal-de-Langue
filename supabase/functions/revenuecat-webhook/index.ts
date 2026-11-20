@@ -1,4 +1,5 @@
-// POST /functions/v1/revenuecat-webhook — notifications d'achats envoyées par RevenueCat (US-11).
+// POST /functions/v1/revenuecat-webhook — notifications d'achats envoyées par RevenueCat :
+// abonnements (US-11) et achats uniques (US-18, 19, 20, 21).
 // Format : https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields
 // Les droits de l'utilisateur sont mis à jour en base ; l'app ne fait que les lire.
 import { admin, json, UUID_PATTERN } from "../_shared/http.ts";
@@ -17,6 +18,9 @@ interface PurchaseEvent {
   period_type?: string | null;
   expiration_at_ms?: number | null;
   cancel_reason?: string | null;
+  // Achats uniques (NON_RENEWING_PURCHASE) et leurs remboursements.
+  transaction_id?: string | null;
+  quantity?: number | null;
 }
 
 /** Comparaison en temps constant : ne révèle pas le secret caractère par caractère. */
@@ -75,7 +79,8 @@ Deno.serve(async (request) => {
   // évite que RevenueCat renvoie la notification en boucle.
   if (!userId) return json(200, { status: "ignored" });
 
-  const { data: status, error } = await admin.rpc("apply_subscription_event", {
+  // La base aiguille selon le produit : abonnement ou achat unique.
+  const { data: status, error } = await admin.rpc("apply_store_event", {
     p_event_id: event.id,
     p_user_id: userId,
     p_type: event.type,
@@ -83,6 +88,9 @@ Deno.serve(async (request) => {
     p_expires_at: expirationOf(event),
     p_in_trial: event.period_type === "TRIAL",
     p_event_at: new Date(event.event_timestamp_ms).toISOString(),
+    p_transaction_id: event.transaction_id ?? null,
+    p_quantity: event.quantity ?? 1,
+    p_cancel_reason: event.cancel_reason ?? null,
   });
   if (error) {
     // Une réponse 5xx fait réessayer RevenueCat plus tard.

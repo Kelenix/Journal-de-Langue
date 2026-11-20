@@ -8,11 +8,18 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../routing/app_routes.dart';
 import '../../../shared/presentation/failure_message.dart';
+import '../../../shared/widgets/app_bars.dart';
 import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/badges.dart';
+import '../../../shared/widgets/surfaces.dart';
+import '../../ads/domain/ad_status.dart';
+import '../../ads/presentation/ad_widgets.dart';
 import '../../billing/application/billing_providers.dart';
 import '../../journal/application/journal_providers.dart';
 import '../../journal/presentation/category_labels.dart';
 import '../../languages/application/language_providers.dart';
+import '../../reports/domain/content_report_repository.dart';
+import '../../reports/presentation/report_content_button.dart';
 import '../application/exercise_providers.dart';
 import '../domain/exercise.dart';
 
@@ -26,7 +33,7 @@ class ExerciseScreen extends ConsumerWidget {
     final language = ref.watch(activeLanguagesProvider).value?.firstOrNull;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.exercisesTitle)),
+      appBar: SoftAppBar(title: l10n.exercisesTitle),
       body: SafeArea(
         // Sans langue, la navigation quitte cet écran.
         child: language == null
@@ -126,28 +133,60 @@ class _QuestionState extends State<_Question> {
     final isLast = session.index == batch.exercises.length - 1;
 
     return ListView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.xs,
+        AppSpacing.lg,
+        AppSpacing.xl,
+      ),
       children: [
-        Text(
-          l10n.exerciseProgress(session.index + 1, batch.exercises.length),
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                l10n.exerciseProgress(
+                  session.index + 1,
+                  batch.exercises.length,
+                ),
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            ReportContentButton(
+              content: ReportedContent.exercise,
+              targetId: exercise.id,
+              style: roundButtonStyle(context),
+            ),
+          ],
         ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          batch.isPersonalized
-              ? '${errorCategoryName(l10n, batch.category)} · '
-                    '${l10n.exercisesPersonalized}'
-              : errorCategoryName(l10n, batch.category),
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
+        const SizedBox(height: AppSpacing.sm),
+        SoftProgressBar(value: (session.index + 1) / batch.exercises.length),
         const SizedBox(height: AppSpacing.lg),
-        Semantics(
-          header: true,
-          child: Text(exercise.question, style: theme.textTheme.titleLarge),
+        SoftCard(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: [
+                  Tag(errorCategoryName(l10n, batch.category)),
+                  if (batch.isPersonalized)
+                    Tag(l10n.exercisesPersonalized, warm: true),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Semantics(
+                header: true,
+                child: Text(
+                  exercise.question,
+                  style: theme.textTheme.titleLarge,
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: AppSpacing.lg),
         for (final (choice, option) in exercise.options.indexed)
@@ -167,18 +206,30 @@ class _QuestionState extends State<_Question> {
                 : null,
           ),
         if (answer != null) ...[
-          const SizedBox(height: AppSpacing.lg),
-          Semantics(
-            liveRegion: true,
-            child: Text(
-              answer.feedback.isCorrect
-                  ? l10n.exerciseCorrect
-                  : l10n.exerciseIncorrect,
-              style: theme.textTheme.titleMedium,
+          const SizedBox(height: AppSpacing.md),
+          SoftCard(
+            color: answer.feedback.isCorrect
+                ? theme.colorScheme.primaryContainer
+                : theme.colorScheme.secondaryContainer,
+            elevated: false,
+            radius: AppRadius.tile,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    answer.feedback.isCorrect
+                        ? l10n.exerciseCorrect
+                        : l10n.exerciseIncorrect,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(answer.feedback.explanation),
+              ],
             ),
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(answer.feedback.explanation),
           const SizedBox(height: AppSpacing.xl),
           FilledButton(
             onPressed: widget.controller.next,
@@ -205,29 +256,48 @@ class _Option extends StatelessWidget {
   final _OptionMark? mark;
   final VoidCallback? onSelected;
 
+  static const _mistakeTint = 0.1;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final colors = Theme.of(context).extension<AppColors>()!;
+    final theme = Theme.of(context);
+    final colors = theme.extension<AppColors>()!;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: ListTile(
-        title: Text(label),
-        trailing: switch (mark) {
-          _OptionMark.rightAnswer => Icon(
-            Icons.check_circle,
-            color: colors.fix,
-            semanticLabel: l10n.exerciseRightAnswer,
-          ),
-          _OptionMark.wrongChoice => Icon(
-            Icons.cancel,
-            color: colors.mistake,
-            semanticLabel: l10n.exerciseYourAnswer,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: SoftCard(
+        radius: AppRadius.tile,
+        elevated: false,
+        padding: EdgeInsets.zero,
+        color: switch (mark) {
+          _OptionMark.rightAnswer => theme.colorScheme.primaryContainer,
+          _OptionMark.wrongChoice => colors.mistake.withValues(
+            alpha: _mistakeTint,
           ),
           null => null,
         },
-        onTap: onSelected,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.xs,
+          ),
+          title: Text(label),
+          trailing: switch (mark) {
+            _OptionMark.rightAnswer => Icon(
+              Icons.check_circle,
+              color: colors.fix,
+              semanticLabel: l10n.exerciseRightAnswer,
+            ),
+            _OptionMark.wrongChoice => Icon(
+              Icons.cancel,
+              color: colors.mistake,
+              semanticLabel: l10n.exerciseYourAnswer,
+            ),
+            null => null,
+          },
+          onTap: onSelected,
+        ),
       ),
     );
   }
@@ -241,6 +311,8 @@ class _Result extends StatelessWidget {
     required this.onContinue,
   });
 
+  static const _badgeRadius = 28.0;
+
   final ExerciseSession session;
   final int total;
 
@@ -251,18 +323,45 @@ class _Result extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
 
     return ListView(
-      padding: const EdgeInsets.all(AppSpacing.xl),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
-        Text(
-          l10n.exerciseScore(session.correctAnswers, total),
-          textAlign: TextAlign.center,
-          style: theme.textTheme.headlineSmall,
+        HeroCard(
+          padding: const EdgeInsets.all(AppSpacing.xxl),
+          child: Builder(
+            builder: (context) {
+              final theme = Theme.of(context);
+              final colors = theme.extension<AppColors>()!;
+              return Column(
+                children: [
+                  ExcludeSemantics(
+                    child: CircleAvatar(
+                      radius: _badgeRadius,
+                      backgroundColor: colors.accent,
+                      foregroundColor: colors.onAccent,
+                      child: const Icon(Icons.emoji_events_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    l10n.exerciseScore(session.correctAnswers, total),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    l10n.correctionEncouragement,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(l10n.correctionEncouragement, textAlign: TextAlign.center),
         const SizedBox(height: AppSpacing.xl),
         if (left > 0)
           FilledButton(onPressed: onContinue, child: Text(l10n.actionContinue))
@@ -287,23 +386,35 @@ class _DailyLimit extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final isPremium = watchActiveSubscription(ref) != null;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          isPremium ? l10n.exercisesLimitPremium : l10n.exercisesLimitFree,
-          textAlign: TextAlign.center,
-        ),
-        // Jamais d'offre payante avant une première correction (INTAKE §6).
-        if (!isPremium && watchHasCorrectedJournal(ref)) ...[
-          const SizedBox(height: AppSpacing.lg),
-          OutlinedButton(
-            onPressed: () => context.push(AppRoutes.paywall),
-            child: Text(l10n.paywallDiscover),
+    return SoftCard(
+      color: Theme.of(context).colorScheme.secondaryContainer,
+      elevated: false,
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Center(child: IconBadge(Icons.bedtime_outlined, accent: true)),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            isPremium ? l10n.exercisesLimitPremium : l10n.exercisesLimitFree,
+            textAlign: TextAlign.center,
+          ),
+          // Jamais d'offre payante avant une première correction
+          // (INTAKE §6).
+          if (!isPremium && watchHasCorrectedJournal(ref)) ...[
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton(
+              onPressed: () => context.push(AppRoutes.paywall),
+              child: Text(l10n.paywallDiscover),
+            ),
+          ],
+          RewardedAdButton(
+            kind: AdRewardKind.exercises,
+            onReload: () => ref.invalidate(exerciseSessionProvider),
           ),
         ],
-      ],
+      ),
     );
   }
 }

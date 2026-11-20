@@ -11,6 +11,11 @@ _LearningStats _$LearningStatsFromJson(Map<String, dynamic> json) =>
       isPremium: json['is_premium'] as bool,
       streakDays: (json['streak_days'] as num).toInt(),
       journals: (json['journals'] as num).toInt(),
+      weekDays:
+          (json['week_days'] as List<dynamic>?)
+              ?.map((e) => DateTime.parse(e as String))
+              .toList() ??
+          const <DateTime>[],
       wordsLearned: (json['words_learned'] as num?)?.toInt(),
       wordsTotal: (json['words_total'] as num?)?.toInt(),
       mistakesByCategory:
@@ -32,6 +37,7 @@ Map<String, dynamic> _$LearningStatsToJson(_LearningStats instance) =>
       'is_premium': instance.isPremium,
       'streak_days': instance.streakDays,
       'journals': instance.journals,
+      'week_days': instance.weekDays.map((e) => e.toIso8601String()).toList(),
       'words_learned': instance.wordsLearned,
       'words_total': instance.wordsTotal,
       'mistakes_by_category': instance.mistakesByCategory,

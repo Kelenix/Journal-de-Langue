@@ -124,6 +124,9 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(english.paywallRestore), findsOneWidget);
+      // Liens exigés par les stores pour un abonnement.
+      expect(find.text(english.legalTermsTitle), findsOneWidget);
+      expect(find.text(english.legalPrivacyTitle), findsOneWidget);
     });
 
     testWidgets('une offre sans essai change le bouton et les conditions', (

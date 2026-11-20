@@ -95,6 +95,8 @@ _JournalAllowance _$JournalAllowanceFromJson(Map<String, dynamic> json) =>
       maxSentences: (json['max_sentences'] as num).toInt(),
       maxCharacters: (json['max_characters'] as num).toInt(),
       correctionsLeft: (json['corrections_left'] as num).toInt(),
+      credits: (json['credits'] as num?)?.toInt() ?? 0,
+      rewardCorrections: (json['reward_corrections'] as num?)?.toInt() ?? 0,
       plan: $enumDecodeNullable(_$SubscriptionPlanEnumMap, json['plan']),
     );
 
@@ -103,6 +105,8 @@ Map<String, dynamic> _$JournalAllowanceToJson(_JournalAllowance instance) =>
       'max_sentences': instance.maxSentences,
       'max_characters': instance.maxCharacters,
       'corrections_left': instance.correctionsLeft,
+      'credits': instance.credits,
+      'reward_corrections': instance.rewardCorrections,
       'plan': _$SubscriptionPlanEnumMap[instance.plan],
     };
 
@@ -116,10 +120,12 @@ _HistoryOverview _$HistoryOverviewFromJson(Map<String, dynamic> json) =>
     _HistoryOverview(
       historyDays: (json['history_days'] as num?)?.toInt(),
       lockedEntries: (json['locked_entries'] as num).toInt(),
+      correctedEntries: (json['corrected_entries'] as num).toInt(),
     );
 
 Map<String, dynamic> _$HistoryOverviewToJson(_HistoryOverview instance) =>
     <String, dynamic>{
       'history_days': instance.historyDays,
       'locked_entries': instance.lockedEntries,
+      'corrected_entries': instance.correctedEntries,
     };

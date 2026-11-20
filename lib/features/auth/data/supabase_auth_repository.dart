@@ -19,6 +19,9 @@ class SupabaseAuthRepository implements AuthRepository {
   }
 
   @override
+  String? get currentEmail => _auth.currentUser?.email;
+
+  @override
   Future<void> signUp({required String email, required String password}) =>
       guardFailures(() => _auth.signUp(email: email, password: password));
 

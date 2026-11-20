@@ -6,9 +6,12 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/presentation/failure_message.dart';
+import '../../../shared/widgets/app_bars.dart';
 import '../../../shared/widgets/async_view.dart';
 import '../../../shared/widgets/error_message.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/widgets/surfaces.dart';
+import '../../legal/presentation/legal_screen.dart';
 import '../application/billing_providers.dart';
 import '../domain/offer.dart';
 import '../domain/subscription.dart';
@@ -22,8 +25,9 @@ class PaywallScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(leading: const CloseButton()),
+      appBar: const SoftAppBar(),
       body: SafeArea(
+        top: false,
         child: AsyncView(
           value: ref.watch(offersProvider),
           onRetry: () => ref.invalidate(offersProvider),
@@ -45,6 +49,8 @@ class _Offers extends ConsumerStatefulWidget {
 }
 
 class _OffersState extends ConsumerState<_Offers> {
+  static const _crownRadius = 24.0;
+
   late Offer _selected = widget.offers.first;
 
   Future<void> _activate(Future<bool> Function() action) async {
@@ -69,36 +75,72 @@ class _OffersState extends ConsumerState<_Offers> {
 
     // Contenu court et fini : une colonne défilante, pas une liste paresseuse.
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.xs,
+        AppSpacing.lg,
+        AppSpacing.xl,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(l10n.paywallTitle, style: theme.textTheme.headlineSmall),
-          const SizedBox(height: AppSpacing.lg),
-          for (final benefit in [
-            l10n.paywallBenefitUnlimited,
-            l10n.paywallBenefitLonger,
-            l10n.paywallBenefitAdvanced,
-            l10n.paywallBenefitExercises,
-            l10n.paywallBenefitLanguages,
-            l10n.paywallBenefitHistory,
-          ])
-            _Benefit(benefit),
-          const SizedBox(height: AppSpacing.lg),
+          HeroCard(
+            child: Builder(
+              builder: (context) {
+                final theme = Theme.of(context);
+                final colors = theme.extension<AppColors>()!;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ExcludeSemantics(
+                      child: CircleAvatar(
+                        radius: _crownRadius,
+                        backgroundColor: colors.accent,
+                        foregroundColor: colors.onAccent,
+                        child: const Icon(Icons.workspace_premium_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Semantics(
+                      header: true,
+                      child: Text(
+                        l10n.paywallTitle,
+                        style: theme.textTheme.headlineSmall,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    for (final benefit in [
+                      l10n.paywallBenefitUnlimited,
+                      l10n.paywallBenefitLonger,
+                      l10n.paywallBenefitAdvanced,
+                      l10n.paywallBenefitExercises,
+                      l10n.paywallBenefitLanguages,
+                      l10n.paywallBenefitHistory,
+                    ])
+                      _Benefit(benefit),
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
           for (final offer in widget.offers)
-            _OfferCard(
-              offer: offer,
-              isSelected: offer == _selected,
-              isHighlighted: offer == widget.offers.first,
-              onSelected: action.isLoading
-                  ? null
-                  : () => setState(() => _selected = offer),
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: _OfferCard(
+                offer: offer,
+                isSelected: offer == _selected,
+                isHighlighted: offer == widget.offers.first,
+                onSelected: action.isLoading
+                    ? null
+                    : () => setState(() => _selected = offer),
+              ),
             ),
           if (error != null) ...[
             const SizedBox(height: AppSpacing.lg),
             ErrorMessage(failureMessage(l10n, error)),
           ],
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.md),
           PrimaryButton(
             label: trialDays == null
                 ? l10n.paywallSubscribe
@@ -124,26 +166,45 @@ class _OffersState extends ConsumerState<_Offers> {
                 : () => _activate(controller.restore),
             child: Text(l10n.paywallRestore),
           ),
+          // Exigés par les stores pour les abonnements.
+          const LegalLinks(),
         ],
       ),
     );
   }
 }
 
+/// Un avantage de Premium, coché en corail sur l'aplat vert.
 class _Benefit extends StatelessWidget {
   const _Benefit(this.label);
+
+  static const _checkSize = 22.0;
+  static const _checkIconSize = 14.0;
 
   final String label;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.extension<AppColors>()!;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         children: [
           ExcludeSemantics(
-            child: Icon(Icons.check, color: theme.colorScheme.primary),
+            child: Container(
+              width: _checkSize,
+              height: _checkSize,
+              decoration: BoxDecoration(
+                color: colors.accent,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check,
+                size: _checkIconSize,
+                color: colors.onAccent,
+              ),
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(child: Text(label, style: theme.textTheme.bodyLarge)),
@@ -178,9 +239,10 @@ class _OfferCard extends StatelessWidget {
     final locale = Localizations.localeOf(context).toLanguageTag();
 
     return Card(
+      margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.card),
+        borderRadius: BorderRadius.circular(AppRadius.tile),
         side: BorderSide(
           color: isSelected
               ? theme.colorScheme.primary
@@ -189,6 +251,10 @@ class _OfferCard extends StatelessWidget {
         ),
       ),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
         selected: isSelected,
         onTap: onSelected,
         leading: Icon(

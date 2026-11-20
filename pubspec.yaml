@@ -51,6 +51,7 @@ dependencies:
   # Contrainte seulement, pour pdf : image 4.11 appelle une fonction d'archive 4.1,
   # que pdf 3.12 n'accepte pas. A retirer avec pdf 3.13 (Dart 3.12, ADR-027).
   image: ">=4.10.0 <4.11.0"
+  google_mobile_ads: ^9.2.0
 
 dev_dependencies:
   flutter_test:
@@ -82,6 +83,8 @@ flutter:
     - assets/brand/logo.png
     - assets/fonts/DMSans-OFL.txt
     - assets/fonts/Inter-OFL.txt
+    # Conditions d'utilisation et politique de confidentialité (fr, en).
+    - assets/legal/
 
   # Polices du brand kit, embarquées (licence OFL) : titres en DM Sans, texte en Inter.
   fonts:

@@ -4,6 +4,9 @@ abstract interface class AuthRepository {
   /// puis chaque changement.
   Stream<String?> watchUserId();
 
+  /// E-mail du compte connecté, `null` sinon.
+  String? get currentEmail;
+
   /// Crée le compte et envoie un code de confirmation par e-mail.
   Future<void> signUp({required String email, required String password});
 

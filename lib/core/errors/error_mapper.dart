@@ -51,6 +51,7 @@ const _aiUnavailableStatus = 503;
 Failure _correctionDenial(String code) {
   if (code == 'premium_required') return const PremiumRequiredFailure();
   if (code == 'rewrite_limit') return const UsageLimitFailure();
+  if (code == 'no_exam_credit') return const NoExamCreditFailure();
   for (final reason in CorrectionDenial.values) {
     if (reason.code == code) return CorrectionDeniedFailure(reason);
   }

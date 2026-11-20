@@ -1,6 +1,7 @@
 # Design system
 
-> Source : **brand kit fourni par l'éditeur le 2026-11-19** (ADR-019). Material 3.
+> Source : **brand kit fourni par l'éditeur le 2026-11-19** (ADR-019), interface refaite
+> d'après la maquette validée le 2026-11-20 (ADR-038). Material 3.
 > Tout passe par `lib/core/theme/` : aucun écran ne contient de couleur, de rayon ou de
 > police en dur.
 
@@ -19,11 +20,13 @@
 | Ivoire | `#F7F4EA` | Arrière-plans (`surface`) ; texte des boutons principaux |
 | Corail | `#F2A38A` | Accents visuels et progression (`AppColors.accent`) |
 | Texte foncé | `#20332E` | Texte (`onSurface`) |
-| Blanc | `#FFFFFF` | Cartes, champs, barre d'onglets |
+| Blanc | `#FFFFFF` | Cartes, boutons ronds, barre d'onglets |
 | Gris doux | `#788680` | Contours, séparateurs, texte secondaire de grande taille |
 
 Couleurs de fonction, hors brand kit : faute `#B3261E` (toujours barrée), correction en
-vert profond (toujours soulignée).
+vert profond (toujours soulignée). Teintes dérivées : vert clair `#D7E6E0` (pastilles,
+onglet actif, version choisie), corail doux `#FBE3D9` (cartes d'offre et de limite,
+étiquettes de fautes), fond des champs `#FBF9F2`.
 
 ### Contrastes mesurés (WCAG, seuil 4,5 pour le texte courant)
 
@@ -43,11 +46,11 @@ ivoire. À faire valider par l'éditeur.
 
 ## Typographie
 
-| Rôle | Police | Graisse |
-|------|--------|---------|
-| Titres | DM Sans | Bold (700) |
-| Texte | Inter | Regular (400) |
-| Libellés, boutons | Inter | Medium (500) |
+| Rôle | Police | Graisse | Tailles |
+|------|--------|---------|---------|
+| Titres | DM Sans | Bold (700) | 34 (accueil), 30 (titre d'onglet), 24, 20, 17 |
+| Texte | Inter | Regular (400) | 16 (journal), 14, 12 |
+| Libellés, boutons | Inter | Medium (500), boutons en 600 | 16 |
 
 Polices embarquées dans l'app (`assets/fonts/`, fichiers variables, licence SIL OFL) :
 aucun téléchargement depuis le téléphone de l'utilisateur. Leurs licences figurent dans la
@@ -58,15 +61,34 @@ suivent le réglage d'accessibilité du téléphone.
 
 | Élément | Style |
 |---------|-------|
-| Boutons principaux | Vert profond, texte ivoire, rayon 16, hauteur 52 |
-| Boutons secondaires | Fond ivoire, bordure vert doux (vert profond à 40 %), rayon 16 |
-| Cartes | Blanches, rayon 16, sans ombre |
-| Champs | Blancs (ivoire à l'intérieur d'une carte), rayon 12 |
+| Boutons principaux | Vert profond, texte ivoire, rayon 18, hauteur 56 |
+| Boutons secondaires | Fond transparent, bordure vert profond à 30 %, rayon 18, hauteur 52 |
+| Boutons ronds | Blancs, ombre légère : retour, fermeture, signalement, export |
+| Cartes de contenu | Blanches, rayon 24, ombre douce teintée de vert ; listes et tuiles rayon 20, à plat |
+| Cartes mises en avant | Aplat vert profond, texte ivoire, accents corail : accueil du Journal, bilan d'une correction, série, offre, résultats |
+| Cartes d'offre ou de limite | Corail doux, pastille corail pleine |
+| Champs | Fond `#FBF9F2`, bordure `#E4E0D3`, rayon 18 ; bordure verte de 2 au focus |
+| Étiquettes | Rayon 12, vert clair ou corail doux |
+| Barre d'onglets | Flottante : blanche, rayon 26, à 16 des bords, ombre douce ; l'onglet actif sur une pastille vert clair |
 | Arrière-plan | Ivoire |
-| Icônes | Contour fin (jeu « outlined » de Material) |
+| Icônes | Contour (jeu « outlined » de Material), souvent sur une pastille teintée |
 | Animations | Courtes (≤ 200 ms), désactivées si le système le demande |
 
-Espacements : 4, 8, 12, 16, 24, 32 (`AppSpacing`).
+Espacements : 4, 8, 12, 16, 24, 32 (`AppSpacing`). Rayons : 12, 18, 20, 24, 28
+(`AppRadius`). Ombre douce : `AppColors.softShadow`.
+
+## Mise en page
+
+- **Onglets** : grand titre à gauche, actions à droite (`TabAppBar`), contenu en cartes ;
+  la barre d'onglets flotte au-dessus du fond, le contenu s'arrête avant elle.
+- **Journal** : en-tête vert aux coins arrondis (date, langue, « Bonjour ! », série et
+  semaine d'écriture du lundi au dimanche), puis la carte de rédaction.
+- **Écrans ouverts par-dessus** (correction, exercices, examen, boutique, offres, textes
+  légaux) : titre centré, retour ou fermeture et actions en boutons ronds (`SoftAppBar`).
+  L'action qui termine l'écran reste visible en bas (« Terminer » de la correction).
+- **Compte** (connexion, inscription, code, mot de passe, langue) : en-tête vert arrondi,
+  avec logo et signature à la connexion et à l'inscription ; formulaire sur l'ivoire
+  (`FormPage`). Le chargement du compte se fait sur l'aplat vert.
 
 ## Logo et icône
 
@@ -77,7 +99,7 @@ texte. Il est dessiné une seule fois, dans `tool/generate_app_icons.py`, qui pr
 |---------|-------|
 | `android/…/mipmap-*/ic_launcher_foreground.png` | Icône adaptative Android 8+ (fond `#174D43`), aussi utilisée en silhouette monochrome |
 | `android/…/mipmap-*/ic_launcher.png` | Icône pleine, Android 7 |
-| `assets/brand/logo.png` | Logo affiché dans l'app (écran de connexion) |
+| `assets/brand/logo.png` | Logo affiché dans l'app (en-tête de la connexion et de l'inscription) |
 | `ios/…/AppIcon.appiconset/*.png` | Icône iOS, toutes tailles (non contrôlée sur appareil) |
 | `design/app_icon_1024.png` | Original 1024 × 1024 pour les fiches des stores (Inc-9) |
 
@@ -101,12 +123,17 @@ Les textes vivent dans `lib/l10n/` (français et anglais).
 
 | Composant | Rôle |
 |-----------|------|
-| `BrandHeader` | Logo, nom et signature |
+| `SoftCard`, `HeroCard` | Carte blanche à l'ombre douce ; aplat vert dont textes, icônes et bouton principal passent en ivoire |
+| `TabAppBar`, `SoftAppBar`, `roundButtonStyle` | Barre des onglets, barre des écrans ouverts par-dessus, bouton rond |
+| `IconBadge`, `Tag`, `SoftProgressBar` | Pastille d'icône, étiquette, barre de progression corail |
+| `SettingsGroup`, `SettingsTile` | Lignes de réglages regroupées sur une carte |
+| `SectionTitle` | Titre de section, annoncé comme tel par les lecteurs d'écran |
+| `BrandHeader` | Logo, nom et signature, sur l'aplat vert |
 | `PrimaryButton` | Action principale d'un écran, avec état de chargement |
-| `FormPage` | Mise en page des écrans de formulaire |
+| `FormPage` | Mise en page des écrans de compte |
 | `AsyncView` | Chargement, erreur avec « Réessayer », contenu |
 | `ErrorMessage` | Erreur dans la page, annoncée par les lecteurs d'écran |
-| `EmptyState` | État vide |
+| `EmptyState` | État vide, icône sur une pastille |
 
 ## Règles
 

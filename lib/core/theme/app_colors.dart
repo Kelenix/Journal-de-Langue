@@ -18,6 +18,10 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.fix,
     required this.accent,
     required this.onAccent,
+    required this.hero,
+    required this.onHero,
+    required this.onHeroMuted,
+    required this.shadow,
   });
 
   static const light = AppColors(
@@ -25,6 +29,10 @@ class AppColors extends ThemeExtension<AppColors> {
     fix: BrandColors.deepGreen,
     accent: BrandColors.coral,
     onAccent: BrandColors.darkText,
+    hero: BrandColors.deepGreen,
+    onHero: BrandColors.ivory,
+    onHeroMuted: Color(0xFFD7E6E0),
+    shadow: Color(0x1F174D43),
   );
 
   static const dark = AppColors(
@@ -32,6 +40,10 @@ class AppColors extends ThemeExtension<AppColors> {
     fix: Color(0xFF8FCDBD),
     accent: BrandColors.coral,
     onAccent: BrandColors.darkText,
+    hero: BrandColors.deepGreen,
+    onHero: BrandColors.ivory,
+    onHeroMuted: Color(0xFFC6D9D2),
+    shadow: Color(0x66000000),
   );
 
   /// Fragment fautif ; toujours accompagné d'un texte barré.
@@ -47,17 +59,42 @@ class AppColors extends ThemeExtension<AppColors> {
   /// Texte ou icône posé sur [accent].
   final Color onAccent;
 
+  /// Grands aplats de la marque : en-têtes et cartes mises en avant.
+  final Color hero;
+
+  /// Texte posé sur [hero].
+  final Color onHero;
+
+  /// Texte secondaire posé sur [hero].
+  final Color onHeroMuted;
+
+  /// Ombre douce des cartes et de la barre d'onglets.
+  final Color shadow;
+
+  /// Ombre des éléments posés sur le fond (cartes, barre d'onglets).
+  List<BoxShadow> get softShadow => [
+    BoxShadow(color: shadow, blurRadius: 30, offset: const Offset(0, 10)),
+  ];
+
   @override
   AppColors copyWith({
     Color? mistake,
     Color? fix,
     Color? accent,
     Color? onAccent,
+    Color? hero,
+    Color? onHero,
+    Color? onHeroMuted,
+    Color? shadow,
   }) => AppColors(
     mistake: mistake ?? this.mistake,
     fix: fix ?? this.fix,
     accent: accent ?? this.accent,
     onAccent: onAccent ?? this.onAccent,
+    hero: hero ?? this.hero,
+    onHero: onHero ?? this.onHero,
+    onHeroMuted: onHeroMuted ?? this.onHeroMuted,
+    shadow: shadow ?? this.shadow,
   );
 
   @override
@@ -68,6 +105,10 @@ class AppColors extends ThemeExtension<AppColors> {
       fix: Color.lerp(fix, other.fix, t)!,
       accent: Color.lerp(accent, other.accent, t)!,
       onAccent: Color.lerp(onAccent, other.onAccent, t)!,
+      hero: Color.lerp(hero, other.hero, t)!,
+      onHero: Color.lerp(onHero, other.onHero, t)!,
+      onHeroMuted: Color.lerp(onHeroMuted, other.onHeroMuted, t)!,
+      shadow: Color.lerp(shadow, other.shadow, t)!,
     );
   }
 }

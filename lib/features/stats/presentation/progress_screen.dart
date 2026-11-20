@@ -5,12 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/clock.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../routing/app_routes.dart';
+import '../../../shared/widgets/app_bars.dart';
 import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/badges.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/section_title.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../../journal/application/journal_providers.dart';
 import '../../journal/presentation/category_labels.dart';
 import '../../languages/application/language_providers.dart';
@@ -29,23 +34,53 @@ class ProgressScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final language = ref.watch(activeLanguagesProvider).value?.firstOrNull;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.tabProgress)),
-      body: SafeArea(
-        child: AsyncView(
-          value: ref.watch(statsProvider),
-          onRetry: () => ref.invalidate(statsProvider),
-          builder: (stats) => stats == null || language == null
-              ? const SizedBox.shrink()
-              : stats.streakDays == 0 && stats.journals == 0
-              ? EmptyState(
-                  icon: Icons.local_fire_department_outlined,
-                  message: l10n.progressEmpty,
-                )
-              : _Progress(
-                  stats: stats,
-                  language: language,
-                  today: ref.watch(clockProvider)(),
-                ),
+      appBar: TabAppBar(
+        title: l10n.tabProgress,
+        actions: [if (language != null) _LanguageChip(language: language)],
+      ),
+      body: AsyncView(
+        value: ref.watch(statsProvider),
+        onRetry: () => ref.invalidate(statsProvider),
+        builder: (stats) => stats == null || language == null
+            ? const SizedBox.shrink()
+            : stats.streakDays == 0 && stats.journals == 0
+            ? EmptyState(
+                icon: Icons.local_fire_department_outlined,
+                message: l10n.progressEmpty,
+              )
+            : _Progress(
+                stats: stats,
+                language: language,
+                today: ref.watch(clockProvider)(),
+              ),
+      ),
+    );
+  }
+}
+
+/// Langue dont les progrès sont affichés.
+class _LanguageChip extends StatelessWidget {
+  const _LanguageChip({required this.language});
+
+  static const _height = 36.0;
+
+  final LearningLanguage language;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Container(
+        height: _height,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(_height / 2),
+        ),
+        child: Text(
+          languageName(AppLocalizations.of(context), language),
+          style: theme.textTheme.labelLarge,
         ),
       ),
     );
@@ -70,7 +105,7 @@ class _Progress extends StatelessWidget {
     final wordsTotal = stats.wordsTotal;
 
     return ListView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: tabPagePadding,
       children: [
         _StreakCard(days: stats.streakDays),
         const SizedBox(height: AppSpacing.md),
@@ -108,57 +143,88 @@ class _Progress extends StatelessWidget {
   }
 }
 
-/// La série : le chiffre de l'écran.
+/// La série : le chiffre de l'écran, sur l'aplat vert.
 class _StreakCard extends StatelessWidget {
   const _StreakCard({required this.days});
 
   static const _heroSize = 56.0;
+  static const _flameSize = 84.0;
+  static const _flameIconSize = 40.0;
 
   final int days;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: MergeSemantics(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return HeroCard(
+      borderRadius: const BorderRadius.all(Radius.circular(AppRadius.sheet)),
+      child: Builder(
+        builder: (context) {
+          final theme = Theme.of(context);
+          final colors = theme.extension<AppColors>()!;
+          final muted = theme.colorScheme.onSurfaceVariant;
+          return Row(
             children: [
-              Text(l10n.progressStreakLabel, style: theme.textTheme.titleSmall),
-              const SizedBox(height: AppSpacing.xs),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    '$days',
-                    style: theme.textTheme.displaySmall?.copyWith(
-                      fontSize: _heroSize,
-                      fontWeight: FontWeight.w600,
-                    ),
+              Expanded(
+                child: MergeSemantics(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.progressStreakLabel,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: muted,
+                        ),
+                      ),
+                      // Un seul texte : l'unité passe à la ligne en très
+                      // grands caractères.
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '$days',
+                              style: theme.textTheme.displaySmall?.copyWith(
+                                fontSize: _heroSize,
+                              ),
+                            ),
+                            TextSpan(
+                              text: ' ${l10n.progressStreakUnit(days)}',
+                              style: theme.textTheme.titleMedium,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        days == 0
+                            ? l10n.progressStreakStart
+                            : l10n.progressStreakKeep,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: muted,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Text(
-                    l10n.progressStreakUnit(days),
-                    style: theme.textTheme.titleMedium,
-                  ),
-                ],
+                ),
               ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                days == 0 ? l10n.progressStreakStart : l10n.progressStreakKeep,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              const SizedBox(width: AppSpacing.lg),
+              ExcludeSemantics(
+                child: Container(
+                  width: _flameSize,
+                  height: _flameSize,
+                  decoration: BoxDecoration(
+                    color: colors.accent,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.local_fire_department,
+                    size: _flameIconSize,
+                    color: colors.onAccent,
+                  ),
                 ),
               ),
             ],
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -182,57 +248,33 @@ class _StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
     final meter = this.meter;
     final detail = this.detail;
 
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: MergeSemantics(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: theme.textTheme.bodyMedium),
-              const SizedBox(height: AppSpacing.xs),
-              Text(value, style: theme.textTheme.headlineSmall),
-              if (detail != null)
-                Text(
-                  detail,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              if (meter != null) ...[
-                const SizedBox(height: AppSpacing.sm),
-                ExcludeSemantics(child: _Meter(value: meter)),
-              ],
+    return SoftCard(
+      radius: AppRadius.tile,
+      elevated: false,
+      child: MergeSemantics(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(value, style: theme.textTheme.headlineMedium),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(color: muted),
+            ),
+            if (detail != null)
+              Text(
+                detail,
+                style: theme.textTheme.bodySmall?.copyWith(color: muted),
+              ),
+            if (meter != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              SoftProgressBar(value: meter),
             ],
-          ),
+          ],
         ),
-      ),
-    );
-  }
-}
-
-/// Jauge : le remplissage et sa piste sont deux teintes de la même couleur.
-class _Meter extends StatelessWidget {
-  const _Meter({required this.value});
-
-  static const _height = 8.0;
-
-  final double value;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(_height / 2),
-      child: LinearProgressIndicator(
-        value: value.clamp(0, 1),
-        minHeight: _height,
-        color: scheme.primary,
-        backgroundColor: scheme.primaryContainer,
       ),
     );
   }
@@ -247,43 +289,28 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final subtitle = this.subtitle;
-
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Semantics(
-              header: true,
-              child: Text(title, style: theme.textTheme.titleMedium),
-            ),
-            if (subtitle != null)
-              Text(
-                subtitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            const SizedBox(height: AppSpacing.md),
-            child,
-          ],
-        ),
+    return SoftCard(
+      elevated: false,
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SectionTitle(title, subtitle: subtitle),
+          child,
+        ],
       ),
     );
   }
 }
 
-/// Barres horizontales classées, une couleur, le nombre au bout de chaque
-/// barre.
+/// Barres horizontales classées, une couleur, le nombre en bout de ligne.
 class _MistakesByCategory extends StatelessWidget {
   const _MistakesByCategory({required this.counts});
-
-  static const _barThickness = 10.0;
-  static const _dataEndRadius = Radius.circular(4);
 
   final List<CategoryCount> counts;
 
@@ -296,7 +323,10 @@ class _MistakesByCategory extends StatelessWidget {
     return _Section(
       title: l10n.progressMistakesTitle,
       child: counts.isEmpty
-          ? Text(l10n.progressMistakesEmpty)
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: Text(l10n.progressMistakesEmpty),
+            )
           : Column(
               children: [
                 for (final entry in counts)
@@ -304,36 +334,25 @@ class _MistakesByCategory extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: AppSpacing.md),
                     child: MergeSemantics(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text(errorCategoryName(l10n, entry.category)),
-                          const SizedBox(height: AppSpacing.xs),
                           Row(
                             children: [
                               Expanded(
-                                child: FractionallySizedBox(
-                                  alignment: AlignmentDirectional.centerStart,
-                                  widthFactor: entry.count / highest,
-                                  child: Container(
-                                    height: _barThickness,
-                                    decoration: BoxDecoration(
-                                      color: theme.colorScheme.primary,
-                                      // Arrondi au bout, carré à la base.
-                                      borderRadius:
-                                          const BorderRadiusDirectional.horizontal(
-                                            end: _dataEndRadius,
-                                          ).resolve(Directionality.of(context)),
-                                    ),
-                                  ),
+                                child: Text(
+                                  errorCategoryName(l10n, entry.category),
                                 ),
                               ),
-                              const SizedBox(width: AppSpacing.sm),
                               Text(
                                 '${entry.count}',
-                                style: theme.textTheme.labelLarge,
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ],
                           ),
+                          const SizedBox(height: AppSpacing.xs),
+                          SoftProgressBar(value: entry.count / highest),
                         ],
                       ),
                     ),
@@ -416,6 +435,7 @@ class _WeeklyMistakeRate extends StatelessWidget {
                                 label: describe(week),
                                 excludeSemantics: true,
                                 child: _Column(
+                                  isLatest: week == latest,
                                   // Même échelle pour toutes les colonnes ;
                                   // une semaine sans faute garde un trait.
                                   height: max(
@@ -455,6 +475,8 @@ class _WeeklyMistakeRate extends StatelessWidget {
                 ),
                 ExpansionTile(
                   tilePadding: EdgeInsets.zero,
+                  shape: const Border(),
+                  collapsedShape: const Border(),
                   title: Text(
                     l10n.progressRateDetails,
                     style: theme.textTheme.bodyMedium,
@@ -476,13 +498,17 @@ class _WeeklyMistakeRate extends StatelessWidget {
 
 /// Une colonne posée sur la ligne de base, sa valeur écrite juste au-dessus.
 class _Column extends StatelessWidget {
-  const _Column({required this.height, this.label});
+  const _Column({required this.height, required this.isLatest, this.label});
 
   static const _width = 20.0;
   static const _labelGap = 2.0;
   static const _dataEndRadius = Radius.circular(4);
+  static const _pastOpacity = 0.35;
 
   final double height;
+
+  /// La dernière semaine ressort ; les précédentes restent en retrait.
+  final bool isLatest;
   final String? label;
 
   @override
@@ -500,7 +526,9 @@ class _Column extends StatelessWidget {
           width: _width,
           height: height,
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary,
+            color: isLatest
+                ? theme.colorScheme.primary
+                : theme.colorScheme.primary.withValues(alpha: _pastOpacity),
             borderRadius: const BorderRadius.vertical(top: _dataEndRadius),
           ),
         ),
@@ -523,26 +551,38 @@ class _PremiumTeaser extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final onWarm = theme.colorScheme.onSecondaryContainer;
 
-    return _Section(
-      title: l10n.progressPremiumTitle,
+    return SoftCard(
+      color: theme.colorScheme.secondaryContainer,
+      elevated: false,
+      padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.lock_outline,
-                color: theme.colorScheme.onSurfaceVariant,
+              const IconBadge(Icons.insights_outlined, accent: true),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    l10n.progressPremiumTitle,
+                    style: theme.textTheme.titleMedium?.copyWith(color: onWarm),
+                  ),
+                ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(child: Text(l10n.progressPremiumBody)),
             ],
           ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            l10n.progressPremiumBody,
+            style: theme.textTheme.bodyMedium?.copyWith(color: onWarm),
+          ),
           if (watchHasCorrectedJournal(ref)) ...[
-            const SizedBox(height: AppSpacing.md),
-            OutlinedButton(
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton(
               onPressed: () => context.push(AppRoutes.paywall),
               child: Text(l10n.paywallDiscover),
             ),

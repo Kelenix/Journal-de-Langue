@@ -14,6 +14,12 @@ final currentUserIdProvider = StreamProvider<String?>(
   (ref) => ref.watch(authRepositoryProvider).watchUserId(),
 );
 
+/// E-mail du compte connecté, relu à chaque changement de compte.
+final currentEmailProvider = Provider<String?>((ref) {
+  ref.watch(currentUserIdProvider);
+  return ref.watch(authRepositoryProvider).currentEmail;
+});
+
 /// Actions de compte d'un écran. Chaque écran a sa propre instance pour ne pas
 /// partager chargement et erreurs.
 class AuthController extends ActionController {

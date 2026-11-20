@@ -16,6 +16,7 @@ String failureMessage(AppLocalizations l10n, Object error) => switch (error) {
   UsageLimitFailure() => l10n.errorUsageLimit,
   LanguageLimitFailure() => l10n.errorLanguageLimit,
   NothingToExportFailure() => l10n.exportNothing,
+  NoExamCreditFailure() => l10n.errorNoExamCredit,
   PurchasePendingFailure() => l10n.errorPurchasePending,
   NothingToRestoreFailure() => l10n.errorNothingToRestore,
   CorrectionDeniedFailure(:final reason) => switch (reason) {

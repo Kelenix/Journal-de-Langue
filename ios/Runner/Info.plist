@@ -4,6 +4,21 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- ID d'application AdMob de démonstration de Google : à remplacer avant publication. -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<!-- Mesure des publicités sans suivi (SKAdNetwork) : identifiant de Google. -->
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+	</array>
+	<!-- Seul le chiffrement standard du système est utilisé (HTTPS, trousseau) :
+	     exempté de déclaration d'exportation. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Le micro sert uniquement à dicter ton journal.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

@@ -4,14 +4,17 @@ import 'app_colors.dart';
 import 'app_spacing.dart';
 
 /// Thème de l'application, construit sur le brand kit : vert profond, ivoire,
-/// corail ; titres en DM Sans, texte en Inter.
+/// corail ; titres en DM Sans, texte en Inter. Grandes cartes arrondies à
+/// l'ombre douce, boutons pleins et généreux.
 abstract final class AppTheme {
   static const titleFont = 'DM Sans';
   static const bodyFont = 'Inter';
 
-  static const _journalLineHeight = 1.5;
-  static const _minTouchTarget = 52.0;
-  static const _softBorderOpacity = 0.4;
+  static const _journalLineHeight = 1.55;
+  static const _buttonHeight = 56.0;
+  static const _secondaryButtonHeight = 52.0;
+  static const _minTouchTarget = 48.0;
+  static const _softBorderOpacity = 0.3;
 
   // Le gris du brand kit (#788680) ne suffit pas pour du petit texte sur
   // ivoire (contraste 3,5) : le texte secondaire utilise un gris plus foncé.
@@ -33,13 +36,15 @@ abstract final class AppTheme {
       onSurfaceVariant: _secondaryTextLight,
       surfaceContainerLowest: BrandColors.white,
       surfaceContainerLow: const Color(0xFFFBF9F2),
-      surfaceContainer: const Color(0xFFF1EEE2),
+      surfaceContainer: const Color(0xFFEFEBDF),
       surfaceContainerHigh: const Color(0xFFEBE8DB),
       surfaceContainerHighest: const Color(0xFFE5E1D3),
       outline: BrandColors.softGray,
-      outlineVariant: const Color(0xFFD8D5C9),
+      outlineVariant: const Color(0xFFE4E0D3),
       error: const Color(0xFFB3261E),
       onError: BrandColors.white,
+      inverseSurface: BrandColors.darkText,
+      onInverseSurface: BrandColors.ivory,
     ),
     cardColor: BrandColors.white,
     colors: AppColors.light,
@@ -54,20 +59,24 @@ abstract final class AppTheme {
     ).copyWith(
       primary: const Color(0xFF8FCDBD),
       onPrimary: const Color(0xFF0B2B25),
-      primaryContainer: BrandColors.deepGreen,
+      primaryContainer: const Color(0xFF24433C),
       onPrimaryContainer: BrandColors.ivory,
       secondary: BrandColors.coral,
       onSecondary: BrandColors.darkText,
+      secondaryContainer: const Color(0xFF4A322A),
+      onSecondaryContainer: const Color(0xFFFBE3D9),
       surface: const Color(0xFF111A17),
       onSurface: BrandColors.ivory,
       onSurfaceVariant: _secondaryTextDark,
       surfaceContainerLowest: const Color(0xFF0C1311),
       surfaceContainerLow: const Color(0xFF17211E),
-      surfaceContainer: const Color(0xFF1B2623),
-      surfaceContainerHigh: const Color(0xFF25312D),
+      surfaceContainer: const Color(0xFF25312D),
+      surfaceContainerHigh: const Color(0xFF2B3733),
       surfaceContainerHighest: const Color(0xFF303C38),
       outline: BrandColors.softGray,
       outlineVariant: const Color(0xFF3A4743),
+      inverseSurface: BrandColors.ivory,
+      onInverseSurface: BrandColors.darkText,
     ),
     cardColor: const Color(0xFF1B2623),
     colors: AppColors.dark,
@@ -80,6 +89,10 @@ abstract final class AppTheme {
   }) {
     final base = ThemeData(colorScheme: scheme, useMaterial3: true);
     final textTheme = _textTheme(base.textTheme, scheme);
+    final buttonText = textTheme.labelLarge?.copyWith(
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+    );
 
     const fieldRadius = BorderRadius.all(Radius.circular(AppRadius.field));
     const buttonShape = RoundedRectangleBorder(
@@ -93,24 +106,33 @@ abstract final class AppTheme {
 
     return base.copyWith(
       scaffoldBackgroundColor: scheme.surface,
+      cardColor: cardColor,
       extensions: [colors],
       textTheme: textTheme,
       appBarTheme: AppBarTheme(
         backgroundColor: scheme.surface,
         foregroundColor: scheme.onSurface,
         surfaceTintColor: Colors.transparent,
-        titleTextStyle: textTheme.titleLarge,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        titleTextStyle: textTheme.titleMedium?.copyWith(fontSize: 18),
       ),
+      // Les cartes ombrées passent par SoftCard ; Card, à plat, sert aux
+      // listes de choix.
       cardTheme: CardThemeData(
         elevation: 0,
         color: cardColor,
+        surfaceTintColor: Colors.transparent,
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        clipBehavior: Clip.antiAlias,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(AppRadius.card)),
+          borderRadius: BorderRadius.all(Radius.circular(AppRadius.tile)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: cardColor,
+        fillColor: scheme.surfaceContainerLow,
+        contentPadding: const EdgeInsets.all(AppSpacing.lg),
         border: fieldBorder(scheme.outlineVariant),
         enabledBorder: fieldBorder(scheme.outlineVariant),
         focusedBorder: fieldBorder(scheme.primary, 2),
@@ -119,62 +141,122 @@ abstract final class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size.fromHeight(_minTouchTarget),
+          minimumSize: const Size.fromHeight(_buttonHeight),
           shape: buttonShape,
-          textStyle: textTheme.labelLarge,
+          textStyle: buttonText,
         ),
       ),
-      // Boutons secondaires du brand kit : fond ivoire, bordure vert doux.
+      // Boutons secondaires : fond transparent, bordure vert doux.
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(_minTouchTarget),
+          minimumSize: const Size.fromHeight(_secondaryButtonHeight),
           shape: buttonShape,
           foregroundColor: scheme.primary,
           side: BorderSide(
             color: scheme.primary.withValues(alpha: _softBorderOpacity),
           ),
-          textStyle: textTheme.labelLarge,
+          textStyle: buttonText,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(textStyle: textTheme.labelLarge),
+        style: TextButton.styleFrom(
+          minimumSize: const Size(_minTouchTarget, _minTouchTarget),
+          textStyle: buttonText?.copyWith(fontSize: 15),
+        ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: cardColor,
-        side: BorderSide(color: scheme.outlineVariant),
-        shape: const StadiumBorder(),
-        labelStyle: textTheme.labelLarge,
+        backgroundColor: scheme.primaryContainer,
+        side: BorderSide.none,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(AppRadius.chip)),
+        ),
+        labelStyle: textTheme.labelLarge?.copyWith(
+          color: scheme.onPrimaryContainer,
+          fontWeight: FontWeight.w600,
+        ),
       ),
-      navigationBarTheme: NavigationBarThemeData(
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: SegmentedButton.styleFrom(
+          backgroundColor: cardColor,
+          selectedBackgroundColor: scheme.primaryContainer,
+          selectedForegroundColor: scheme.onPrimaryContainer,
+          side: BorderSide(color: scheme.outlineVariant),
+          minimumSize: const Size.fromHeight(_minTouchTarget),
+          textStyle: textTheme.labelLarge,
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: scheme.inverseSurface,
+        contentTextStyle: textTheme.bodyMedium?.copyWith(
+          color: scheme.onInverseSurface,
+        ),
+        actionTextColor: colors.accent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(AppRadius.chip)),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
         backgroundColor: cardColor,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: scheme.primaryContainer,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(AppRadius.sheet)),
+        ),
       ),
-      dividerTheme: DividerThemeData(color: scheme.outlineVariant),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: scheme.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.sheet),
+          ),
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: cardColor,
+        surfaceTintColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(AppRadius.tile)),
+        ),
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: scheme.primary,
+        linearTrackColor: scheme.surfaceContainer,
+      ),
+      dividerTheme: DividerThemeData(
+        color: scheme.surfaceContainer,
+        space: 1,
+        thickness: 1,
+      ),
     );
   }
 
-  /// Titres en DM Sans gras, contenu en Inter (Regular, Medium pour les
-  /// libellés).
+  /// Titres en DM Sans gras et resserrés, contenu en Inter (Regular, Medium
+  /// pour les libellés).
   static TextTheme _textTheme(TextTheme base, ColorScheme scheme) {
     final body = base.apply(
       fontFamily: bodyFont,
       bodyColor: scheme.onSurface,
       displayColor: scheme.onSurface,
     );
-    TextStyle? title(TextStyle? style) =>
-        style?.copyWith(fontFamily: titleFont, fontWeight: FontWeight.w700);
+    TextStyle? title(TextStyle? style, {double? size, double spacing = 0}) =>
+        style?.copyWith(
+          fontFamily: titleFont,
+          fontWeight: FontWeight.w700,
+          fontSize: size,
+          letterSpacing: spacing,
+        );
     TextStyle? label(TextStyle? style) =>
         style?.copyWith(fontWeight: FontWeight.w500);
 
     return body.copyWith(
-      displaySmall: title(body.displaySmall),
-      headlineLarge: title(body.headlineLarge),
-      headlineMedium: title(body.headlineMedium),
-      headlineSmall: title(body.headlineSmall),
-      titleLarge: title(body.titleLarge),
-      titleMedium: title(body.titleMedium),
-      titleSmall: title(body.titleSmall),
+      displaySmall: title(body.displaySmall, size: 40, spacing: -0.5),
+      headlineLarge: title(body.headlineLarge, size: 34, spacing: -0.5),
+      headlineMedium: title(body.headlineMedium, size: 30, spacing: -0.5),
+      headlineSmall: title(body.headlineSmall, size: 24),
+      titleLarge: title(body.titleLarge, size: 20),
+      titleMedium: title(body.titleMedium, size: 17),
+      titleSmall: title(body.titleSmall, size: 15),
       bodyLarge: body.bodyLarge?.copyWith(height: _journalLineHeight),
       labelLarge: label(body.labelLarge),
       labelMedium: label(body.labelMedium),

@@ -5,16 +5,24 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/widgets/app_bars.dart';
 import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/badges.dart';
+import '../../../shared/widgets/section_title.dart';
+import '../../../shared/widgets/surfaces.dart';
 import '../../billing/application/billing_providers.dart';
+import '../../reports/domain/content_report_repository.dart';
+import '../../reports/presentation/report_content_button.dart';
+import '../../vocabulary/domain/vocabulary_item.dart';
 import '../../voice/presentation/voice_buttons.dart';
 import '../application/journal_providers.dart';
 import '../domain/journal_entry.dart';
-import 'category_labels.dart';
+import 'correction_item_card.dart';
 import 'highlighted_text.dart';
 import 'rewrite_section.dart';
 
-/// Correction d'un journal : version d'origine, version corrigée, explications.
+/// Correction d'un journal : bilan, version d'origine ou corrigée,
+/// explications, mots à réviser et reformulations.
 class CorrectionScreen extends ConsumerWidget {
   const CorrectionScreen({required this.entryId, super.key});
 
@@ -24,13 +32,20 @@ class CorrectionScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.correctionTitle)),
-      body: SafeArea(
-        child: AsyncView(
-          value: ref.watch(journalEntryProvider(entryId)),
-          onRetry: () => ref.invalidate(journalEntryProvider(entryId)),
-          builder: (entry) => _CorrectionContent(entry: entry),
-        ),
+      appBar: SoftAppBar(
+        title: l10n.correctionTitle,
+        actions: [
+          ReportContentButton(
+            content: ReportedContent.correction,
+            targetId: entryId,
+            style: roundButtonStyle(context),
+          ),
+        ],
+      ),
+      body: AsyncView(
+        value: ref.watch(journalEntryProvider(entryId)),
+        onRetry: () => ref.invalidate(journalEntryProvider(entryId)),
+        builder: (entry) => _CorrectionContent(entry: entry),
       ),
     );
   }
@@ -44,173 +59,271 @@ class _CorrectionContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final colors = theme.extension<AppColors>()!;
     final items = entry.items;
-    final isPremium = watchActiveSubscription(ref) != null;
     final isAdvanced = entry.level == CorrectionLevel.advanced;
 
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+    return Column(
       children: [
-        if (isAdvanced)
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Chip(label: Text(l10n.correctionAdvanced)),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.xs,
+              AppSpacing.lg,
+              AppSpacing.xl,
             ),
-          ),
-        _SectionTitle(l10n.correctionYourVersion),
-        // Jamais la couleur seule : la faute est aussi barrée.
-        HighlightedText(
-          text: entry.originalText,
-          fragments: [for (final item in items) item.original],
-          highlightStyle: TextStyle(
-            color: colors.mistake,
-            decoration: TextDecoration.lineThrough,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        Row(
-          children: [
-            Expanded(child: _SectionTitle(l10n.correctionCorrectedVersion)),
-            // Lecture à voix haute réservée à Premium (US-15).
-            if (isPremium)
-              ListenButton(text: entry.correctedText, language: entry.language),
-          ],
-        ),
-        HighlightedText(
-          text: entry.correctedText,
-          fragments: [for (final item in items) item.corrected],
-          highlightStyle: TextStyle(
-            color: colors.fix,
-            fontWeight: FontWeight.w600,
-            decoration: TextDecoration.underline,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        _SectionTitle(
-          items.isEmpty
-              ? l10n.correctionNoMistakes
-              : l10n.correctionPointsTitle(items.length),
-        ),
-        if (items.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: Text(
-              l10n.correctionEncouragement,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+            children: [
+              _Summary(mistakes: items.length, isAdvanced: isAdvanced),
+              const SizedBox(height: AppSpacing.lg),
+              _Versions(
+                entry: entry,
+                canListen: watchActiveSubscription(ref) != null,
               ),
-            ),
-          ),
-        for (final item in items)
-          // Premium : chaque faute est classée par catégorie (US-12).
-          _CorrectionItemCard(item: item, showsCategory: isAdvanced),
-        if (entry.vocabulary.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.xl),
-          _SectionTitle(l10n.correctionVocabularyTitle),
-          Card(
-            child: Column(
-              children: [
-                for (final word in entry.vocabulary)
-                  ListTile(
-                    title: Text(word.term),
-                    subtitle: Text(word.translation),
+              for (final item in items)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.md),
+                  // Premium : chaque faute est classée par catégorie (US-12).
+                  child: CorrectionItemCard(
+                    item: item,
+                    showsCategory: isAdvanced,
                   ),
+                ),
+              if (entry.vocabulary.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.xl),
+                SectionTitle(l10n.correctionVocabularyTitle),
+                _VocabularyChips(words: entry.vocabulary),
               ],
+              const SizedBox(height: AppSpacing.xl),
+              RewriteSection(entry: entry),
+            ],
+          ),
+        ),
+        // Toujours à portée de main, en bas de l'écran.
+        SafeArea(
+          top: false,
+          minimum: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.sm,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
+          child: SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => context.pop(),
+              child: Text(l10n.correctionDone),
             ),
           ),
-        ],
-        const SizedBox(height: AppSpacing.xl),
-        RewriteSection(entry: entry),
-        const SizedBox(height: AppSpacing.xl),
-        FilledButton(
-          onPressed: () => context.pop(),
-          child: Text(l10n.correctionDone),
         ),
       ],
     );
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.title);
+/// Bilan sur l'aplat vert : nombre de fautes et encouragement.
+class _Summary extends StatelessWidget {
+  const _Summary({required this.mistakes, required this.isAdvanced});
 
-  final String title;
+  static const _ringSize = 64.0;
+  static const _ringWidth = 6.0;
+
+  final int mistakes;
+  final bool isAdvanced;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Semantics(
-        header: true,
-        child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+    final l10n = AppLocalizations.of(context);
+    return HeroCard(
+      child: Builder(
+        builder: (context) {
+          final theme = Theme.of(context);
+          final colors = theme.extension<AppColors>()!;
+          return Row(
+            children: [
+              ExcludeSemantics(
+                child: Container(
+                  width: _ringSize,
+                  height: _ringSize,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: colors.accent, width: _ringWidth),
+                  ),
+                  child: mistakes == 0
+                      ? const Icon(Icons.check)
+                      : Text('$mistakes', style: theme.textTheme.headlineSmall),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.lg),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (isAdvanced) ...[
+                      Tag(l10n.correctionAdvanced, warm: true),
+                      const SizedBox(height: AppSpacing.sm),
+                    ],
+                    Semantics(
+                      header: true,
+                      child: Text(
+                        mistakes == 0
+                            ? l10n.correctionNoMistakes
+                            : l10n.correctionPointsTitle(mistakes),
+                        style: theme.textTheme.titleLarge,
+                      ),
+                    ),
+                    if (mistakes > 0) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        l10n.correctionEncouragement,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-class _CorrectionItemCard extends StatelessWidget {
-  const _CorrectionItemCard({required this.item, required this.showsCategory});
+/// Version d'origine (fautes barrées) ou corrigée (corrections soulignées).
+/// La couleur n'est jamais seule à porter l'information.
+class _Versions extends StatefulWidget {
+  const _Versions({required this.entry, required this.canListen});
 
-  final CorrectionItem item;
-  final bool showsCategory;
+  final JournalEntry entry;
+
+  /// Lecture à voix haute réservée à Premium (US-15).
+  final bool canListen;
+
+  @override
+  State<_Versions> createState() => _VersionsState();
+}
+
+class _VersionsState extends State<_Versions> {
+  bool _showsCorrected = true;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final colors = theme.extension<AppColors>()!;
+    final colors = Theme.of(context).extension<AppColors>()!;
+    final entry = widget.entry;
+    final items = entry.items;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (showsCategory)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                child: Text(
-                  errorCategoryName(l10n, item.category),
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SegmentedButton<bool>(
+          showSelectedIcon: false,
+          segments: [
+            ButtonSegment(
+              value: false,
+              label: Text(l10n.correctionYourVersion),
+            ),
+            ButtonSegment(
+              value: true,
+              label: Text(l10n.correctionCorrectedVersion),
+            ),
+          ],
+          selected: {_showsCorrected},
+          onSelectionChanged: (selection) =>
+              setState(() => _showsCorrected = selection.single),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        SoftCard(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _showsCorrected
+                    ? HighlightedText(
+                        text: entry.correctedText,
+                        fragments: [for (final item in items) item.corrected],
+                        highlightStyle: TextStyle(
+                          color: colors.fix,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                          decorationColor: colors.fix,
+                        ),
+                      )
+                    : HighlightedText(
+                        text: entry.originalText,
+                        fragments: [for (final item in items) item.original],
+                        highlightStyle: TextStyle(
+                          color: colors.mistake,
+                          decoration: TextDecoration.lineThrough,
+                          decorationColor: colors.mistake,
+                        ),
+                      ),
               ),
-            Semantics(
-              label: l10n.correctionItemLabel(item.original, item.corrected),
-              excludeSemantics: true,
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: item.original,
-                      style: TextStyle(
-                        color: colors.mistake,
-                        decoration: TextDecoration.lineThrough,
-                      ),
-                    ),
-                    const TextSpan(text: '  →  '),
-                    TextSpan(
-                      text: item.corrected,
-                      style: TextStyle(
-                        color: colors.fix,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+              if (_showsCorrected && widget.canListen) ...[
+                const SizedBox(width: AppSpacing.sm),
+                ListenButton(
+                  text: entry.correctedText,
+                  language: entry.language,
                 ),
-                style: theme.textTheme.titleMedium,
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Mots relevés dans le journal, avec leur traduction.
+class _VocabularyChips extends StatelessWidget {
+  const _VocabularyChips({required this.words});
+
+  final List<VocabularyItem> words;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
+      children: [
+        for (final word in words)
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: scheme.secondaryContainer,
+              borderRadius: BorderRadius.circular(AppRadius.chip),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    word.term,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: scheme.onSecondaryContainer,
+                    ),
+                  ),
+                  Text(
+                    word.translation,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSecondaryContainer,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(item.explanation),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 }

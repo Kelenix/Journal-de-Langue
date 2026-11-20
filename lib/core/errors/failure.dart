@@ -85,6 +85,11 @@ final class LanguageLimitFailure extends Failure {
   const LanguageLimitFailure();
 }
 
+/// Une simulation d'examen demande un Pack Examinateur.
+final class NoExamCreditFailure extends Failure {
+  const NoExamCreditFailure();
+}
+
 /// Aucun journal corrigé sur la période choisie pour un export.
 final class NothingToExportFailure extends Failure {
   const NothingToExportFailure();

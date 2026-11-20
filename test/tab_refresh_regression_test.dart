@@ -76,7 +76,7 @@ void main() {
     expect(find.text('I has a cat.'), findsOneWidget);
 
     await openTab(tester, Icons.style_outlined);
-    expect(find.text('a cat'), findsOneWidget);
+    expect(find.text(english.reviewCardOf(1, 1)), findsOneWidget);
 
     // L'offre payante peut maintenant être proposée depuis le profil.
     await openTab(tester, Icons.person_outline);
@@ -123,6 +123,6 @@ void main() {
     expect(find.text(english.languageGerman), findsOneWidget);
 
     await openTab(tester, Icons.style_outlined);
-    expect(find.text('a cat'), findsOneWidget);
+    expect(find.text(english.reviewCardOf(1, 1)), findsOneWidget);
   });
 }

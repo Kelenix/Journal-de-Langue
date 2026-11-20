@@ -7,13 +7,12 @@ Cahier des charges : `INTAKE.md` · Plan : `docs/PLAN.md` · Avancement : `PROJE
 
 ## Prérequis
 
-- Docker Desktop démarré
-- Supabase CLI
-- Flutter 3.41.7 sur l'hôte, uniquement pour lancer l'app sur émulateur ou téléphone
+- Flutter 3.41.7 : analyse, tests, compilation et lancement de l'app, sur le poste
+- Supabase CLI et Docker Desktop démarré : Docker sert uniquement à la base locale
 
 ## Démarrer
 
-1. Backend local (Postgres, Auth, Edge Functions) dans Docker :
+1. Base locale (Postgres, Auth, Edge Functions), lancée dans Docker par Supabase :
 
    ```powershell
    supabase start
@@ -42,34 +41,24 @@ débite rien.
 L'émulateur joint le backend local par `http://10.0.2.2:55321`. Sur un téléphone réel,
 remplacer `10.0.2.2` par l'adresse IP du poste sur le réseau local.
 
-### Si le build Android échoue sur l'hôte
+Si l'installation répond `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, l'app installée a été
+signée avec une autre clé de test : la désinstaller une fois du téléphone, puis
+réinstaller.
 
-Sur ce poste, Gradle échoue avec `Unable to establish loopback connection`
-(`Invalid argument: connect`, Java 17.0.12). Tant que le JDK n'est pas mis à jour
-(voir `docs/manual-tasks.md`), compiler dans Docker puis installer avec adb :
+## Vérifier le code
+
+Comme la CI :
 
 ```powershell
-docker compose run --rm flutter sh -c "flutter pub get && flutter build apk --debug --dart-define-from-file=env/dev.json && mkdir -p dist && cp build/app/outputs/flutter-apk/app-debug.apk dist/"
+dart format --output=none --set-exit-if-changed lib test test_integration
 ```
 
 ```powershell
-& "$env:LOCALAPPDATA\Android\sdk\platform-tools\adb.exe" install -r dist/app-debug.apk
+flutter analyze
 ```
 
-Le premier build télécharge le NDK Android (environ 1 Go) : il peut durer plus de dix
-minutes. Les suivants réutilisent le volume Docker `android_sdk` et sont bien plus courts.
-
-Si adb répond `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, l'app installée a été signée avec une
-autre clé de debug : la désinstaller une fois (`adb uninstall
-com.journaldelangue.journal_de_langue`), puis réinstaller. La clé est ensuite conservée
-dans le volume Docker `android_home`.
-
-## Vérifier le code (dans Docker)
-
-Même image que la CI.
-
 ```powershell
-docker compose run --rm flutter sh -c "flutter pub get && dart format --output=none --set-exit-if-changed lib test test_integration && flutter analyze && flutter test"
+flutter test
 ```
 
 ## Tester le backend
@@ -99,6 +88,76 @@ pour retrouver la configuration normale des fonctions.
 
 Les e-mails envoyés en local sont visibles sur http://127.0.0.1:55324.
 
+## Configuration
+
+Valeurs passées à l'app au build (`--dart-define-from-file=env/<fichier>.json`, voir
+`env/example.json`) :
+
+| Clé | Rôle |
+|-----|------|
+| `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` | Projet Supabase (clé publique, non secrète) |
+| `ADMOB_BANNER_ID`, `ADMOB_INTERSTITIAL_ID`, `ADMOB_REWARDED_ID` | Blocs AdMob ; vides en debug : blocs de démonstration de Google ; vides en publication : pas de publicité |
+
+Propriété Gradle : `-PADMOB_APP_ID=ca-app-pub-…~…` (obligatoire pour un build de
+publication Android). Secrets des Edge Functions (`supabase secrets set`, jamais dans le
+dépôt) : voir `supabase/functions/.env.example`.
+
+## Tester sur un téléphone
+
+Le téléphone doit être sur le même Wi-Fi que le poste, qui garde Supabase démarré. Créer
+`env/phone.json` comme `env/dev.json`, en remplaçant `10.0.2.2` par l'adresse IP du poste
+sur le Wi-Fi (`ipconfig`), puis :
+
+```powershell
+flutter build apk --profile --dart-define-from-file=env/phone.json
+```
+
+Copier `build/app/outputs/flutter-apk/app-profile.apk` (un seul APK, valable pour tous
+les téléphones) sur le téléphone et l'ouvrir, en autorisant l'installation
+d'applications inconnues. Mode « profile » : vitesse proche de la version publiée.
+
+Vérification depuis le navigateur du téléphone : `http://<IP du poste>:55321/auth/v1/health`
+doit afficher « No API key found in request ». Sinon, le téléphone ne joint pas le poste
+(autre réseau, isolation des appareils par la box) : passer par le câble USB, sans Wi-Fi.
+Créer `env/usb.json` comme `env/dev.json` avec `127.0.0.1` à la place de `10.0.2.2`,
+activer le débogage USB, puis :
+
+```powershell
+adb reverse tcp:55321 tcp:55321
+```
+
+```powershell
+flutter run --dart-define-from-file=env/usb.json
+```
+
+Le Supabase local n'envoie aucun vrai e-mail : les codes de confirmation arrivent dans la
+boîte locale du poste, http://127.0.0.1:55324. Le compte de démonstration
+(identifiants en tête de `supabase/seed.sql`) évite l'inscription.
+
+## Build de publication (Android)
+
+À faire sur l'ordinateur de publication : la clé d'envoi n'est jamais sur le poste de
+développement (`docs/manual-tasks.md`, étape 3).
+
+```powershell
+flutter build appbundle --release --dart-define-from-file=env/prod.json -PADMOB_APP_ID=<identifiant AdMob de l'app>
+```
+
+L'app bundle est produit dans `build/app/outputs/bundle/release/`. Il est signé avec la clé
+d'envoi décrite par `android/key.properties`, à créer une fois (`docs/manual-tasks.md`) ;
+sans ce fichier, il est signé avec la clé de debug et Google Play le refuse. Avant chaque
+version : `docs/store/compliance-checklist.md`.
+
+## Suivi (coût de l'IA, rétention)
+
+Dans l'éditeur SQL du tableau de bord Supabase :
+
+```sql
+select * from v_ai_cost_per_month order by month desc;
+select * from v_retention_d7 order by cohort_week desc;
+select * from ai_content_reports order by created_at desc;
+```
+
 ## Simuler un abonnement en local
 
 Sans store, un abonnement se simule en envoyant une notification à la fonction
@@ -125,6 +184,13 @@ Le symbole est dessiné une seule fois dans `tool/generate_app_icons.py` (Pillow
 python tool/generate_app_icons.py
 ```
 
+Visuels des fiches des stores (icône 512, image de présentation, captures commentées
+depuis `docs/store/captures/`) :
+
+```powershell
+python tool/generate_store_visuals.py
+```
+
 ## Régénérer le code
 
 Après modification d'un modèle `@freezed` (fichiers `*.freezed.dart`, `*.g.dart`) :
@@ -143,10 +209,11 @@ lib/
 ├── shared/     widgets communs
 └── features/   une fonctionnalité par dossier
 supabase/       configuration, migrations, Edge Functions
-assets/         polices et logo embarqués
+assets/         polices, logo et textes légaux (fr, en) embarqués
 design/         original de l'icône (non embarqué)
-tool/           génération de l'icône
-docs/           plan, produit, architecture, données, design, risques, tâches manuelles
+tool/           génération de l'icône et des visuels des stores
+docs/           plan, produit, architecture, données, design, risques, qualité,
+                performances, fiches des stores, tâches manuelles
 ```
 
 ## Documentation
@@ -158,5 +225,11 @@ docs/           plan, produit, architecture, données, design, risques, tâches 
 | Modèle de données | `docs/data-model.md` |
 | Design | `docs/design/design-system.md`, `docs/design/flows.md` |
 | Risques | `docs/risks.md` |
+| Sécurité | `docs/security.md` |
+| Plan de test | `docs/qa/test-plan.md` |
+| Performances | `docs/performance.md` |
+| Fiches et conformité des stores | `docs/store/` |
+| Textes légaux | `assets/legal/` |
+| Versions | `CHANGELOG.md` |
 | Décisions | `DECISION_LOG.md` |
 | À faire par l'éditeur | `docs/manual-tasks.md` |

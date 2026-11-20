@@ -55,4 +55,3 @@ app.*.map.json
 
 # Localisation générée (flutter gen-l10n, relancé par flutter pub get)
 /lib/l10n/app_localizations*.dart
-/dist/

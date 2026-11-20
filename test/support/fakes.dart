@@ -1,11 +1,19 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/widgets.dart';
+
 import 'package:journal_de_langue/core/errors/failure.dart';
+import 'package:journal_de_langue/features/ads/domain/ad_status.dart';
+import 'package:journal_de_langue/features/ads/domain/ads_service.dart';
 import 'package:journal_de_langue/features/auth/domain/auth_repository.dart';
 import 'package:journal_de_langue/features/billing/domain/billing_repository.dart';
 import 'package:journal_de_langue/features/billing/domain/offer.dart';
+import 'package:journal_de_langue/features/billing/domain/one_time_product.dart';
 import 'package:journal_de_langue/features/billing/domain/subscription.dart';
+import 'package:journal_de_langue/features/billing/domain/wallet.dart';
+import 'package:journal_de_langue/features/exam/domain/exam.dart';
+import 'package:journal_de_langue/features/exam/domain/exam_repository.dart';
 import 'package:journal_de_langue/features/exercises/domain/exercise.dart';
 import 'package:journal_de_langue/features/exercises/domain/exercise_repository.dart';
 import 'package:journal_de_langue/features/journal/domain/journal_draft_store.dart';
@@ -13,6 +21,7 @@ import 'package:journal_de_langue/features/journal/domain/journal_entry.dart';
 import 'package:journal_de_langue/features/journal/domain/journal_repository.dart';
 import 'package:journal_de_langue/features/languages/domain/language_repository.dart';
 import 'package:journal_de_langue/features/languages/domain/learning_language.dart';
+import 'package:journal_de_langue/features/reports/domain/content_report_repository.dart';
 import 'package:journal_de_langue/features/stats/domain/learning_stats.dart';
 import 'package:journal_de_langue/features/stats/domain/stats_repository.dart';
 import 'package:journal_de_langue/features/voice/domain/voice_service.dart';
@@ -48,6 +57,9 @@ class FakeAuthRepository implements AuthRepository {
     yield _userId;
     yield* _changes.stream;
   }
+
+  @override
+  String? get currentEmail => _userId == null ? null : 'learner@example.test';
 
   @override
   Future<void> signUp({required String email, required String password}) =>
@@ -176,7 +188,7 @@ JournalEntry sampleEntry({
 
 /// Journaux en mémoire, avec la règle gratuite : une correction par jour.
 class FakeJournalRepository implements JournalRepository {
-  FakeJournalRepository({this.vocabulary, this.subscriptions});
+  FakeJournalRepository({this.vocabulary, this.subscriptions, this.wallet});
 
   static const _freeDailyCorrections = 1;
   static const _premiumDailyCorrections = 30;
@@ -186,6 +198,12 @@ class FakeJournalRepository implements JournalRepository {
 
   /// Source de l'offre de l'utilisateur ; sans elle, l'offre est gratuite.
   final FakeSubscriptionRepository? subscriptions;
+
+  /// Crédits achetés, utilisés une fois le quota du jour épuisé.
+  final FakeWalletRepository? wallet;
+
+  /// Corrections offertes par des vidéos, utilisées après les crédits.
+  int rewardCorrections = 0;
 
   final submissions = <({String text, String idempotencyKey})>[];
   final _entries = <String, JournalEntry>{};
@@ -223,33 +241,69 @@ class FakeJournalRepository implements JournalRepository {
   /// Place un journal corrigé un jour précédent.
   void seedPast(JournalEntry entry) => _entries[entry.id] = entry;
 
+  /// Journaux corrigés, du plus récent au plus ancien.
+  List<JournalEntry> get savedEntries =>
+      _entries.values.toList()
+        ..sort((a, b) => b.entryDate.compareTo(a.entryDate));
+
+  /// Pages d'historique demandées.
+  final historyPages = <({int offset, int limit})>[];
+
+  /// Fait échouer le chargement des pages suivantes de l'historique.
+  Failure? nextPageFailure;
+
   @override
-  Future<List<JournalEntry>> recentEntries() async {
-    final failure = loadFailure;
+  Future<List<JournalEntry>> historyPage({
+    required int offset,
+    required int limit,
+  }) async {
+    final failure = offset == 0 ? loadFailure : nextPageFailure;
     if (failure != null) throw failure;
-    return _entries.values.toList()
-      ..sort((a, b) => b.entryDate.compareTo(a.entryDate));
+    historyPages.add((offset: offset, limit: limit));
+    return savedEntries.skip(offset).take(limit).toList();
   }
 
   @override
-  Future<HistoryOverview> historyOverview() async =>
-      subscriptions?.activePlan == null
-      ? HistoryOverview(historyDays: 4, lockedEntries: lockedEntries)
-      : const HistoryOverview(historyDays: null, lockedEntries: 0);
+  Future<List<JournalEntry>> entriesSince(
+    LearningLanguage language, {
+    DateTime? firstDay,
+  }) async {
+    final failure = loadFailure;
+    if (failure != null) throw failure;
+    return [
+      for (final entry in savedEntries)
+        if (entry.language == language &&
+            (firstDay == null || !entry.entryDate.isBefore(firstDay)))
+          entry,
+    ];
+  }
+
+  @override
+  Future<HistoryOverview> historyOverview() async => HistoryOverview(
+    historyDays: subscriptions?.activePlan == null ? 4 : null,
+    lockedEntries: subscriptions?.activePlan == null ? lockedEntries : 0,
+    correctedEntries: _entries.length + lockedEntries,
+  );
+
+  int get _planCorrectionsLeft =>
+      ((subscriptions?.activePlan == null
+                  ? _freeDailyCorrections
+                  : _premiumDailyCorrections) -
+              _correctionsToday)
+          .clamp(0, 30);
 
   @override
   Future<JournalAllowance> allowance(DateTime day) async {
     final failure = loadFailure;
     if (failure != null) throw failure;
     final plan = subscriptions?.activePlan;
-    final dailyCorrections = plan == null
-        ? _freeDailyCorrections
-        : _premiumDailyCorrections;
     return JournalAllowance(
       plan: plan,
       maxSentences: plan == null ? 7 : 40,
       maxCharacters: plan == null ? 1000 : 6000,
-      correctionsLeft: (dailyCorrections - _correctionsToday).clamp(0, 30),
+      correctionsLeft: _planCorrectionsLeft,
+      credits: wallet?.wallet.correctionCredits ?? 0,
+      rewardCorrections: rewardCorrections,
     );
   }
 
@@ -292,7 +346,17 @@ class FakeJournalRepository implements JournalRepository {
           ? CorrectionLevel.basic
           : CorrectionLevel.advanced,
     );
+    // Quota du jour épuisé : un crédit acheté prend le relais.
+    final usesCredit = _planCorrectionsLeft == 0;
+    if (usesCredit) {
+      if ((wallet?.wallet.correctionCredits ?? 0) > 0) {
+        wallet!.spendCredit();
+      } else {
+        rewardCorrections--;
+      }
+    }
     seedCorrectedToday(entry);
+    if (usesCredit) _correctionsToday--;
     vocabulary?.items.insertAll(0, entry.vocabulary);
     return entry;
   }
@@ -370,7 +434,20 @@ class FakeSubscriptionRepository implements SubscriptionRepository {
 
 /// Store en mémoire : un achat réussi active l'abonnement côté « serveur ».
 class FakeBillingRepository implements BillingRepository {
-  FakeBillingRepository(this.subscriptions);
+  FakeBillingRepository(this.subscriptions, [this.wallet]);
+
+  /// Prix affichés pour les produits vendus à l'unité.
+  static String priceOf(OneTimeProduct product) => switch (product) {
+    OneTimeProduct.corrections10 => r'$1.99',
+    OneTimeProduct.corrections50 => r'$5.99',
+    OneTimeProduct.examPack => r'$7.99',
+    OneTimeProduct.removeAds => r'$2.99',
+    _ => r'$2.49',
+  };
+
+  /// Reçoit les achats à l'unité, comme le serveur après la notification.
+  final FakeWalletRepository? wallet;
+  final boughtProducts = <OneTimeProduct>[];
 
   static const annual = Offer(
     plan: SubscriptionPlan.annual,
@@ -428,6 +505,27 @@ class FakeBillingRepository implements BillingRepository {
   }
 
   @override
+  Future<List<ProductOffer>> products() async {
+    final failure = this.failure;
+    if (failure != null) throw failure;
+    return [
+      for (final product in OneTimeProduct.values.reversed)
+        ProductOffer(product: product, priceLabel: priceOf(product)),
+    ];
+  }
+
+  @override
+  Future<PurchaseOutcome> buy(OneTimeProduct product) async {
+    final failure = this.failure;
+    if (failure != null) throw failure;
+    if (cancelsPurchase) return PurchaseOutcome.cancelledByUser;
+
+    boughtProducts.add(product);
+    if (!neverConfirms) wallet?.grant(product);
+    return PurchaseOutcome.completed;
+  }
+
+  @override
   Future<void> restore() async {
     final failure = this.failure;
     if (failure != null) throw failure;
@@ -468,7 +566,10 @@ class FakeExerciseRepository implements ExerciseRepository {
 
   bool get _isPremium => subscriptions?.activePlan != null;
 
-  int get _left => (_isPremium ? 20 : 3) - answers.length;
+  /// Exercices offerts par des vidéos.
+  int bonus = 0;
+
+  int get _left => (_isPremium ? 20 : 3) + bonus - answers.length;
 
   @override
   Future<ExerciseBatch> next({
@@ -535,7 +636,7 @@ class FakeStatsRepository implements StatsRepository {
     final failure = this.failure;
     if (failure != null) throw failure;
 
-    final entries = await journal.recentEntries();
+    final entries = journal.savedEntries;
     final days = {
       for (final entry in entries)
         DateTime(
@@ -554,6 +655,13 @@ class FakeStatsRepository implements StatsRepository {
       cursor = cursor.subtract(const Duration(days: 1));
     }
 
+    final monday = today.subtract(Duration(days: today.weekday - 1));
+    final weekDays = [
+      for (var offset = 0; offset < today.weekday; offset++)
+        if (days.contains(monday.add(Duration(days: offset))))
+          monday.add(Duration(days: offset)),
+    ];
+
     final inLanguage = entries.where((entry) => entry.language == language);
     final isPremium = subscriptions?.activePlan != null;
     if (!isPremium) {
@@ -561,6 +669,7 @@ class FakeStatsRepository implements StatsRepository {
         isPremium: false,
         streakDays: streak,
         journals: inLanguage.length,
+        weekDays: weekDays,
       );
     }
 
@@ -573,6 +682,7 @@ class FakeStatsRepository implements StatsRepository {
       isPremium: true,
       streakDays: streak,
       journals: inLanguage.length,
+      weekDays: weekDays,
       wordsLearned: words.where((word) => word.learnedAt != null).length,
       wordsTotal: words.length,
       mistakesByCategory: [
@@ -634,4 +744,247 @@ class FakeVoiceService implements VoiceService {
 
   @override
   Future<void> stopSpeaking() async {}
+}
+
+/// Achats à l'unité en mémoire, tels que le serveur les connaît.
+class FakeWalletRepository implements WalletRepository {
+  FakeWalletRepository([this.wallet = const Wallet()]);
+
+  Wallet wallet;
+
+  @override
+  Future<Wallet> current() async => wallet;
+
+  /// Ce que la notification d'achat apporterait.
+  void grant(OneTimeProduct product) {
+    final language = product.passLanguage;
+    wallet = switch (product) {
+      OneTimeProduct.corrections10 => wallet.copyWith(
+        correctionCredits: wallet.correctionCredits + 10,
+      ),
+      OneTimeProduct.corrections50 => wallet.copyWith(
+        correctionCredits: wallet.correctionCredits + 50,
+      ),
+      OneTimeProduct.examPack => wallet.copyWith(
+        examCredits: wallet.examCredits + 1,
+      ),
+      OneTimeProduct.removeAds => wallet.copyWith(adsRemoved: true),
+      _ => wallet.copyWith(
+        languagePasses: [
+          ...wallet.languagePasses,
+          LanguagePass(language: language!, expiresAt: DateTime(2026, 12, 19)),
+        ],
+      ),
+    };
+  }
+
+  void spendCredit() =>
+      wallet = wallet.copyWith(correctionCredits: wallet.correctionCredits - 1);
+}
+
+/// Sujet d'examen d'exemple.
+const sampleExamPrompt = ExamPrompt(
+  title: 'A letter to a friend',
+  task: 'Write to a friend about your last holiday.',
+  minWords: 120,
+  maxWords: 180,
+);
+
+/// Correction renforcée d'exemple.
+const sampleExamResult = ExamResult(
+  score: 14,
+  levelEstimate: 'B1',
+  summary: 'Clear and well organised.',
+  criteria: [
+    CriterionScore(
+      criterion: ExamCriterion.task,
+      score: 4,
+      comment: 'Complete.',
+    ),
+    CriterionScore(
+      criterion: ExamCriterion.coherence,
+      score: 4,
+      comment: 'Well linked.',
+    ),
+    CriterionScore(
+      criterion: ExamCriterion.vocabulary,
+      score: 3,
+      comment: 'Some repetition.',
+    ),
+    CriterionScore(
+      criterion: ExamCriterion.grammar,
+      score: 3,
+      comment: 'Check past tenses.',
+    ),
+  ],
+  correctedText: 'I went to Rome.',
+  items: [
+    CorrectionItem(
+      original: 'goed',
+      corrected: 'went',
+      category: ErrorCategory.conjugation,
+      explanation: '"Go" is irregular.',
+    ),
+  ],
+  revisionPlan: [
+    RevisionStep(
+      title: 'Irregular verbs',
+      details: 'Learn the 50 most common.',
+    ),
+    RevisionStep(title: 'Linking words', details: 'Vary "and" and "then".'),
+  ],
+);
+
+/// Simulations en mémoire, avec les règles du serveur : un Pack Examinateur
+/// par simulation, une seule simulation en cours à la fois.
+class FakeExamRepository implements ExamRepository {
+  FakeExamRepository(this.wallet);
+
+  final FakeWalletRepository wallet;
+  final exams = <Exam>[];
+  final drafts = <String>[];
+
+  /// Fait échouer le lancement d'une simulation.
+  Failure? startFailure;
+
+  @override
+  Future<List<Exam>> list() async => [...exams.reversed];
+
+  @override
+  Future<Exam> start({
+    required LearningLanguage language,
+    required ExamLevel level,
+    required String uiLocale,
+  }) async {
+    final failure = startFailure;
+    if (failure != null) throw failure;
+    final open = exams
+        .where((exam) => exam.status != ExamStatus.graded)
+        .firstOrNull;
+    if (open != null) return open;
+    if (wallet.wallet.examCredits == 0) throw const NoExamCreditFailure();
+
+    wallet.wallet = wallet.wallet.copyWith(
+      examCredits: wallet.wallet.examCredits - 1,
+    );
+    final exam = Exam(
+      id: 'exam-${exams.length + 1}',
+      language: language,
+      level: level,
+      status: ExamStatus.inProgress,
+      createdAt: DateTime(2026, 11, 19),
+      prompt: sampleExamPrompt,
+    );
+    exams.add(exam);
+    return exam;
+  }
+
+  @override
+  Future<void> saveDraft({
+    required String examId,
+    required String answer,
+  }) async {
+    drafts.add(answer);
+    _replace(examId, (exam) => exam.copyWith(answer: answer));
+  }
+
+  @override
+  Future<Exam> submit({required String examId, required String answer}) async =>
+      _replace(
+        examId,
+        (exam) => exam.copyWith(
+          answer: answer,
+          status: ExamStatus.graded,
+          result: sampleExamResult,
+          gradedAt: DateTime(2026, 11, 19),
+        ),
+      );
+
+  Exam _replace(String examId, Exam Function(Exam) change) {
+    final index = exams.indexWhere((exam) => exam.id == examId);
+    return exams[index] = change(exams[index]);
+  }
+}
+
+/// Publicités et récompenses telles que le serveur les connaît.
+class FakeAdsRepository implements AdsRepository {
+  FakeAdsRepository([this.adStatus = const AdStatus()]);
+
+  /// Utilisateur gratuit, inscrit depuis plus de 14 jours, sans récompense
+  /// obtenue aujourd'hui.
+  static const eligible = AdStatus(
+    adsEnabled: true,
+    correctionRewardAvailable: true,
+    exercisesRewardAvailable: true,
+  );
+
+  AdStatus adStatus;
+
+  @override
+  Future<AdStatus> status() async => adStatus;
+}
+
+/// SDK publicitaire simulé : la bannière est une boîte reconnaissable, la vidéo
+/// « vue en entier » prévient le serveur par [onEarned] comme le ferait AdMob.
+class FakeAdsService implements AdsService {
+  static const bannerKey = Key('fake-banner');
+
+  /// Consentement donné (ou non requis).
+  bool canRequestAds = true;
+  bool privacyOptionsRequired = false;
+  int privacyOptionsShown = 0;
+  int interstitialsShown = 0;
+  RewardedOutcome rewardedOutcome = RewardedOutcome.earned;
+
+  /// Ce que le serveur fait quand AdMob confirme la récompense.
+  void Function(AdRewardKind kind)? onEarned;
+  final rewardedFor = <({String userId, AdRewardKind kind})>[];
+
+  @override
+  Future<bool> prepare() async => canRequestAds;
+
+  @override
+  Future<bool> isPrivacyOptionsRequired() async => privacyOptionsRequired;
+
+  @override
+  Future<void> showPrivacyOptions() async => privacyOptionsShown++;
+
+  @override
+  Widget banner() => const SizedBox(key: bannerKey, height: 50);
+
+  @override
+  Future<bool> showInterstitial() async {
+    interstitialsShown++;
+    return true;
+  }
+
+  @override
+  Future<RewardedOutcome> showRewarded({
+    required String userId,
+    required AdRewardKind kind,
+  }) async {
+    rewardedFor.add((userId: userId, kind: kind));
+    if (rewardedOutcome == RewardedOutcome.earned) onEarned?.call(kind);
+    return rewardedOutcome;
+  }
+}
+
+/// Signalements reçus par le serveur.
+class FakeContentReportRepository implements ContentReportRepository {
+  final reports =
+      <({ReportedContent content, String targetId, String? comment})>[];
+
+  /// Fait échouer l'envoi.
+  Failure? failure;
+
+  @override
+  Future<void> report(
+    ReportedContent content,
+    String targetId, {
+    String? comment,
+  }) async {
+    final failure = this.failure;
+    if (failure != null) throw failure;
+    reports.add((content: content, targetId: targetId, comment: comment));
+  }
 }

@@ -9,6 +9,7 @@ import '../../../shared/presentation/failure_message.dart';
 import '../../../shared/widgets/error_message.dart';
 import '../../../shared/widgets/form_page.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../legal/presentation/legal_screen.dart';
 import '../application/auth_providers.dart';
 import 'auth_fields.dart';
 
@@ -45,11 +46,13 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final action = ref.watch(signUpControllerProvider);
     final error = action.error;
 
     return FormPage(
       title: l10n.authSignUpTitle,
+      withBrand: true,
       children: [
         Form(
           key: _formKey,
@@ -79,6 +82,15 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           isLoading: action.isLoading,
           onPressed: _submit,
         ),
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          l10n.legalSignUpNotice,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const LegalLinks(),
         const SizedBox(height: AppSpacing.sm),
         TextButton(
           onPressed: () => context.go(AppRoutes.signIn),

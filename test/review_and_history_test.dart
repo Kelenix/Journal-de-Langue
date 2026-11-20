@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:journal_de_langue/core/errors/failure.dart';
 import 'package:journal_de_langue/features/languages/domain/learning_language.dart';
 import 'package:journal_de_langue/features/vocabulary/domain/vocabulary_item.dart';
+import 'package:journal_de_langue/features/vocabulary/presentation/daily_card.dart';
 
 import 'support/fakes.dart';
 import 'support/pump_app.dart';
@@ -62,9 +63,11 @@ void main() {
       await pump(tester);
       await openReview(tester);
 
-      expect(find.text('a cat'), findsOneWidget);
-      expect(find.text('un chat'), findsOneWidget);
-      expect(find.text('The cat is sleeping.'), findsOneWidget);
+      final row = wordRow(sampleWord.id);
+      await tester.scrollUntilVisible(row, 200);
+      for (final text in ['a cat', 'un chat', 'The cat is sleeping.']) {
+        expect(find.descendant(of: row, matching: find.text(text)), findsOne);
+      }
       expect(find.text(english.reviewLearnedCount(0)), findsOneWidget);
     });
 
@@ -75,14 +78,15 @@ void main() {
       await pump(tester);
       await openReview(tester);
 
+      await tester.scrollUntilVisible(wordRow(secondWord.id), 200);
       await tapOn(tester, find.byTooltip(english.reviewMarkLearned).first);
 
       expect(find.text(english.reviewLearnedCount(1)), findsOneWidget);
       expect(vocabulary.items.first.learnedAt, isNotNull);
       // Le mot appris passe après celui qui reste à réviser.
       expect(
-        tester.getTopLeft(find.text('to sleep')).dy,
-        lessThan(tester.getTopLeft(find.text('a cat')).dy),
+        tester.getTopLeft(wordRow(secondWord.id)).dy,
+        lessThan(tester.getTopLeft(wordRow(sampleWord.id)).dy),
       );
 
       await tapOn(tester, find.byTooltip(english.reviewMarkToReview));
@@ -118,7 +122,81 @@ void main() {
       vocabulary.failure = null;
       await tapOn(tester, find.text(english.actionRetry));
 
-      expect(find.text('a cat'), findsOneWidget);
+      expect(find.text(english.reviewWordsTitle), findsOneWidget);
+    });
+
+    group('carte du jour', () {
+      Finder onCard(String text) => find.descendant(
+        of: find.byType(DailyCard),
+        matching: find.text(text),
+      );
+
+      testWidgets('un mot à réviser à la fois, la traduction à la demande', (
+        tester,
+      ) async {
+        vocabulary.items.addAll([sampleWord, secondWord]);
+        await pump(tester);
+        await openReview(tester);
+
+        expect(find.text(english.reviewCardOf(1, 2)), findsOneWidget);
+        expect(onCard('a cat'), findsOneWidget);
+        expect(onCard('The cat is sleeping.'), findsOneWidget);
+        expect(onCard('un chat'), findsNothing);
+
+        await tapOn(tester, find.text(english.reviewShowTranslation));
+
+        expect(onCard('un chat'), findsOneWidget);
+      });
+
+      testWidgets('« Je sais » apprend le mot, « À revoir » le garde ; '
+          'd\'autres cartes ensuite', (tester) async {
+        vocabulary.items.addAll([sampleWord, secondWord]);
+        await pump(tester);
+        await openReview(tester);
+
+        await tapOn(tester, find.text(english.reviewKnown));
+
+        expect(vocabulary.items.first.learnedAt, isNotNull);
+        expect(find.text(english.reviewLearnedCount(1)), findsOneWidget);
+        expect(find.text(english.reviewCardOf(2, 2)), findsOneWidget);
+        expect(onCard('to sleep'), findsOneWidget);
+
+        await tapOn(tester, find.text(english.reviewAgain));
+
+        expect(vocabulary.items.last.learnedAt, isNull);
+        expect(find.text(english.reviewDeckDone), findsOneWidget);
+
+        await tapOn(tester, find.text(english.reviewDeckMore));
+
+        expect(find.text(english.reviewCardOf(1, 1)), findsOneWidget);
+        expect(onCard('to sleep'), findsOneWidget);
+      });
+
+      testWidgets('si l\'enregistrement échoue, la carte reste et '
+          'l\'utilisateur est prévenu', (tester) async {
+        vocabulary.items.add(sampleWord);
+        await pump(tester);
+        await openReview(tester);
+        vocabulary.failure = const NetworkFailure();
+
+        await tapOn(tester, find.text(english.reviewKnown));
+
+        expect(find.text(english.errorNetwork), findsOneWidget);
+        expect(find.text(english.reviewCardOf(1, 1)), findsOneWidget);
+        expect(vocabulary.items.single.learnedAt, isNull);
+      });
+
+      testWidgets('tous les mots appris : pas de carte', (tester) async {
+        vocabulary.items.add(
+          sampleWord.copyWith(learnedAt: DateTime(2026, 11, 18)),
+        );
+        await pump(tester);
+        await openReview(tester);
+
+        expect(find.byType(DailyCard), findsOneWidget);
+        expect(find.text(english.reviewKnown), findsNothing);
+        expect(find.text(english.reviewDeckDone), findsNothing);
+      });
     });
   });
 
@@ -155,7 +233,8 @@ void main() {
       await tapOn(tester, find.text(english.correctionDone));
 
       await openReview(tester);
-      expect(find.text('a cat'), findsOneWidget);
+      expect(find.text(english.reviewCardOf(1, 1)), findsOneWidget);
+      await tester.scrollUntilVisible(wordRow(sampleWord.id), 200);
 
       await openHistory(tester);
       expect(find.text('I has a cat.'), findsOneWidget);
@@ -237,6 +316,68 @@ void main() {
       await openHistory(tester);
 
       expect(find.text(english.errorNetwork), findsWidgets);
+    });
+
+    group('un long historique', () {
+      /// 25 journaux, du 25 novembre (journal 1) au 1er novembre (journal 25).
+      void seedLongHistory() {
+        for (var day = 1; day <= 25; day++) {
+          journal.seedPast(
+            sampleEntry(
+              id: 'entry-$day',
+              originalText: 'Journal ${26 - day}.',
+              entryDate: DateTime(2026, 11, day),
+            ),
+          );
+        }
+      }
+
+      Future<void> scrollToEnd(WidgetTester tester) =>
+          tester.scrollUntilVisible(
+            find.text('Journal 25.'),
+            500,
+            scrollable: find.byType(Scrollable).first,
+          );
+
+      testWidgets('se charge par pages, à mesure qu\'on le parcourt', (
+        tester,
+      ) async {
+        seedLongHistory();
+        await pump(tester);
+        await openHistory(tester);
+
+        expect(journal.historyPages, [(offset: 0, limit: 20)]);
+
+        await scrollToEnd(tester);
+
+        expect(journal.historyPages, [
+          (offset: 0, limit: 20),
+          (offset: 20, limit: 20),
+        ]);
+        expect(find.text('Journal 25.'), findsOneWidget);
+      });
+
+      testWidgets('une page qui ne se charge pas propose de réessayer', (
+        tester,
+      ) async {
+        seedLongHistory();
+        journal.nextPageFailure = const NetworkFailure();
+        await pump(tester);
+        await openHistory(tester);
+        await tester.scrollUntilVisible(
+          find.text(english.actionRetry),
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+
+        expect(find.text(english.errorNetwork), findsOneWidget);
+
+        journal.nextPageFailure = null;
+        await tapOn(tester, find.text(english.actionRetry));
+        await scrollToEnd(tester);
+
+        expect(find.text('Journal 25.'), findsOneWidget);
+      });
     });
   });
 }

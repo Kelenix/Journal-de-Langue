@@ -6,6 +6,8 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../routing/app_routes.dart';
 import '../../../shared/widgets/async_view.dart';
+import '../../../shared/widgets/section_title.dart';
+import '../../../shared/widgets/settings_group.dart';
 import '../../billing/application/billing_providers.dart';
 import '../application/journal_providers.dart';
 import '../domain/journal_entry.dart';
@@ -21,50 +23,35 @@ class RewriteSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     final isPremium = watchActiveSubscription(ref) != null;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Semantics(
-          header: true,
-          child: Text(l10n.rewriteTitle, style: theme.textTheme.titleMedium),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          l10n.rewriteHint,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Card(
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            children: [
-              for (final sentence in splitSentences(entry.correctedText))
-                ListTile(
-                  title: Text(sentence),
-                  trailing: isPremium
-                      ? const Icon(Icons.chevron_right)
-                      : Icon(
-                          Icons.lock_outline,
-                          semanticLabel: l10n.rewriteLocked,
+        SectionTitle(l10n.rewriteTitle, subtitle: l10n.rewriteHint),
+        SettingsGroup(
+          children: [
+            for (final sentence in splitSentences(entry.correctedText))
+              ListTile(
+                title: Text(sentence),
+                trailing: isPremium
+                    ? const Icon(Icons.chevron_right)
+                    : Icon(
+                        Icons.lock_outline,
+                        semanticLabel: l10n.rewriteLocked,
+                      ),
+                onTap: isPremium
+                    ? () => showModalBottomSheet<void>(
+                        context: context,
+                        isScrollControlled: true,
+                        showDragHandle: true,
+                        builder: (context) => _RewriteSheet(
+                          request: (entryId: entry.id, sentence: sentence),
                         ),
-                  onTap: isPremium
-                      ? () => showModalBottomSheet<void>(
-                          context: context,
-                          isScrollControlled: true,
-                          showDragHandle: true,
-                          builder: (context) => _RewriteSheet(
-                            request: (entryId: entry.id, sentence: sentence),
-                          ),
-                        )
-                      : () => context.push(AppRoutes.paywall),
-                ),
-            ],
-          ),
+                      )
+                    : () => context.push(AppRoutes.paywall),
+              ),
+          ],
         ),
       ],
     );

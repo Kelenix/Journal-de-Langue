@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/errors/failure.dart';
 import '../../../core/supabase/supabase_client_provider.dart';
 import '../../../core/utils/clock.dart';
 import '../../../core/utils/uuid.dart';
@@ -42,32 +43,92 @@ final journalDayProvider = FutureProvider.autoDispose<JournalDay>(
   retry: (retryCount, error) => null,
 );
 
-/// Journaux relisibles avec l'offre, et ce qui reste verrouillé au-delà.
-typedef JournalHistory = ({
-  List<JournalEntry> entries,
-  HistoryOverview overview,
-});
-
-final journalHistoryProvider = FutureProvider.autoDispose<JournalHistory>((
+/// Étendue de l'historique lisible avec l'offre, sans le charger.
+final historyOverviewProvider = FutureProvider.autoDispose<HistoryOverview>((
   ref,
 ) async {
   // Recalculé quand l'utilisateur ou son offre change.
   await ref.watch(currentUserIdProvider.future);
   await ref.watch(subscriptionProvider.future);
-  final repository = ref.watch(journalRepositoryProvider);
-  final entries = await repository.recentEntries();
-  final overview = await repository.historyOverview();
-  return (entries: entries, overview: overview);
+  return ref.watch(journalRepositoryProvider).historyOverview();
 }, retry: (retryCount, error) => null);
+
+/// Journaux relisibles déjà chargés ; [moreFailure] est l'échec du chargement
+/// de la page suivante.
+typedef JournalHistory = ({
+  List<JournalEntry> entries,
+  bool hasMore,
+  Failure? moreFailure,
+});
+
+/// Historique chargé par pages, à mesure que l'utilisateur le parcourt.
+class JournalHistoryNotifier extends AsyncNotifier<JournalHistory> {
+  static const pageSize = 20;
+
+  bool _isLoadingMore = false;
+
+  @override
+  Future<JournalHistory> build() async {
+    // Recalculé quand l'utilisateur ou son offre change.
+    await ref.watch(currentUserIdProvider.future);
+    await ref.watch(subscriptionProvider.future);
+    final entries = await ref
+        .watch(journalRepositoryProvider)
+        .historyPage(offset: 0, limit: pageSize);
+    return (
+      entries: entries,
+      hasMore: entries.length == pageSize,
+      moreFailure: null,
+    );
+  }
+
+  /// Charge la page suivante, sauf pendant un chargement ou à la fin.
+  Future<void> loadMore() async {
+    final history = state.value;
+    if (history == null || !history.hasMore || _isLoadingMore) return;
+    _isLoadingMore = true;
+    if (history.moreFailure != null) {
+      state = AsyncData((
+        entries: history.entries,
+        hasMore: true,
+        moreFailure: null,
+      ));
+    }
+    try {
+      final page = await ref
+          .read(journalRepositoryProvider)
+          .historyPage(offset: history.entries.length, limit: pageSize);
+      if (!ref.mounted) return;
+      state = AsyncData((
+        entries: [...history.entries, ...page],
+        hasMore: page.length == pageSize,
+        moreFailure: null,
+      ));
+    } on Failure catch (failure) {
+      if (!ref.mounted) return;
+      state = AsyncData((
+        entries: history.entries,
+        hasMore: true,
+        moreFailure: failure,
+      ));
+    } finally {
+      _isLoadingMore = false;
+    }
+  }
+}
+
+final journalHistoryProvider =
+    AsyncNotifierProvider.autoDispose<JournalHistoryNotifier, JournalHistory>(
+      JournalHistoryNotifier.new,
+      // Pas de nouvel essai automatique : l'écran propose « Réessayer ».
+      retry: (retryCount, error) => null,
+    );
 
 /// Vrai dès que l'utilisateur a fait corriger un journal : les offres payantes
 /// ne lui sont jamais proposées avant (INTAKE §6). Une fonction et non un
 /// provider, pour la même raison que `watchActiveSubscription` (ADR-022).
-bool watchHasCorrectedJournal(WidgetRef ref) {
-  final history = ref.watch(journalHistoryProvider).value;
-  return history != null &&
-      (history.entries.isNotEmpty || history.overview.lockedEntries > 0);
-}
+bool watchHasCorrectedJournal(WidgetRef ref) =>
+    (ref.watch(historyOverviewProvider).value?.correctedEntries ?? 0) > 0;
 
 final journalEntryProvider = FutureProvider.autoDispose
     .family<JournalEntry, String>(
@@ -128,9 +189,11 @@ class JournalSubmissionController extends Notifier<AsyncValue<void>> {
       // et les statistiques.
       ref
         ..invalidate(journalDayProvider)
+        ..invalidate(historyOverviewProvider)
         ..invalidate(journalHistoryProvider)
         ..invalidate(vocabularyProvider)
-        ..invalidate(statsProvider);
+        ..invalidate(statsProvider)
+        ..invalidate(walletProvider);
     }
     return result.value;
   }

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:journal_de_langue/features/legal/domain/legal_document.dart';
 import 'package:journal_de_langue/routing/app_routes.dart';
 import 'package:journal_de_langue/routing/session_gate.dart';
 
@@ -14,7 +15,8 @@ void main() {
       }
     });
 
-    test('déconnecté : seules les routes de compte sont accessibles', () {
+    test('déconnecté : seules les routes de compte et les textes légaux sont '
+        'accessibles', () {
       const gate = SessionGate.signedOut;
 
       expect(AppRoutes.redirectFor(gate, AppRoutes.journal), AppRoutes.signIn);
@@ -28,6 +30,8 @@ void main() {
         AppRoutes.signUp,
         AppRoutes.verifyEmail,
         AppRoutes.forgotPassword,
+        for (final document in LegalDocument.values)
+          AppRoutes.legalOf(document),
       ]) {
         expect(AppRoutes.redirectFor(gate, route), isNull);
       }

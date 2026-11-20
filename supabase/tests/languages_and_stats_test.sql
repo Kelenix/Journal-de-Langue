@@ -1,7 +1,7 @@
 -- Règles de l'incrément 6 : langues selon l'offre, statistiques.
 -- Lancer : supabase test db
 begin;
-select plan(27);
+select plan(28);
 
 -- La base locale peut contenir d'autres données : chaque vérification se limite aux
 -- comptes créés ici.
@@ -136,9 +136,16 @@ set local role authenticated;
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000a');
 
 select is(
-  public.get_stats('es', current_date),
+  public.get_stats('es', current_date) - 'week_days',
   '{"is_premium": false, "streak_days": 3, "journals": 3}'::jsonb,
   'gratuit : série toutes langues confondues et nombre de journaux de la langue, sans plus'
+);
+select is(
+  public.get_stats('es', current_date) -> 'week_days',
+  (select coalesce(jsonb_agg(day order by day), '[]'::jsonb)
+     from unnest(array[current_date, current_date - 1, current_date - 2, current_date - 4]) as day
+    where day >= date_trunc('week', current_date)::date),
+  'jours écrits de la semaine en cours, du lundi à aujourd''hui, toutes langues confondues'
 );
 select is(
   public.get_stats('es', date '1990-01-01') ->> 'streak_days',
@@ -153,7 +160,7 @@ select is(
   'la série tient tant que le dernier journal date d''hier'
 );
 select is(
-  public.get_stats('en', current_date) - 'weekly_mistake_rate',
+  public.get_stats('en', current_date) - array['weekly_mistake_rate', 'week_days'],
   '{"is_premium": true, "streak_days": 2, "journals": 2, "words_learned": 1, "words_total": 2,
     "mistakes_by_category": [{"category": "conjugation", "count": 3}]}'::jsonb,
   'Premium : mots appris et fautes par catégorie'

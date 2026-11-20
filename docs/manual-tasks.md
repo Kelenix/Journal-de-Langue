@@ -3,17 +3,6 @@
 > Ce que Claude ne peut pas faire à ta place : créer des comptes, payer, signer, saisir des
 > secrets. Classé par moment où la tâche devient bloquante. Mis à jour à chaque incrément.
 
-## Poste de développement (dès maintenant, non bloquant)
-
-- [ ] Le build Android échoue sur l'hôte : Gradle s'arrête sur
-      `Unable to establish loopback connection` / `Invalid argument: connect` avec le
-      Java 17.0.12 d'Oracle présent sur ce poste. Cause probable : incompatibilité entre
-      ce JDK et cette version de Windows 11 (26300). Piste : installer un JDK plus récent
-      (17 à jour ou 21) puis `flutter config --jdk-dir <dossier>`. En attendant, le build
-      se fait dans Docker (voir README), ce qui prive du rechargement à chaud.
-      À vérifier d'abord dans ton propre terminal avec `flutter run` : l'erreur a été
-      constatée depuis la session de Claude.
-
 ## Pour voir de vraies corrections (Inc-2 livré, non vérifié avec le vrai modèle)
 
 - [ ] Créer un compte **Anthropic Console**, ajouter un moyen de paiement, générer une clé
@@ -30,6 +19,7 @@
       supabase functions deploy correct-entry
       supabase functions deploy rewrite-sentence
       supabase functions deploy next-exercises
+      supabase functions deploy exam
 
 - [ ] Fixer une limite de dépense mensuelle dans la console Anthropic.
 
@@ -78,14 +68,42 @@
       supabase secrets set REVENUECAT_WEBHOOK_AUTHORIZATION=<la chaîne>
       supabase functions deploy revenuecat-webhook
 
-- [ ] Plus tard (Inc-7) : packs de 10 et 50 corrections, accès langue 30 jours, Pack
-      Examinateur, suppression des publicités.
+- [ ] Créer les achats uniques avec **exactement** ces identifiants (ADR-029) :
+      consommables `corrections_10` (1,99 €), `corrections_50` (5,99 €), `exam_pack`
+      (7,99 €), `language_pass_en`, `language_pass_es`, `language_pass_de`,
+      `language_pass_fr` (2,99 € chacun) ; non consommable `remove_ads` (2,99 €).
+      Prix indicatifs de l'INTAKE, à ajuster dans les stores.
 - [ ] Renseigner les informations fiscales et bancaires dans chaque store.
 
-## Avant Inc-8 (publicités)
+## Publicités (Inc-8 livré, testé avec les publicités de démonstration de Google)
 
-- [ ] Compte **AdMob**, création de l'app et des 3 blocs (bannière, interstitiel,
-      récompensée), configuration du message de consentement.
+- [ ] Compte **AdMob** (gratuit), relié à un profil de paiement Google.
+- [ ] Créer l'app Android et l'app iOS dans AdMob et me communiquer leurs identifiants
+      d'app (`ca-app-pub-…~…`, non secrets). Android : passé au build par
+      `flutter build appbundle -PADMOB_APP_ID=<identifiant>` ; iOS : remplace celui de
+      démonstration dans `ios/Runner/Info.plist` (`GADApplicationIdentifier`).
+- [ ] Pour chaque app, créer 3 blocs : bannière, interstitiel, avec récompense. Me
+      communiquer leurs identifiants (`ca-app-pub-…/…`, non secrets) : ils sont passés au
+      build par `--dart-define` (`ADMOB_BANNER_ID`, `ADMOB_INTERSTITIAL_ID`,
+      `ADMOB_REWARDED_ID`), un jeu par plateforme.
+- [ ] Sur chaque bloc avec récompense, activer la vérification côté serveur avec
+      l'adresse `https://<projet>.supabase.co/functions/v1/admob-reward`, puis
+      enregistrer les numéros de ces blocs (la partie après `/`) et déployer :
+
+      supabase secrets set ADMOB_REWARDED_AD_UNITS=<numéro android>,<numéro ios>
+      supabase functions deploy admob-reward
+
+- [ ] Dans AdMob, « Confidentialité et messages » : créer et publier le message de
+      consentement RGPD (et celui des États américains si l'app y est distribuée). Sans
+      message publié, aucun formulaire n'apparaît.
+- [ ] Déclarer ton téléphone comme appareil de test dans AdMob avant d'essayer les vrais
+      blocs : cliquer sur ses propres publicités peut faire suspendre le compte.
+- [ ] Essayer sur ce téléphone avec un compte de plus de 14 jours : la vidéo doit
+      débloquer la correction en quelques secondes (rappel réel d'AdMob, impossible en
+      local).
+- [ ] Avant publication (Inc-9) : fichier `app-ads.txt` sur le site du développeur
+      déclaré dans les stores ; fiche Play (identifiant publicitaire, sécurité des
+      données) ; iOS : liste SKAdNetwork de Google et choix de la demande de suivi (ATT).
 
 ## Identité visuelle (quand tu veux)
 
@@ -95,15 +113,94 @@
 - [ ] Trancher l'écart du brand kit : son aperçu dit « 10 phrases maximum », l'app
       applique les 7 phrases validées.
 
-## Avant publication (Inc-9)
+## Publication (après Inc-4b), étape par étape
 
-- [ ] Confirmer l'identifiant d'application `com.journaldelangue.journal_de_langue`
-      (ADR-010). Il devient définitif à la première mise en ligne.
-- [ ] Clé de signature Android (keystore) : génération guidée, conservation sous ta
-      responsabilité. Sa perte empêche toute mise à jour.
-- [ ] Certificats et profils iOS.
-- [ ] Faire valider la politique de confidentialité et les conditions d'utilisation, et
-      les héberger à une adresse publique.
-- [ ] Fiches stores : captures, description, classification du contenu, formulaire sur les
-      données collectées.
-- [ ] Dépôt GitHub pour la CI (privé ou public, voir Q3).
+La liste de contrôle complète est `docs/store/compliance-checklist.md`.
+
+### 1. Textes légaux — obligatoire, gratuit (hors juriste)
+
+Les stores et le RGPD exigent une politique de confidentialité et, pour les abonnements,
+des conditions d'utilisation. Les textes sont rédigés (`assets/legal/`, ADR-033).
+
+1. [ ] Remplacer chaque `[À COMPLÉTER : …]` dans les 4 fichiers de `assets/legal/` et dans
+       `docs/store/listing.md` : nom de l'éditeur, adresse, e-mail de contact, médiateur
+       de la consommation (obligatoire pour vendre à des consommateurs en France).
+2. [ ] Les faire relire par un juriste. Points à trancher : âge minimum (16 ans retenu),
+       durée de conservation des comptes inactifs, renonciation au droit de rétractation.
+3. [ ] Les publier à une adresse publique (site de l'éditeur, ou GitHub Pages) et reporter
+       les adresses dans les fiches des stores.
+
+Vérification : `git grep -n "À COMPLÉTER\|TO COMPLETE" -- assets docs/store` ne renvoie
+rien.
+
+### 2. Projet Supabase de production
+
+1. [ ] Le créer dans une région de l'Union européenne (Francfort ou Paris), comme
+       l'annonce la politique de confidentialité.
+2. [ ] Appliquer « Avant toute inscription réelle » ci-dessus (SMTP, e-mails, mot de passe).
+3. [ ] `supabase link`, puis `supabase db push`, puis les secrets et le déploiement des six
+       fonctions : `correct-entry`, `rewrite-sentence`, `next-exercises`, `exam`,
+       `revenuecat-webhook`, `admob-reward`.
+4. [ ] Créer `env/prod.json` sur le modèle de `env/example.json` (adresse et clé publique
+       du projet, blocs AdMob). Ce fichier n'est pas versionné.
+
+### 3. Clé d'envoi Android — sur ton ordinateur de publication, jamais sur ce PC
+
+Décision de l'éditeur (2026-11-19) : rien n'est signé sur le poste de développement ; la
+clé d'envoi, `android/key.properties` et le build de publication sont faits sur un autre
+ordinateur. Google Play signe l'app avec sa propre clé (« signature des applications par
+Google Play ») ; la clé d'envoi prouve que les versions viennent de toi. Perdue, elle se
+remplace par une demande au support de Google, ce qui bloque les mises à jour quelques
+jours.
+
+Sur l'ordinateur de publication : cloner le dépôt, installer Flutter 3.41.7, créer
+`env/prod.json`, puis :
+
+1. [ ] Depuis la racine du projet, créer la clé dans `android/app/` (les `.jks` sont
+       ignorés par Git) ; choisir un mot de passe solide, à ne jamais coller dans le chat.
+       `keytool` est fourni avec Java (Android Studio l'installe) :
+
+       keytool -genkeypair -v -keystore android/app/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+
+2. [ ] Créer `android/key.properties` (ignoré par Git) :
+
+       storePassword=<mot de passe>
+       keyPassword=<mot de passe>
+       keyAlias=upload
+       storeFile=upload-keystore.jks
+
+3. [ ] Copier `upload-keystore.jks` et les mots de passe dans un gestionnaire de mots de
+       passe ou un coffre : ils ne sont nulle part ailleurs.
+
+Vérification : le build de publication (`README.md`) réussit, et
+`keytool -printcert -jarfile <app-release.aab>` affiche ton certificat, pas
+« Android Debug ».
+
+### 4. Google Play Console — 25 $ une fois
+
+1. [ ] Confirmer l'identifiant d'application `com.journaldelangue.journal_de_langue`
+       (ADR-010) : il devient définitif à la première mise en ligne.
+2. [ ] Créer l'app, puis remplir « Contenu de l'app » avec `docs/store/data-safety.md`
+       (sécurité des données, identifiant publicitaire, public cible, classification).
+3. [ ] Remplir la fiche avec `docs/store/listing.md` et `docs/store/assets/` (icône 512,
+       image de présentation, captures du téléphone).
+4. [ ] Créer les produits (section « Pour Inc-4b »).
+5. [ ] Envoyer l'app bundle en test fermé : un nouveau compte personnel doit garder au
+       moins 12 testeurs pendant 14 jours avant d'accéder à la production.
+6. [ ] Publier en production par paliers (10 %, 50 %, 100 %) et suivre les plantages.
+
+### 5. App Store — 99 $ par an, un Mac nécessaire
+
+1. [ ] Sur un Mac avec Xcode : certificats, profil de distribution, `flutter build ipa`.
+2. [ ] Dans App Store Connect : fiche (`docs/store/listing.md`, captures iPhone 6,9" de
+       `docs/store/assets/`), confidentialité de l'app (`docs/store/data-safety.md`),
+       liens vers les conditions et la politique, achats intégrés.
+3. [ ] Test par TestFlight, puis soumission.
+
+### 6. Après la publication
+
+- [ ] Chaque semaine : `v_ai_cost_per_month`, `v_retention_d7` et les signalements
+      (`ai_content_reports`) dans l'éditeur SQL de Supabase (`README.md`, « Suivi ») ;
+      conversion et annulations dans RevenueCat ; avis dans les consoles des stores.
+- [ ] Mettre à jour `ai_model_prices` si un prix de modèle change.
+- [ ] Dépôt GitHub pour la CI : privé ou public (question Q3 du plan).

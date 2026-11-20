@@ -8,7 +8,7 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    # Même image que docker-compose.yml.
+    # Flutter 3.41.7, la version du poste de développement.
     container: ghcr.io/cirruslabs/flutter:3.41.7
     steps:
       - uses: actions/checkout@v4
@@ -27,3 +27,17 @@ jobs:
           version: 2.121.0
       - run: supabase db start
       - run: supabase test db
+
+  android:
+    runs-on: ubuntu-latest
+    container: ghcr.io/cirruslabs/flutter:3.41.7
+    steps:
+      - uses: actions/checkout@v4
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - run: flutter pub get
+      # Build de publication sans secret (clé de debug, identifiants de démonstration) :
+      # vérifie que l'app compile et passe la réduction de code (R8).
+      - run: >-
+          flutter build appbundle --release
+          --dart-define-from-file=env/example.json
+          -PADMOB_APP_ID=ca-app-pub-3940256099942544~3347511713

@@ -82,6 +82,14 @@ abstract class JournalAllowance with _$JournalAllowance {
     required int maxCharacters,
     required int correctionsLeft,
 
+    /// Corrections achetées à l'unité, utilisées une fois le quota du jour
+    /// épuisé (US-18).
+    @Default(0) int credits,
+
+    /// Corrections offertes par des vidéos, utilisées après les crédits
+    /// (US-23).
+    @Default(0) int rewardCorrections,
+
     /// Offre Premium en cours ; `null` avec l'offre gratuite.
     SubscriptionPlan? plan,
   }) = _JournalAllowance;
@@ -101,6 +109,9 @@ abstract class HistoryOverview with _$HistoryOverview {
 
     /// Journaux plus anciens, conservés mais non lisibles avec cette offre.
     required int lockedEntries,
+
+    /// Tous les journaux corrigés, lisibles ou non.
+    required int correctedEntries,
   }) = _HistoryOverview;
 
   factory HistoryOverview.fromJson(Map<String, dynamic> json) =>

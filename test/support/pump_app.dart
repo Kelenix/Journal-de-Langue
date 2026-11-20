@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:journal_de_langue/app.dart';
+import 'package:journal_de_langue/features/ads/application/ads_providers.dart';
 import 'package:journal_de_langue/core/utils/clock.dart';
 import 'package:journal_de_langue/core/utils/external_links.dart';
 import 'package:journal_de_langue/features/auth/application/auth_providers.dart';
 import 'package:journal_de_langue/features/billing/application/billing_providers.dart';
+import 'package:journal_de_langue/features/exam/application/exam_providers.dart';
 import 'package:journal_de_langue/features/exercises/application/exercise_providers.dart';
 import 'package:journal_de_langue/features/export/application/export_providers.dart';
 import 'package:journal_de_langue/features/journal/application/journal_providers.dart';
 import 'package:journal_de_langue/features/languages/application/language_providers.dart';
+import 'package:journal_de_langue/features/reports/application/report_providers.dart';
 import 'package:journal_de_langue/features/stats/application/stats_providers.dart';
 import 'package:journal_de_langue/features/voice/application/voice_providers.dart';
 import 'package:journal_de_langue/features/vocabulary/application/vocabulary_providers.dart';
@@ -26,6 +29,10 @@ final testNow = DateTime(2026, 11, 19, 10);
 /// Écran d'un petit téléphone : 360 × 800 points.
 const _phonePhysicalSize = Size(1080, 2400);
 const _phonePixelRatio = 3.0;
+
+/// Ligne d'un mot dans la liste « Tes mots » de l'onglet Réviser (le mot
+/// peut aussi figurer sur la carte du jour).
+Finder wordRow(String wordId) => find.byKey(ValueKey(wordId));
 
 /// Fait défiler jusqu'à [target] si nécessaire, puis appuie dessus.
 Future<void> tapOn(WidgetTester tester, Finder target) async {
@@ -49,6 +56,11 @@ Future<void> pumpApp(
   FakeExerciseRepository? exercises,
   FakeStatsRepository? stats,
   FakeVoiceService? voice,
+  FakeWalletRepository? wallet,
+  FakeExamRepository? exams,
+  FakeAdsRepository? adsRepository,
+  FakeAdsService? ads,
+  FakeContentReportRepository? reports,
   List<({String fileName, int size})>? sharedPdfs,
   List<Uri>? openedUrls,
 }) async {
@@ -59,11 +71,13 @@ Future<void> pumpApp(
 
   final vocabularyRepository = vocabulary ?? FakeVocabularyRepository();
   final subscriptionRepository = subscriptions ?? FakeSubscriptionRepository();
+  final walletRepository = wallet ?? FakeWalletRepository();
   final journalRepository =
       journal ??
       FakeJournalRepository(
         vocabulary: vocabularyRepository,
         subscriptions: subscriptionRepository,
+        wallet: walletRepository,
       );
   await tester.pumpWidget(
     ProviderScope(
@@ -82,13 +96,25 @@ Future<void> pumpApp(
           subscriptionRepository,
         ),
         billingRepositoryProvider.overrideWithValue(
-          billing ?? FakeBillingRepository(subscriptionRepository),
+          billing ??
+              FakeBillingRepository(subscriptionRepository, walletRepository),
         ),
         exerciseRepositoryProvider.overrideWithValue(
           exercises ??
               FakeExerciseRepository(subscriptions: subscriptionRepository),
         ),
         voiceServiceProvider.overrideWithValue(voice ?? FakeVoiceService()),
+        walletRepositoryProvider.overrideWithValue(walletRepository),
+        adsRepositoryProvider.overrideWithValue(
+          adsRepository ?? FakeAdsRepository(),
+        ),
+        adsServiceProvider.overrideWithValue(ads ?? FakeAdsService()),
+        contentReportRepositoryProvider.overrideWithValue(
+          reports ?? FakeContentReportRepository(),
+        ),
+        examRepositoryProvider.overrideWithValue(
+          exams ?? FakeExamRepository(walletRepository),
+        ),
         pdfSharerProvider.overrideWithValue(
           (bytes, fileName) async =>
               sharedPdfs?.add((fileName: fileName, size: bytes.length)),

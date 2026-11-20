@@ -11,9 +11,19 @@ abstract interface class JournalRepository {
 
   Future<JournalEntry> entry(String id);
 
-  /// Journaux corrigés que l'offre permet de relire, du plus récent au plus
-  /// ancien.
-  Future<List<JournalEntry>> recentEntries();
+  /// Page de journaux corrigés que l'offre permet de relire, du plus récent au
+  /// plus ancien, sans leur vocabulaire.
+  Future<List<JournalEntry>> historyPage({
+    required int offset,
+    required int limit,
+  });
+
+  /// Tous les journaux corrigés et lisibles en [language], depuis [firstDay]
+  /// s'il est donné, du plus récent au plus ancien.
+  Future<List<JournalEntry>> entriesSince(
+    LearningLanguage language, {
+    DateTime? firstDay,
+  });
 
   Future<HistoryOverview> historyOverview();
 

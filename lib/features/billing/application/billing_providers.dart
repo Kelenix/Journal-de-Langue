@@ -6,14 +6,27 @@ import '../../../core/utils/clock.dart';
 import '../../auth/application/auth_providers.dart';
 import '../../languages/application/language_providers.dart';
 import '../data/supabase_subscription_repository.dart';
+import '../data/supabase_wallet_repository.dart';
 import '../data/unavailable_billing_repository.dart';
 import '../domain/billing_repository.dart';
 import '../domain/offer.dart';
 import '../domain/subscription.dart';
+import '../domain/wallet.dart';
 
 final subscriptionRepositoryProvider = Provider<SubscriptionRepository>(
   (ref) => SupabaseSubscriptionRepository(ref.watch(supabaseClientProvider)),
 );
+
+final walletRepositoryProvider = Provider<WalletRepository>(
+  (ref) => SupabaseWalletRepository(ref.watch(supabaseClientProvider)),
+);
+
+/// Achats à l'unité de l'utilisateur connecté ; vide s'il n'est pas connecté.
+final walletProvider = FutureProvider.autoDispose<Wallet>((ref) async {
+  final userId = await ref.watch(currentUserIdProvider.future);
+  if (userId == null) return const Wallet();
+  return ref.watch(walletRepositoryProvider).current();
+}, retry: (retryCount, error) => null);
 
 /// Achats auprès du store. Indisponibles tant que l'app n'est pas reliée à
 /// RevenueCat (ADR-021) ; remplacé dans les tests.

@@ -217,8 +217,8 @@ void main() {
       await openProgress(tester);
 
       expect(find.text(english.progressStreakLabel), findsOneWidget);
-      expect(find.text('2'), findsOneWidget);
-      expect(find.text(english.progressStreakUnit(2)), findsOneWidget);
+      // Le chiffre et son unité forment un seul texte.
+      expect(find.text('2 ${english.progressStreakUnit(2)}'), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
       expect(find.text(english.progressMistakesTitle), findsNothing);
 

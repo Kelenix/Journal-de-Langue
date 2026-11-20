@@ -26,18 +26,20 @@ jamais d'exception Supabase.
 | `AuthRepository` | `watchUserId`, `signUp`, `confirmSignUp`, `resendSignUpCode`, `signIn`, `requestPasswordReset`, `resetPassword`, `signOut`, `deleteAccount` (Google / Apple en Inc-1b) | Auth + RPC `delete_account` |
 | `LanguageRepository` | `activeLanguages` (langue en cours d'abord), `activate`, `deactivate` | RPC `get_languages`, `activate_language`, `deactivate_language` |
 | `EntitlementsRepository` | `watch()` → `Entitlements` (offre, limites, crédits, restant du jour) | RPC `get_entitlements` |
-| `JournalRepository` | `allowance(day)`, `entryOfDay(day)`, `entry(id)`, `submit(text, language, uiLocale, day, idempotencyKey)`, `rewrite(entryId, sentence)` | RPC `get_entitlements`, Postgres, EF `correct-entry`, EF `rewrite-sentence` |
+| `JournalRepository` | `allowance(day)`, `entryOfDay(day)`, `entry(id)`, `historyPage(offset, limit)`, `entriesSince(language, firstDay)` (par lots, pour l'export), `historyOverview()`, `submit(text, language, uiLocale, day, idempotencyKey)`, `rewrite(entryId, sentence)` | RPC `get_entitlements`, `get_history_overview`, Postgres, EF `correct-entry`, EF `rewrite-sentence` |
 | `JournalDraftStore` | `load`, `save`, `clearAll` | stockage sécurisé de l'appareil |
-| `HistoryRepository` | `list(language, page)`, `get(entryId)` | Postgres |
-| `VocabularyRepository` | `today()`, `list(page)`, `markLearned(id)` | Postgres |
+| `VocabularyRepository` | `list(language)` (tout, par lots de 500), `setLearned(id, isLearned)` | Postgres |
+| `ContentReportRepository` | `report(content, targetId, comment)` | RPC `report_ai_content` |
 | `RewriteRepository` | `rewrite(entryId, sentenceIndex)` | EF `rewrite-sentence` |
 | `ExerciseRepository` | `next(language, uiLocale, day)`, `answer(exerciseId, choice, day)` | EF `next-exercises`, RPC `answer_exercise` |
 | `StatsRepository` | `get(language, day)` | RPC `get_stats` |
 | `VoiceService` | `startDictation`, `stopDictation`, `canSpeak`, `speak`, `stopSpeaking` | reconnaissance et synthèse vocales du système |
 | Export (`ExportController`) | `export(period)` : PDF créé sur l'appareil (`buildReviewPdf`), remis par la feuille de partage | `JournalRepository.recentEntries` |
 | `BillingRepository` | `offerings()`, `purchase(package)`, `restore()` | RevenueCat SDK |
-| `RewardRepository` | `claim(kind, adToken)` | EF `claim-reward` |
-| `ExamRepository` | `start()`, `submit(examId, text)` | EF `exam` |
+| `AdsRepository` | `status()` → `AdStatus` (publicités à montrer, récompenses disponibles et restantes) | RPC `get_ad_status` |
+| `AdsService` | `prepare()` (consentement puis SDK), `isPrivacyOptionsRequired`, `showPrivacyOptions`, `banner()`, `showInterstitial()`, `showRewarded(userId, kind)` | SDK Google Mobile Ads et UMP |
+| `ExamRepository` | `list()`, `start(language, level, uiLocale)`, `saveDraft(examId, answer)`, `submit(examId, answer)` | EF `exam`, Postgres, RPC `save_exam_draft` |
+| `WalletRepository` | `current()` | RPC `get_wallet` |
 
 ## Parcours critique : soumission d'un journal
 
@@ -92,6 +94,25 @@ sequenceDiagram
 Le droit effectif vient toujours de Postgres. Après un achat, l'app rafraîchit les droits
 avec quelques tentatives espacées tant que le webhook n'est pas arrivé.
 
+## Parcours : vidéo récompensée (ADR-031)
+
+```mermaid
+sequenceDiagram
+  participant U as App
+  participant A as AdMob
+  participant F as EF admob-reward
+  participant DB as Postgres
+  U->>A: vidéo demandée avec user_id et custom_data (correction ou exercises)
+  A-->>U: vidéo vue en entier
+  A->>F: rappel signé (GET, transaction_id)
+  F->>F: signature ECDSA vérifiée avec les clés de Google
+  F->>DB: grant_ad_reward(transaction_id, user, sorte)  — une par jour et par sorte
+  U->>DB: get_ad_status toutes les 2 s pendant 10 s
+  DB-->>U: récompense disponible → journal ou exercices rechargés
+```
+
+Si le rappel tarde, l'app affiche « récompense en attente » avec « Actualiser ».
+
 ## Appels IA
 
 | Fonction | Niveau de modèle | Sortie |
@@ -112,5 +133,7 @@ aux instructions ; la sortie est validée contre un schéma avant enregistrement
 - `AsyncValue` partout ; boutons d'action désactivés pendant un envoi.
 - Délai maximal de 30 s côté app pour une correction ; une seule nouvelle tentative
   automatique sur erreur réseau, avec la même clé d'idempotence.
-- Listes paginées par 20 (historique, vocabulaire), tri décroissant par date.
+- Historique paginé par 20, page suivante chargée en fin de liste ; vocabulaire et
+  export lus par lots sous la limite de l'API (1 000 lignes) ; listes construites à la
+  demande (ADR-035).
 - Pas de realtime : aucune donnée n'est modifiée par un tiers en cours de session.

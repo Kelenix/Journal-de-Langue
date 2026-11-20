@@ -23,28 +23,33 @@ L'écran d'offres n'est jamais montré avant qu'une première correction soit te
 
 ## Onglets
 
-`Journal` · `Historique` · `Réviser` · `Progrès` · `Profil`
+`Journal` · `Historique` · `Réviser` · `Progrès` · `Profil`, dans une barre flottante aux
+coins arrondis (ADR-038).
 
 ## Écrans
 
 ### Journal (accueil)
 
-Mise en page du brand kit (ADR-019).
+Mise en page du brand kit (ADR-019), refaite d'après la maquette (ADR-038).
 ```
 ┌──────────────────────────────┐
-│ Mon journal        [Anglais] │   langue active
-│                              │
-│ Bonjour !                    │
-│ Une phrase à la fois.        │
-│ Prends quelques minutes…     │
+│▓Jeudi 20 novembre [Anglais ▾]▓│   aplat vert : date, langue active
+│▓Bonjour !                    ▓│
+│▓Une phrase à la fois.        ▓│
+│▓┌─🔥 3 jours de suite ──────┐▓│   série
+│▓│  (L)(M)(M)(J) V  S  D     │▓│   jours écrits cette semaine
+│▓└──────────────────────────┘▓│
+│ ╰────────────────────────────╯ │
 │ ┌──────────────────────────┐ │
-│ │ Mon journal du jour      │ │   carte blanche
+│ │ Mon journal du jour   🎤(P)│ │   carte blanche, dictée Premium
 │ │ ┌──────────────────────┐ │ │
 │ │ │ Aujourd'hui, j'ai…   │ │ │   saisie, brouillon automatique
 │ │ └──────────────────────┘ │ │
 │ │ ▓▓▓▓▓░░░░░  3 / 7 phrases│ │   progression en corail
 │ │ [       Corriger       ] │ │
+│ │ 1 correction disponible  │ │
 │ └──────────────────────────┘ │
+│ ╭ Journal Hist. Rév. Prog. ╮ │   barre d'onglets flottante
 └──────────────────────────────┘
 ```
 - Limite de phrases dépassée : barre et texte en rouge, bouton désactivé, explication.
@@ -53,26 +58,27 @@ Mise en page du brand kit (ADR-019).
   Premium, crédits et vidéo s'y ajouteront (Inc-4, 7, 8).
 - Hors ligne ou panne : la saisie reste possible et conservée ; l'envoi affiche l'erreur
   et précise que rien n'est débité.
-- La série de jours s'affiche sous le titre dès le premier jour ; Premium ajoute la
-  dictée (micro dans la carte du journal) et, s'il pratique plusieurs langues, une
+- La série de jours et la semaine d'écriture s'affichent dans l'en-tête ; Premium ajoute
+  la dictée (micro dans la carte du journal) et, s'il pratique plusieurs langues, une
   puce pour changer la langue du journal (Inc-6).
 - Pas de publicité sur cet écran pendant la saisie (clavier ouvert ou texte non vide).
 
 ### Correction
 ```
 ┌──────────────────────────────┐
-│ ← Correction                 │
-│ Ta version                   │
-│  Today I ~~have went~~ to…   │
-│ Version corrigée        🔊(P)│
-│  Today I __went__ to…        │
-│ ── 2 points à retenir ─────  │
-│ ▸ have went → went           │
-│   Le prétérit s'emploie…     │
-│   [Reformuler (P)]           │
-│ ── À réviser ─────────────   │
-│  • grocery store — épicerie  │
-│ [      Terminer      ]       │
+│ (←)      Correction       (⚑)│   boutons ronds : retour, signaler
+│▓(2) 2 points à retenir       ▓│   bilan sur l'aplat vert
+│▓    Chaque erreur est une…   ▓│
+│ [Ta version|Version corrigée]│   bascule, corrigée par défaut
+│ ┌──────────────────────────┐ │
+│ │ Today I __went__ to… 🔊(P)│ │
+│ └──────────────────────────┘ │
+│ ┌ ~~have went~~ → went ─────┐ │   une carte par faute
+│ │ Le prétérit s'emploie…    │ │
+│ À réviser                    │
+│ [grocery store · épicerie]   │   mots en étiquettes corail
+│ Reformuler une phrase  🔒/›  │
+│ [        Terminer         ]  │   toujours visible en bas
 └──────────────────────────────┘
 ```
 - Chargement : squelette + « Claude lit ton journal… » (jusqu'à 15 s).
@@ -82,22 +88,32 @@ Mise en page du brand kit (ADR-019).
 - Interstitiel éventuel uniquement après « Terminer ».
 
 ### Historique
-Liste par date (langue, extrait, nombre de fautes). Gratuit : au-delà de 4 jours, lignes
-verrouillées avec invitation Premium. Vide : « Ton premier journal apparaîtra ici. »
+Cartes par date (pastille jour et mois, jour de la semaine, extrait, étiquette du nombre
+de fautes). Gratuit : au-delà de 4 jours, carte corail « journaux conservés » avec
+invitation Premium. Vide : « Ton premier journal apparaîtra ici. »
 
 ### Réviser
-Deux sections : **Vocabulaire** (cartes terme / traduction / exemple, bouton « Appris ») et
-**Exercices** (une question à la fois, retour immédiat). Vide : « Corrige un journal pour
-obtenir des mots à réviser. » Aucune publicité pendant une révision.
+En tête, deux tuiles : **Exercices** (aplat vert ; une question à la fois, retour
+immédiat) et **Simulation d'examen** (corail doux, après une première correction).
+Ensuite la **carte du jour** : jusqu'à 5 mots à réviser, un à la fois (« Carte du jour ·
+1 sur 5 », le mot, son exemple) ; la traduction s'affiche à la demande, « Je sais » le
+marque appris, « À revoir » le garde ; une fois le paquet fini, « Revoir d'autres
+cartes » s'il en reste. Puis **Tes mots** : mots appris sur le total, barre de
+progression, cartes terme / traduction / exemple avec un bouton rond « Appris ». Vide : « Corrige un journal pour obtenir des
+mots à réviser. » Aucune publicité pendant une révision.
 
 ### Progrès
-Série de jours (visible par tous). Mots appris, erreurs fréquentes par catégorie, évolution :
-Premium, sinon aperçu verrouillé. Export PDF (Premium).
+Série de jours sur l'aplat vert (visible par tous), journaux écrits. Mots appris, fautes
+par type, fautes par phrase semaine après semaine (la dernière semaine en vert profond) :
+Premium, sinon carte corail « Statistiques détaillées ». Export PDF (Premium, onglet
+Réviser).
 
 ### Profil
-Langues (ajout selon l'offre), offre actuelle et solde de crédits,
-« Gérer mon abonnement » (lien store), « Restaurer mes achats », boutique (packs),
-confidentialité et conditions, déconnexion, suppression du compte (double confirmation).
+En-tête : initiale et e-mail du compte. Carte verte de l'offre (« Découvrir Premium »
+après une première correction, « Gérer mon abonnement » pour un abonné). Puis trois
+groupes : langues, boutique (solde des crédits), « Restaurer mes achats », confidentialité
+des publicités ; conditions, confidentialité, à propos ; déconnexion, suppression du
+compte (double confirmation).
 
 ### Offres (paywall)
 ```
@@ -120,9 +136,10 @@ confidentialité et conditions, déconnexion, suppression du compte (double conf
 Les prix affichés sont ceux renvoyés par le store. La croix de fermeture est toujours visible.
 
 ### Authentification
-Connexion, inscription, saisie du code reçu par e-mail, mot de passe oublié. Google et
-Apple en Inc-1b ; liens vers les textes légaux en Inc-9. L'interface suit la langue du
-téléphone (français ou anglais).
+Connexion, inscription, saisie du code reçu par e-mail, mot de passe oublié. En-tête vert
+arrondi (logo, nom et signature à la connexion et à l'inscription), formulaire sur
+l'ivoire. Google et Apple en Inc-1b ; liens vers les textes légaux à l'inscription.
+L'interface suit la langue du téléphone (français ou anglais).
 
 ### Onboarding
 Une seule question : « Quelle langue veux-tu apprendre ? » (4 choix), puis l'écran Journal.

@@ -1,35 +1,100 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import 'brand_header.dart';
+import 'surfaces.dart';
 
-/// Mise en page commune des écrans de formulaire : titre, contenu défilant
-/// (le clavier ne masque rien), largeur bornée sur grand écran.
+/// Mise en page des écrans de compte : en-tête sur l'aplat vert, contenu
+/// défilant (le clavier ne masque rien), largeur bornée sur grand écran.
 class FormPage extends StatelessWidget {
-  const FormPage({required this.title, required this.children, super.key});
+  const FormPage({
+    required this.title,
+    required this.children,
+    this.withBrand = false,
+    super.key,
+  });
 
   static const _maxContentWidth = 480.0;
+  static const _headerRadius = Radius.circular(32);
 
   final String title;
+
+  /// Logo, nom et signature de l'app en tête : écrans d'accueil. Le titre
+  /// passe alors au-dessus du formulaire.
+  final bool withBrand;
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+    final heading = Builder(
+      builder: (context) => Semantics(
+        header: true,
+        child: Text(
+          title,
+          style: withBrand
+              ? Theme.of(context).textTheme.titleLarge
+              : Theme.of(context).textTheme.headlineMedium,
+        ),
+      ),
+    );
+
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: _maxContentWidth),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: children,
+      appBar: AppBar(
+        backgroundColor: colors.hero,
+        foregroundColor: colors.onHero,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            HeroCard(
+              borderRadius: const BorderRadius.vertical(bottom: _headerRadius),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                0,
+                AppSpacing.xl,
+                AppSpacing.xxl,
+              ),
+              child: _Bounded(child: withBrand ? const BrandHeader() : heading),
+            ),
+            SafeArea(
+              top: false,
+              child: _Bounded(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (withBrand) ...[
+                        heading,
+                        const SizedBox(height: AppSpacing.xl),
+                      ],
+                      ...children,
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
+}
+
+/// Centre son contenu sur une largeur de lecture confortable.
+class _Bounded extends StatelessWidget {
+  const _Bounded({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: FormPage._maxContentWidth),
+      child: SizedBox(width: double.infinity, child: child),
+    ),
+  );
 }

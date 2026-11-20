@@ -7,6 +7,8 @@ import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/auth/presentation/verify_email_screen.dart';
 import '../features/billing/presentation/paywall_screen.dart';
+import '../features/exam/presentation/exam_result_screen.dart';
+import '../features/exam/presentation/exam_screen.dart';
 import '../features/exercises/presentation/exercise_screen.dart';
 import '../features/history/presentation/history_screen.dart';
 import '../features/home/presentation/home_shell.dart';
@@ -14,7 +16,10 @@ import '../features/home/presentation/startup_screen.dart';
 import '../features/journal/presentation/correction_screen.dart';
 import '../features/journal/presentation/journal_screen.dart';
 import '../features/languages/presentation/onboarding_screen.dart';
+import '../features/legal/domain/legal_document.dart';
+import '../features/legal/presentation/legal_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
+import '../features/shop/presentation/shop_screen.dart';
 import '../features/stats/presentation/progress_screen.dart';
 import '../features/vocabulary/presentation/review_screen.dart';
 import 'app_routes.dart';
@@ -37,6 +42,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       _route(AppRoutes.forgotPassword, const ForgotPasswordScreen()),
       _route(AppRoutes.onboarding, const OnboardingScreen()),
       _route(AppRoutes.exercises, const ExerciseScreen()),
+      _route(AppRoutes.shop, const ShopScreen()),
+      _route(AppRoutes.exam, const ExamScreen()),
+      GoRoute(
+        path: AppRoutes.examResult,
+        builder: (context, state) => ExamResultScreen(
+          examId: state.pathParameters[AppRoutes.examResultId]!,
+        ),
+      ),
       GoRoute(
         path: AppRoutes.verifyEmail,
         // L'e-mail à confirmer est transmis par l'écran précédent.
@@ -49,6 +62,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.correction,
         builder: (context, state) => CorrectionScreen(
           entryId: state.pathParameters[AppRoutes.correctionEntryId]!,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.legal,
+        builder: (context, state) => LegalScreen(
+          document: LegalDocument.values.byName(
+            state.pathParameters[AppRoutes.legalDocumentName]!,
+          ),
         ),
       ),
       GoRoute(

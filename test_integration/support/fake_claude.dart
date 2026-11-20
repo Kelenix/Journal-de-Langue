@@ -27,6 +27,15 @@ class FakeClaude {
   Future<void> stop() => _server.close(force: true);
 
   Future<void> _respond(HttpRequest request) async {
+    // Clés de vérification des rappels AdMob : aucune, tout rappel est refusé.
+    if (request.method == 'GET' && request.uri.path == '/admob-keys') {
+      request.response
+        ..headers.contentType = ContentType.json
+        ..write(jsonEncode({'keys': <Object?>[]}));
+      await request.response.close();
+      return;
+    }
+
     final body = await utf8.decoder.bind(request).join();
     requests.add(jsonDecode(body) as Map<String, dynamic>);
 

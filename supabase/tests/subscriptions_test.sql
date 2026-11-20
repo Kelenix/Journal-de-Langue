@@ -125,12 +125,12 @@ select is(
 );
 select is(
   public.get_history_overview(),
-  '{"history_days": null, "locked_entries": 0}'::jsonb,
+  '{"history_days": null, "locked_entries": 0, "corrected_entries": 2}'::jsonb,
   'Premium : rien n''est verrouillé'
 );
 select is(
   public.get_entitlements(current_date) - 'corrections_left',
-  '{"plan": "annual", "max_sentences": 40, "max_characters": 6000}'::jsonb,
+  '{"plan": "annual", "max_sentences": 40, "max_characters": 6000, "credits": 0, "reward_corrections": 0}'::jsonb,
   'A voit son offre et ses limites Premium'
 );
 select is(

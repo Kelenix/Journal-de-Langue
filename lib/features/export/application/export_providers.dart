@@ -41,13 +41,9 @@ class ExportController extends ActionController {
         final language = (await ref.read(activeLanguagesProvider.future)).first;
         final today = ref.read(clockProvider)();
         final firstDay = period.firstDay(today);
-        final entries = [
-          for (final entry
-              in await ref.read(journalRepositoryProvider).recentEntries())
-            if (entry.language == language &&
-                (firstDay == null || !entry.entryDate.isBefore(firstDay)))
-              entry,
-        ];
+        final entries = await ref
+            .read(journalRepositoryProvider)
+            .entriesSince(language, firstDay: firstDay);
         if (entries.isEmpty) throw const NothingToExportFailure();
 
         final bytes = await buildReviewPdf(

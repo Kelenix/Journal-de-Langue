@@ -272,7 +272,7 @@
     }
   },
   "profileManageSubscription": "Gérer mon abonnement",
-  "errorBillingUnavailable": "Les abonnements ne sont pas encore disponibles dans cette version.",
+  "errorBillingUnavailable": "Les achats ne sont pas encore disponibles dans cette version.",
   "errorPurchaseFailed": "L'achat n'a pas abouti. Rien n'a été débité.",
   "errorPurchasePending": "Ton achat est enregistré. Premium sera actif dans quelques instants.",
   "errorNothingToRestore": "Aucun achat à restaurer sur ce compte.",
@@ -443,5 +443,190 @@
   "exportPdfTerm": "Mot ou expression",
   "exportPdfTranslation": "Traduction",
   "exportPdfExample": "Exemple",
-  "exportPdfCorrections": "Mes journaux corrigés"
+  "exportPdfCorrections": "Mes journaux corrigés",
+  "shopTitle": "Boutique",
+  "shopOwnedTitle": "Mes achats",
+  "shopNothingOwned": "Aucun achat pour l'instant.",
+  "shopCredits": "{count, plural, =1{1 correction} other{{count} corrections}}",
+  "@shopCredits": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopExamCredits": "{count, plural, =1{1 simulation d'examen} other{{count} simulations d'examen}}",
+  "@shopExamCredits": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopPassUntil": "{language} jusqu'au {date}",
+  "@shopPassUntil": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "shopAdsRemoved": "Sans publicité",
+  "shopOneTimeNote": "Paiements uniques, sans abonnement ni renouvellement.",
+  "shopCorrectionsTitle": "Corrections à l'unité",
+  "shopCorrectionsBody": "Pour écrire un autre journal une fois ta correction du jour utilisée. Sans date limite.",
+  "productCorrections10": "10 corrections",
+  "productCorrections50": "50 corrections",
+  "productExamPack": "Pack Examinateur",
+  "productExamPackBody": "Une simulation d'examen notée sur 20, avec une correction renforcée et un plan de révision.",
+  "shopLanguagePassTitle": "Une langue pendant 30 jours",
+  "shopLanguagePassBody": "Pratique une langue de plus pendant 30 jours. Ses journaux restent après.",
+  "shopRemoveAdsBody": "Achat unique : plus aucune publicité dans l'app.",
+  "shopPurchased": "Achat enregistré. Merci !",
+  "shopRestored": "Tes achats sont à jour.",
+  "journalBuyCorrections": "Acheter des corrections",
+  "journalUsesCredit": "{count, plural, =1{Ta correction du jour est utilisée : celle-ci utilisera ton dernier crédit.} other{Ta correction du jour est utilisée : celle-ci utilisera 1 de tes {count} crédits.}}",
+  "@journalUsesCredit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "examTitle": "Simulation d'examen",
+  "examCardBody": "Un sujet d'examen, ta copie notée et un plan de révision.",
+  "examNoCredit": "Le Pack Examinateur donne une simulation complète : un sujet de production écrite dans la langue que tu apprends, ta copie notée sur 20, une correction renforcée et un plan de révision.",
+  "examBuyPack": "Obtenir le Pack Examinateur",
+  "examCreditsLeft": "{count, plural, =1{1 simulation disponible} other{{count} simulations disponibles}}",
+  "@examCreditsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "examChooseLevel": "Niveau visé",
+  "examStart": "Commencer la simulation",
+  "examStarting": "Création de ton sujet…",
+  "examResumeNote": "Ta simulation reste disponible : tu peux la quitter et revenir la terminer.",
+  "examWordTarget": "Entre {min} et {max} mots",
+  "@examWordTarget": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "examWordCount": "{count, plural, =1{1 mot} other{{count} mots}}",
+  "@examWordCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "examAnswerHint": "Rédige ta copie ici…",
+  "examSubmit": "Rendre ma copie",
+  "examGrading": "Correction en cours… cela peut prendre une minute.",
+  "examResultsTitle": "Mes résultats",
+  "examScore": "{score}/20",
+  "@examScore": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "examLevelEstimate": "Niveau estimé : {level}",
+  "@examLevelEstimate": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "examResultSubtitle": "{language} · niveau {level}",
+  "@examResultSubtitle": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      },
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "examCriteriaTitle": "Critères",
+  "examCriterionScore": "{score}/5",
+  "@examCriterionScore": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "criterionTask": "Réalisation de la tâche",
+  "criterionCoherence": "Cohérence",
+  "criterionVocabulary": "Vocabulaire",
+  "criterionGrammar": "Grammaire",
+  "examCorrectedTitle": "Ta copie corrigée",
+  "examPlanTitle": "Ton plan de révision",
+  "errorNoExamCredit": "Il te faut un Pack Examinateur pour commencer une simulation.",
+  "rewardWatchForCorrection": "Regarder une vidéo pour 1 correction de plus",
+  "rewardWatchForExercises": "Regarder une vidéo pour 3 exercices de plus",
+  "rewardGranted": "C'est débloqué. Bonne pratique !",
+  "rewardPending": "Vidéo vue : ta récompense arrive dans un instant.",
+  "rewardRefresh": "Actualiser",
+  "rewardNotEarned": "La vidéo n'a pas été vue jusqu'au bout : pas de récompense cette fois.",
+  "rewardUnavailable": "Aucune vidéo disponible pour le moment. Réessaie plus tard.",
+  "journalUsesReward": "Ta correction du jour est utilisée : celle-ci utilisera ta correction offerte par la vidéo.",
+  "profileAdPrivacy": "Confidentialité des publicités",
+  "legalTermsTitle": "Conditions d'utilisation",
+  "legalPrivacyTitle": "Politique de confidentialité",
+  "legalSignUpNotice": "En créant un compte, tu acceptes les conditions d'utilisation et la politique de confidentialité.",
+  "reportAction": "Signaler un contenu",
+  "reportTitle": "Signaler ce contenu",
+  "reportBody": "Une erreur, un contenu choquant ou inapproprié ? Dis-nous ce qui ne va pas.",
+  "reportHint": "Ce qui ne va pas (facultatif)",
+  "reportSend": "Envoyer",
+  "reportThanks": "Merci : nous allons vérifier ce contenu.",
+  "journalWeekSummary": "{count, plural, =0{Aucun journal cette semaine} =1{1 journal cette semaine} other{{count} journaux cette semaine}}",
+  "@journalWeekSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "journalCorrectionsLeft": "{count, plural, =1{1 correction disponible aujourd'hui} other{{count} corrections disponibles aujourd'hui}}",
+  "@journalCorrectionsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewWordsTitle": "Tes mots",
+  "reviewCardOf": "Carte du jour · {current} sur {total}",
+  "@reviewCardOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewShowTranslation": "Voir la traduction",
+  "reviewAgain": "À revoir",
+  "reviewKnown": "Je sais",
+  "reviewDeckDone": "Cartes du jour revues. Bravo !",
+  "reviewDeckMore": "Revoir d'autres cartes"
 }

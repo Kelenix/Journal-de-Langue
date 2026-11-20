@@ -115,7 +115,13 @@ void main() {
 
       expect(
         await stats.get(language: LearningLanguage.english, day: today),
-        const LearningStats(isPremium: false, streakDays: 1, journals: 1),
+        LearningStats(
+          isPremium: false,
+          streakDays: 1,
+          journals: 1,
+          // Le journal du jour compte dans la semaine en cours.
+          weekDays: [DateTime(today.year, today.month, today.day)],
+        ),
       );
     });
 

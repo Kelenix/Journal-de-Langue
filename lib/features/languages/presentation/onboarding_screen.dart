@@ -15,13 +15,8 @@ class OnboardingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return FormPage(
-      title: l10n.appTitle,
+      title: l10n.onboardingTitle,
       children: [
-        Text(
-          l10n.onboardingTitle,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        const SizedBox(height: AppSpacing.xl),
         // Une fois la langue activée, la navigation suit l'état de session.
         const LanguageChoiceList(),
         const SizedBox(height: AppSpacing.xl),

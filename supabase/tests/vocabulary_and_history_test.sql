@@ -98,8 +98,8 @@ select is(
 );
 select is(
   public.get_history_overview(),
-  '{"history_days": 4, "locked_entries": 1}'::jsonb,
-  'A sait qu''un journal plus ancien est conservé'
+  '{"history_days": 4, "locked_entries": 1, "corrected_entries": 4}'::jsonb,
+  'A sait qu''un journal plus ancien est conservé, et combien il en a en tout'
 );
 
 -- ── Accès au vocabulaire ────────────────────────────────────────────────────
@@ -144,8 +144,8 @@ select is(
 );
 select is(
   public.get_history_overview(),
-  '{"history_days": 4, "locked_entries": 0}'::jsonb,
-  'B n''a aucun journal verrouillé'
+  '{"history_days": 4, "locked_entries": 0, "corrected_entries": 0}'::jsonb,
+  'B n''a aucun journal, verrouillé ou non'
 );
 select lives_ok(
   $$ update public.vocabulary_items set learned_at = now() $$,

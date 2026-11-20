@@ -439,3 +439,10 @@ verify_jwt = false
 
 [functions.next-exercises]
 verify_jwt = false
+
+[functions.exam]
+verify_jwt = false
+
+# AdMob s'authentifie par une signature ECDSA vérifiée dans la fonction.
+[functions.admob-reward]
+verify_jwt = false

@@ -857,7 +857,11 @@ as String,
 /// @nodoc
 mixin _$JournalAllowance {
 
- int get maxSentences; int get maxCharacters; int get correctionsLeft;/// Offre Premium en cours ; `null` avec l'offre gratuite.
+ int get maxSentences; int get maxCharacters; int get correctionsLeft;/// Corrections achetées à l'unité, utilisées une fois le quota du jour
+/// épuisé (US-18).
+ int get credits;/// Corrections offertes par des vidéos, utilisées après les crédits
+/// (US-23).
+ int get rewardCorrections;/// Offre Premium en cours ; `null` avec l'offre gratuite.
  SubscriptionPlan? get plan;
 /// Create a copy of JournalAllowance
 /// with the given fields replaced by the non-null parameter values.
@@ -871,16 +875,16 @@ $JournalAllowanceCopyWith<JournalAllowance> get copyWith => _$JournalAllowanceCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is JournalAllowance&&(identical(other.maxSentences, maxSentences) || other.maxSentences == maxSentences)&&(identical(other.maxCharacters, maxCharacters) || other.maxCharacters == maxCharacters)&&(identical(other.correctionsLeft, correctionsLeft) || other.correctionsLeft == correctionsLeft)&&(identical(other.plan, plan) || other.plan == plan));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is JournalAllowance&&(identical(other.maxSentences, maxSentences) || other.maxSentences == maxSentences)&&(identical(other.maxCharacters, maxCharacters) || other.maxCharacters == maxCharacters)&&(identical(other.correctionsLeft, correctionsLeft) || other.correctionsLeft == correctionsLeft)&&(identical(other.credits, credits) || other.credits == credits)&&(identical(other.rewardCorrections, rewardCorrections) || other.rewardCorrections == rewardCorrections)&&(identical(other.plan, plan) || other.plan == plan));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,maxSentences,maxCharacters,correctionsLeft,plan);
+int get hashCode => Object.hash(runtimeType,maxSentences,maxCharacters,correctionsLeft,credits,rewardCorrections,plan);
 
 @override
 String toString() {
-  return 'JournalAllowance(maxSentences: $maxSentences, maxCharacters: $maxCharacters, correctionsLeft: $correctionsLeft, plan: $plan)';
+  return 'JournalAllowance(maxSentences: $maxSentences, maxCharacters: $maxCharacters, correctionsLeft: $correctionsLeft, credits: $credits, rewardCorrections: $rewardCorrections, plan: $plan)';
 }
 
 
@@ -891,7 +895,7 @@ abstract mixin class $JournalAllowanceCopyWith<$Res>  {
   factory $JournalAllowanceCopyWith(JournalAllowance value, $Res Function(JournalAllowance) _then) = _$JournalAllowanceCopyWithImpl;
 @useResult
 $Res call({
- int maxSentences, int maxCharacters, int correctionsLeft, SubscriptionPlan? plan
+ int maxSentences, int maxCharacters, int correctionsLeft, int credits, int rewardCorrections, SubscriptionPlan? plan
 });
 
 
@@ -908,11 +912,13 @@ class _$JournalAllowanceCopyWithImpl<$Res>
 
 /// Create a copy of JournalAllowance
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? maxSentences = null,Object? maxCharacters = null,Object? correctionsLeft = null,Object? plan = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? maxSentences = null,Object? maxCharacters = null,Object? correctionsLeft = null,Object? credits = null,Object? rewardCorrections = null,Object? plan = freezed,}) {
   return _then(_self.copyWith(
 maxSentences: null == maxSentences ? _self.maxSentences : maxSentences // ignore: cast_nullable_to_non_nullable
 as int,maxCharacters: null == maxCharacters ? _self.maxCharacters : maxCharacters // ignore: cast_nullable_to_non_nullable
 as int,correctionsLeft: null == correctionsLeft ? _self.correctionsLeft : correctionsLeft // ignore: cast_nullable_to_non_nullable
+as int,credits: null == credits ? _self.credits : credits // ignore: cast_nullable_to_non_nullable
+as int,rewardCorrections: null == rewardCorrections ? _self.rewardCorrections : rewardCorrections // ignore: cast_nullable_to_non_nullable
 as int,plan: freezed == plan ? _self.plan : plan // ignore: cast_nullable_to_non_nullable
 as SubscriptionPlan?,
   ));
@@ -999,10 +1005,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int maxSentences,  int maxCharacters,  int correctionsLeft,  SubscriptionPlan? plan)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int maxSentences,  int maxCharacters,  int correctionsLeft,  int credits,  int rewardCorrections,  SubscriptionPlan? plan)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _JournalAllowance() when $default != null:
-return $default(_that.maxSentences,_that.maxCharacters,_that.correctionsLeft,_that.plan);case _:
+return $default(_that.maxSentences,_that.maxCharacters,_that.correctionsLeft,_that.credits,_that.rewardCorrections,_that.plan);case _:
   return orElse();
 
 }
@@ -1020,10 +1026,10 @@ return $default(_that.maxSentences,_that.maxCharacters,_that.correctionsLeft,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int maxSentences,  int maxCharacters,  int correctionsLeft,  SubscriptionPlan? plan)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int maxSentences,  int maxCharacters,  int correctionsLeft,  int credits,  int rewardCorrections,  SubscriptionPlan? plan)  $default,) {final _that = this;
 switch (_that) {
 case _JournalAllowance():
-return $default(_that.maxSentences,_that.maxCharacters,_that.correctionsLeft,_that.plan);case _:
+return $default(_that.maxSentences,_that.maxCharacters,_that.correctionsLeft,_that.credits,_that.rewardCorrections,_that.plan);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1040,10 +1046,10 @@ return $default(_that.maxSentences,_that.maxCharacters,_that.correctionsLeft,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int maxSentences,  int maxCharacters,  int correctionsLeft,  SubscriptionPlan? plan)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int maxSentences,  int maxCharacters,  int correctionsLeft,  int credits,  int rewardCorrections,  SubscriptionPlan? plan)?  $default,) {final _that = this;
 switch (_that) {
 case _JournalAllowance() when $default != null:
-return $default(_that.maxSentences,_that.maxCharacters,_that.correctionsLeft,_that.plan);case _:
+return $default(_that.maxSentences,_that.maxCharacters,_that.correctionsLeft,_that.credits,_that.rewardCorrections,_that.plan);case _:
   return null;
 
 }
@@ -1055,12 +1061,18 @@ return $default(_that.maxSentences,_that.maxCharacters,_that.correctionsLeft,_th
 
 @JsonSerializable(fieldRename: FieldRename.snake)
 class _JournalAllowance implements JournalAllowance {
-  const _JournalAllowance({required this.maxSentences, required this.maxCharacters, required this.correctionsLeft, this.plan});
+  const _JournalAllowance({required this.maxSentences, required this.maxCharacters, required this.correctionsLeft, this.credits = 0, this.rewardCorrections = 0, this.plan});
   factory _JournalAllowance.fromJson(Map<String, dynamic> json) => _$JournalAllowanceFromJson(json);
 
 @override final  int maxSentences;
 @override final  int maxCharacters;
 @override final  int correctionsLeft;
+/// Corrections achetées à l'unité, utilisées une fois le quota du jour
+/// épuisé (US-18).
+@override@JsonKey() final  int credits;
+/// Corrections offertes par des vidéos, utilisées après les crédits
+/// (US-23).
+@override@JsonKey() final  int rewardCorrections;
 /// Offre Premium en cours ; `null` avec l'offre gratuite.
 @override final  SubscriptionPlan? plan;
 
@@ -1077,16 +1089,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _JournalAllowance&&(identical(other.maxSentences, maxSentences) || other.maxSentences == maxSentences)&&(identical(other.maxCharacters, maxCharacters) || other.maxCharacters == maxCharacters)&&(identical(other.correctionsLeft, correctionsLeft) || other.correctionsLeft == correctionsLeft)&&(identical(other.plan, plan) || other.plan == plan));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _JournalAllowance&&(identical(other.maxSentences, maxSentences) || other.maxSentences == maxSentences)&&(identical(other.maxCharacters, maxCharacters) || other.maxCharacters == maxCharacters)&&(identical(other.correctionsLeft, correctionsLeft) || other.correctionsLeft == correctionsLeft)&&(identical(other.credits, credits) || other.credits == credits)&&(identical(other.rewardCorrections, rewardCorrections) || other.rewardCorrections == rewardCorrections)&&(identical(other.plan, plan) || other.plan == plan));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,maxSentences,maxCharacters,correctionsLeft,plan);
+int get hashCode => Object.hash(runtimeType,maxSentences,maxCharacters,correctionsLeft,credits,rewardCorrections,plan);
 
 @override
 String toString() {
-  return 'JournalAllowance(maxSentences: $maxSentences, maxCharacters: $maxCharacters, correctionsLeft: $correctionsLeft, plan: $plan)';
+  return 'JournalAllowance(maxSentences: $maxSentences, maxCharacters: $maxCharacters, correctionsLeft: $correctionsLeft, credits: $credits, rewardCorrections: $rewardCorrections, plan: $plan)';
 }
 
 
@@ -1097,7 +1109,7 @@ abstract mixin class _$JournalAllowanceCopyWith<$Res> implements $JournalAllowan
   factory _$JournalAllowanceCopyWith(_JournalAllowance value, $Res Function(_JournalAllowance) _then) = __$JournalAllowanceCopyWithImpl;
 @override @useResult
 $Res call({
- int maxSentences, int maxCharacters, int correctionsLeft, SubscriptionPlan? plan
+ int maxSentences, int maxCharacters, int correctionsLeft, int credits, int rewardCorrections, SubscriptionPlan? plan
 });
 
 
@@ -1114,11 +1126,13 @@ class __$JournalAllowanceCopyWithImpl<$Res>
 
 /// Create a copy of JournalAllowance
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? maxSentences = null,Object? maxCharacters = null,Object? correctionsLeft = null,Object? plan = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? maxSentences = null,Object? maxCharacters = null,Object? correctionsLeft = null,Object? credits = null,Object? rewardCorrections = null,Object? plan = freezed,}) {
   return _then(_JournalAllowance(
 maxSentences: null == maxSentences ? _self.maxSentences : maxSentences // ignore: cast_nullable_to_non_nullable
 as int,maxCharacters: null == maxCharacters ? _self.maxCharacters : maxCharacters // ignore: cast_nullable_to_non_nullable
 as int,correctionsLeft: null == correctionsLeft ? _self.correctionsLeft : correctionsLeft // ignore: cast_nullable_to_non_nullable
+as int,credits: null == credits ? _self.credits : credits // ignore: cast_nullable_to_non_nullable
+as int,rewardCorrections: null == rewardCorrections ? _self.rewardCorrections : rewardCorrections // ignore: cast_nullable_to_non_nullable
 as int,plan: freezed == plan ? _self.plan : plan // ignore: cast_nullable_to_non_nullable
 as SubscriptionPlan?,
   ));
@@ -1134,7 +1148,8 @@ mixin _$HistoryOverview {
 /// Nombre de jours d'historique lisibles ; `null` si l'offre donne accès à
 /// tout l'historique.
  int? get historyDays;/// Journaux plus anciens, conservés mais non lisibles avec cette offre.
- int get lockedEntries;
+ int get lockedEntries;/// Tous les journaux corrigés, lisibles ou non.
+ int get correctedEntries;
 /// Create a copy of HistoryOverview
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1147,16 +1162,16 @@ $HistoryOverviewCopyWith<HistoryOverview> get copyWith => _$HistoryOverviewCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HistoryOverview&&(identical(other.historyDays, historyDays) || other.historyDays == historyDays)&&(identical(other.lockedEntries, lockedEntries) || other.lockedEntries == lockedEntries));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HistoryOverview&&(identical(other.historyDays, historyDays) || other.historyDays == historyDays)&&(identical(other.lockedEntries, lockedEntries) || other.lockedEntries == lockedEntries)&&(identical(other.correctedEntries, correctedEntries) || other.correctedEntries == correctedEntries));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,historyDays,lockedEntries);
+int get hashCode => Object.hash(runtimeType,historyDays,lockedEntries,correctedEntries);
 
 @override
 String toString() {
-  return 'HistoryOverview(historyDays: $historyDays, lockedEntries: $lockedEntries)';
+  return 'HistoryOverview(historyDays: $historyDays, lockedEntries: $lockedEntries, correctedEntries: $correctedEntries)';
 }
 
 
@@ -1167,7 +1182,7 @@ abstract mixin class $HistoryOverviewCopyWith<$Res>  {
   factory $HistoryOverviewCopyWith(HistoryOverview value, $Res Function(HistoryOverview) _then) = _$HistoryOverviewCopyWithImpl;
 @useResult
 $Res call({
- int? historyDays, int lockedEntries
+ int? historyDays, int lockedEntries, int correctedEntries
 });
 
 
@@ -1184,10 +1199,11 @@ class _$HistoryOverviewCopyWithImpl<$Res>
 
 /// Create a copy of HistoryOverview
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? historyDays = freezed,Object? lockedEntries = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? historyDays = freezed,Object? lockedEntries = null,Object? correctedEntries = null,}) {
   return _then(_self.copyWith(
 historyDays: freezed == historyDays ? _self.historyDays : historyDays // ignore: cast_nullable_to_non_nullable
 as int?,lockedEntries: null == lockedEntries ? _self.lockedEntries : lockedEntries // ignore: cast_nullable_to_non_nullable
+as int,correctedEntries: null == correctedEntries ? _self.correctedEntries : correctedEntries // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }
@@ -1273,10 +1289,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int? historyDays,  int lockedEntries)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int? historyDays,  int lockedEntries,  int correctedEntries)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _HistoryOverview() when $default != null:
-return $default(_that.historyDays,_that.lockedEntries);case _:
+return $default(_that.historyDays,_that.lockedEntries,_that.correctedEntries);case _:
   return orElse();
 
 }
@@ -1294,10 +1310,10 @@ return $default(_that.historyDays,_that.lockedEntries);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int? historyDays,  int lockedEntries)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int? historyDays,  int lockedEntries,  int correctedEntries)  $default,) {final _that = this;
 switch (_that) {
 case _HistoryOverview():
-return $default(_that.historyDays,_that.lockedEntries);case _:
+return $default(_that.historyDays,_that.lockedEntries,_that.correctedEntries);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1314,10 +1330,10 @@ return $default(_that.historyDays,_that.lockedEntries);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int? historyDays,  int lockedEntries)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int? historyDays,  int lockedEntries,  int correctedEntries)?  $default,) {final _that = this;
 switch (_that) {
 case _HistoryOverview() when $default != null:
-return $default(_that.historyDays,_that.lockedEntries);case _:
+return $default(_that.historyDays,_that.lockedEntries,_that.correctedEntries);case _:
   return null;
 
 }
@@ -1329,7 +1345,7 @@ return $default(_that.historyDays,_that.lockedEntries);case _:
 
 @JsonSerializable(fieldRename: FieldRename.snake)
 class _HistoryOverview implements HistoryOverview {
-  const _HistoryOverview({required this.historyDays, required this.lockedEntries});
+  const _HistoryOverview({required this.historyDays, required this.lockedEntries, required this.correctedEntries});
   factory _HistoryOverview.fromJson(Map<String, dynamic> json) => _$HistoryOverviewFromJson(json);
 
 /// Nombre de jours d'historique lisibles ; `null` si l'offre donne accès à
@@ -1337,6 +1353,8 @@ class _HistoryOverview implements HistoryOverview {
 @override final  int? historyDays;
 /// Journaux plus anciens, conservés mais non lisibles avec cette offre.
 @override final  int lockedEntries;
+/// Tous les journaux corrigés, lisibles ou non.
+@override final  int correctedEntries;
 
 /// Create a copy of HistoryOverview
 /// with the given fields replaced by the non-null parameter values.
@@ -1351,16 +1369,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HistoryOverview&&(identical(other.historyDays, historyDays) || other.historyDays == historyDays)&&(identical(other.lockedEntries, lockedEntries) || other.lockedEntries == lockedEntries));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HistoryOverview&&(identical(other.historyDays, historyDays) || other.historyDays == historyDays)&&(identical(other.lockedEntries, lockedEntries) || other.lockedEntries == lockedEntries)&&(identical(other.correctedEntries, correctedEntries) || other.correctedEntries == correctedEntries));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,historyDays,lockedEntries);
+int get hashCode => Object.hash(runtimeType,historyDays,lockedEntries,correctedEntries);
 
 @override
 String toString() {
-  return 'HistoryOverview(historyDays: $historyDays, lockedEntries: $lockedEntries)';
+  return 'HistoryOverview(historyDays: $historyDays, lockedEntries: $lockedEntries, correctedEntries: $correctedEntries)';
 }
 
 
@@ -1371,7 +1389,7 @@ abstract mixin class _$HistoryOverviewCopyWith<$Res> implements $HistoryOverview
   factory _$HistoryOverviewCopyWith(_HistoryOverview value, $Res Function(_HistoryOverview) _then) = __$HistoryOverviewCopyWithImpl;
 @override @useResult
 $Res call({
- int? historyDays, int lockedEntries
+ int? historyDays, int lockedEntries, int correctedEntries
 });
 
 
@@ -1388,10 +1406,11 @@ class __$HistoryOverviewCopyWithImpl<$Res>
 
 /// Create a copy of HistoryOverview
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? historyDays = freezed,Object? lockedEntries = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? historyDays = freezed,Object? lockedEntries = null,Object? correctedEntries = null,}) {
   return _then(_HistoryOverview(
 historyDays: freezed == historyDays ? _self.historyDays : historyDays // ignore: cast_nullable_to_non_nullable
 as int?,lockedEntries: null == lockedEntries ? _self.lockedEntries : lockedEntries // ignore: cast_nullable_to_non_nullable
+as int,correctedEntries: null == correctedEntries ? _self.correctedEntries : correctedEntries // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }

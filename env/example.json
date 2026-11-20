@@ -1,4 +1,7 @@
 {
   "SUPABASE_URL": "http://10.0.2.2:55321",
-  "SUPABASE_PUBLISHABLE_KEY": "valeur 'Publishable key' (ou 'anon key') affichée par la commande: supabase status"
+  "SUPABASE_PUBLISHABLE_KEY": "valeur 'Publishable key' (ou 'anon key') affichée par la commande: supabase status",
+  "ADMOB_BANNER_ID": "",
+  "ADMOB_INTERSTITIAL_ID": "",
+  "ADMOB_REWARDED_ID": ""
 }

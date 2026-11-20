@@ -8,9 +8,12 @@ abstract final class AppSpacing {
   static const double xxl = 32;
 }
 
-/// Rayons du brand kit : cartes 16, champs 12 à 16.
+/// Rayons : grandes cartes très arrondies, éléments plus petits à l'avenant.
 abstract final class AppRadius {
-  static const double field = 12;
-  static const double card = 16;
-  static const double button = 16;
+  static const double chip = 12;
+  static const double field = 18;
+  static const double button = 18;
+  static const double tile = 20;
+  static const double card = 24;
+  static const double sheet = 28;
 }

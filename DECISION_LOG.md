@@ -5,6 +5,278 @@
 
 ---
 
+## ADR-038 — Refonte de l'interface d'après une maquette validée
+
+- **Date** : 2026-11-20
+- **Statut** : Accepté
+- **Décideur** : Utilisateur (demande et validation de la maquette), Claude (exécution)
+- **Contexte** : l'utilisateur juge l'interface « pas du tout moderne » et demande de la
+  refaire entièrement. Une maquette de six écrans (accueil, Journal, Correction, Réviser,
+  Progrès, Profil) lui a été présentée et validée.
+- **Décision** : (1) Nouveau langage visuel, toujours sur le brand kit : aplats vert
+  profond pour les contenus mis en avant, cartes blanches aux grands arrondis et à
+  l'ombre douce, barre d'onglets flottante, boutons ronds, titres plus grands
+  (`docs/design/design-system.md`). (2) Composants partagés (`SoftCard`, `HeroCard`,
+  `TabAppBar`, `SoftAppBar`, `IconBadge`, `Tag`, `SettingsGroup`…) pour que chaque écran
+  garde le même dessin. (3) `get_stats` renvoie aussi les jours écrits de la semaine en
+  cours (migration `20261121120000_stats_week_days.sql`), pour l'en-tête du Journal.
+  (4) Le Profil affiche l'e-mail du compte (`AuthRepository.currentEmail`).
+- **Carte du jour** (ajoutée à la demande de l'utilisateur) : paquet des 5 premiers mots
+  à réviser, fixé à son ouverture et gardé tant que l'app est ouverte, sans nouvelle
+  donnée serveur ; « Je sais » enregistre le mot comme appris (même enregistrement que
+  la liste), « À revoir » passe au suivant.
+- **Écarts avec la maquette** : pas d'écran d'accueil séparé : la connexion en reprend
+  l'en-tête ; le graphique de Progrès montre les fautes par phrase (donnée
+  existante) au lieu des journaux par semaine ; le contenu s'arrête au-dessus de la barre
+  d'onglets au lieu de passer dessous, pour qu'aucun bouton ne soit caché.
+- **Alternatives écartées** : retouches du thème seul (n'aurait pas changé la structure
+  des écrans) ; bibliothèque de composants externe (dépendance pour peu de gain).
+- **Conséquences** : textes et parcours inchangés ; quelques tests adaptés au nouveau
+  découpage des textes (série, achats possédés). Un rendu des écrans en images a servi de
+  contrôle visuel et révélé deux défauts corrigés (cartes et pastilles invisibles).
+- **Impact** : fonctionnel mineur (réversible).
+
+## ADR-037 — Docker uniquement pour la base locale ; Flutter sur le poste
+
+- **Date** : 2026-11-20
+- **Statut** : Accepté ; remplace ADR-007 pour tout ce qui touche à Flutter
+- **Décideur** : Utilisateur (précision de sa demande)
+- **Contexte** : ADR-007 avait interprété « développer avec Docker » au sens large :
+  conteneur Flutter pour l'analyse, les tests et la compilation. L'utilisateur précise
+  qu'il voulait Docker seulement pour la base de données. L'échec de Gradle qui
+  justifiait la compilation en conteneur n'a été constaté que dans la session de Claude.
+- **Décision** : Docker ne sert qu'à Supabase local (`supabase start`). Analyse, tests,
+  génération de code et compilation se font sur le poste avec les commandes Flutter
+  habituelles ; un APK de test est un APK unique valable pour tous les téléphones
+  (`flutter build apk`, sans découpage par processeur). Le conteneur Flutter
+  (`docker-compose.yml`) est supprimé ; la CI garde l'image Flutter 3.41.7.
+- **Alternatives écartées** : garder le conteneur en parallèle (deux façons de compiler,
+  source de confusion).
+- **Conséquences** : rechargement à chaud disponible ; les volumes Docker du conteneur
+  (`journaldelangue_*`) peuvent être supprimés.
+- **Impact** : technique (réversible).
+
+## ADR-036 — Build de publication : signature hors dépôt, identifiant AdMob exigé, CI Android
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôles : release-manager, playstore-appstore-engineer)
+- **Contexte** : Inc-9 doit produire un `.aab` de publication. La clé de signature et les
+  vrais identifiants AdMob n'existent pas encore ; le build Android se fait dans Docker.
+- **Décision** : (1) La clé d'envoi est lue dans `android/key.properties` (ignoré par Git,
+  comme les `.jks`) ; sans ce fichier, la version de publication est signée avec la clé
+  de debug, installable pour un essai mais refusée par Google Play. (2) Un build de
+  publication sans `-PADMOB_APP_ID` échoue au lieu d'embarquer l'identifiant de
+  démonstration. (3) La CI construit l'app bundle de publication à chaque envoi (clé de
+  debug, identifiants de démonstration) pour détecter tôt un échec de R8. (4) Gradle est
+  limité à 3 Go : avec les 8 Go par défaut de Flutter, le build de publication a fait
+  tomber Docker Desktop (8 Go pour Supabase et le build). (5) Décision de l'éditeur :
+  aucune signature sur le poste de développement ; clé d'envoi et builds de publication
+  sur un autre ordinateur. Les APK de test (mode profile) gardent la clé de test de Flutter.
+- **Alternatives écartées** : clé dans les secrets de la CI dès maintenant (rien à signer
+  tant que le compte Play n'existe pas) ; Fastlane avant l'existence des comptes (non
+  vérifiable).
+- **Conséquences** : déploiement automatique vers les canaux de test à ajouter avec le
+  compte Play (Fastlane `supply`) ; un build iOS demande un Mac (question Q3).
+- **Impact** : technique (réversible).
+
+## ADR-035 — Historique par pages, vocabulaire et export lus par lots
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôles : performance-engineer, backend-engineer)
+- **Contexte** : mesuré sur un compte local d'un an d'usage Premium (730 journaux,
+  3 650 mots, `docs/performance.md`) : l'historique complet (2,1 Mo) était chargé à chaque
+  ouverture de l'app pour savoir s'il existait un journal corrigé ; l'API ne rend que
+  1 000 lignes par requête, donc 2 650 mots n'apparaissaient jamais et l'export « tout »
+  aurait été tronqué au-delà de 1 000 journaux.
+- **Décision** : (1) `get_history_overview` compte les journaux corrigés : l'app sait
+  sans rien charger si elle peut proposer les offres. (2) L'historique se lit par pages de
+  20 (40 Ko), sans le vocabulaire ; la suivante se charge en fin de liste, avec
+  « Réessayer » en cas d'échec. (3) Vocabulaire et export lisent tout, par lots de 500 et
+  200 lignes, dans un ordre stable ; les listes sont construites à la demande.
+- **Alternatives écartées** : pagination du vocabulaire (les mots à réviser passent
+  avant les mots appris : l'ordre changerait sous les pages ; 3 650 mots pèsent 600 Ko) ;
+  relever la limite de l'API (le problème revient plus loin).
+- **Conséquences** : les mots appris et à réviser restent comptés sur la liste complète.
+- **Impact** : technique (réversible).
+
+## ADR-034 — Signalement des contenus produits par l'IA
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôles : playstore-appstore-engineer, security-engineer)
+- **Contexte** : Google Play exige des apps qui génèrent du contenu par IA un moyen de
+  signaler un contenu choquant sans quitter l'app, et l'usage de ces signalements.
+- **Décision** : un drapeau sur la correction, l'exercice et la simulation d'examen ouvre
+  un commentaire facultatif (500 caractères) ; `report_ai_content` vérifie que le
+  contenu existe et appartient à l'utilisateur (un exercice est partagé), limite à 20
+  signalements par jour et enregistre `ai_content_reports`, lisible avec le rôle service
+  seulement. Les reformulations, affichées depuis la correction, se signalent avec elle.
+- **Alternatives écartées** : lien `mailto:` (quitte l'app) ; signalement anonyme sans
+  vérification du contenu (inexploitable).
+- **Conséquences** : relire les signalements dans le tableau de bord Supabase
+  (`docs/manual-tasks.md`) ; mention ajoutée à la politique de confidentialité.
+- **Impact** : fonctionnel et légal (réversible).
+
+## ADR-033 — Textes légaux livrés avec l'app
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté, **à faire relire par un juriste**
+- **Décideur** : Claude (rôle : documentation-pro) ; validation par l'utilisateur
+- **Contexte** : les stores exigent une politique de confidentialité et, pour les
+  abonnements, des conditions d'utilisation accessibles dans l'app et en ligne.
+- **Décision** : (1) Les textes français et anglais sont des fichiers Markdown simples
+  (`assets/legal/`) affichés par l'app (Profil, inscription, écran d'offres), lisibles
+  sans compte ; les mêmes fichiers seront publiés à une adresse publique. (2) Hypothèses
+  posées par défaut, réversibles avant publication : app réservée aux 16 ans et plus
+  (public cible Play hors enfants, pas d'accord parental) ; base de données Supabase dans
+  l'Union européenne ; droit français et médiateur de la consommation. (3) Les champs
+  propres à l'éditeur restent marqués `[À COMPLÉTER : …]` ; la checklist de publication
+  vérifie qu'il n'en reste aucun.
+- **Alternatives écartées** : textes seulement en ligne (dépendance à un site, pas de
+  lecture hors connexion) ; un paquet de rendu Markdown (une dépendance pour 4 textes).
+- **Conséquences** : une modification des textes demande une nouvelle version de l'app ;
+  les durées de conservation des comptes inactifs restent à décider avec le juriste.
+- **Impact** : légal (réversible).
+
+## ADR-032 — Suivi : vues SQL du coût de l'IA et de la rétention
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôles : backend-engineer, database-architect)
+- **Contexte** : US-24 et ADR-006 : coût de l'IA par utilisateur actif et rétention à
+  7 jours, sans SDK d'analytics.
+- **Décision** : `ai_model_prices` donne le prix public de chaque modèle (Haiku 5.5 :
+  0,10 $ / 0,50 $ par million de tokens ; Sonnet 5.5 : 2 $ / 10 $) ;
+  `v_ai_cost_per_user` (par mois) et `v_ai_cost_per_month` (coût par utilisateur actif)
+  en découlent ; un modèle sans prix est compté à part, jamais pour zéro.
+  `v_retention_d7` : part des inscrits d'une semaine qui ont écrit un journal ou fait un
+  exercice le 7e jour (UTC). Lecture réservée au rôle service.
+- **Alternatives écartées** : prix codés dans les vues (une migration à chaque
+  changement) ; rétention « au moins une activité entre J7 et J13 » (moins comparable).
+- **Conséquences** : mettre à jour `ai_model_prices` quand un prix ou un modèle change.
+  Conversion et annulations restent dans RevenueCat, les avis dans les consoles.
+- **Impact** : technique (réversible).
+
+## ADR-031 — Vidéo récompensée : accordée par le rappel signé d'AdMob
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôles : backend-engineer, security-engineer)
+- **Contexte** : US-23 : une vidéo vue en entier rapporte 1 correction ou 3 exercices,
+  au plus une fois de chaque par jour. Comme pour les achats (ADR-021, ADR-029), l'app
+  ne doit pas pouvoir s'attribuer une récompense.
+- **Décision** : (1) Seul le rappel de vérification côté serveur d'AdMob (SSV) accorde
+  la récompense. La fonction `admob-reward` vérifie sa signature ECDSA avec les clés
+  publiées par Google (rechargées une fois si la clé est inconnue), n'accepte que les
+  blocs de l'app (`ADMOB_REWARDED_AD_UNITS`) et lit l'utilisateur et la récompense que
+  l'app a joints à la vidéo (`user_id`, `custom_data`). (2) `grant_ad_reward` garde
+  chaque récompense par son `transaction_id` (rappel rejoué : sans effet), une seule de
+  chaque sorte par jour UTC (index unique), et ignore les utilisateurs qui ne voient pas
+  de publicités. (3) Ordre d'utilisation : quota de l'offre, puis crédits achetés, puis
+  correction offerte ; celle-ci est retenue par la correction en cours et débitée à sa
+  réussite (comme un crédit, ADR-029). Les exercices offerts s'ajoutent à la limite du
+  jour. (4) Dans l'app : après la vidéo, l'app interroge le serveur pendant 10 s ; si la
+  confirmation tarde, elle le dit et propose « Actualiser ».
+- **Alternatives écartées** : se fier au signal de l'app (`onUserEarnedReward`), qu'un
+  client modifié peut simuler ; plafond appliqué dans l'app.
+- **Conséquences** : le plafond suit le jour UTC, pas le jour local du quota. Une
+  récompense non utilisée reste acquise, comme un crédit. En local, AdMob ne peut pas
+  joindre la fonction : la vidéo de démonstration se termine sur « récompense en
+  attente » (vérifié sur émulateur, rappel simulé en base). Sans
+  `ADMOB_REWARDED_AD_UNITS`, une autre app AdMob pourrait viser l'adresse : à renseigner
+  avant publication (`docs/manual-tasks.md`).
+- **Impact** : financier (réversible).
+
+## ADR-030 — Publicités : éligibilité côté serveur, emplacements discrets, consentement
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôles : product-manager, mobile-architect, security-engineer)
+- **Contexte** : INTAKE §5 : bannière discrète, interstitiel après une correction au plus
+  une fois par session, vidéo récompensée ; aucune publicité pendant la saisie, la
+  correction ou une révision, ni pour Premium, ni après l'achat « sans publicité », ni
+  pendant les 14 premiers jours (H7). Le consentement est exigé dans l'UE.
+- **Décision** : (1) Le serveur décide qui voit des publicités (`ads_enabled` : offre
+  gratuite, pas d'achat « sans publicité », compte de plus de 14 jours) et l'app le lit
+  par `get_ad_status`. (2) Emplacements : bannière standard 320 × 50 en bas du Journal,
+  seulement champ vide et clavier fermé, et sous la carte de limite du jour ;
+  interstitiel à la sortie d'une correction, au plus un par session de l'app ; rien dans
+  la correction, la révision, les exercices, l'examen, la boutique ou le profil.
+  (3) Consentement par le SDK Google UMP au lancement, formulaire là où la loi l'exige ;
+  aucune publicité tant qu'il ne le permet pas ; le Profil permet de revoir ses choix
+  quand c'est requis. (4) Blocs d'annonces passés au build (`ADMOB_BANNER_ID`,
+  `ADMOB_INTERSTITIAL_ID`, `ADMOB_REWARDED_ID` en `--dart-define`) : en debug, sans
+  valeur, ceux de démonstration de Google ; en version publiée, un bloc absent n'est
+  jamais affiché. Identifiant d'app AdMob : `-PADMOB_APP_ID` (Android) et
+  `GADApplicationIdentifier` (iOS), valeurs de démonstration en attendant le compte.
+- **Alternatives écartées** : bannière adaptative (nettement plus haute à l'essai sur
+  émulateur) ; règle des 14 jours dans l'app (contournable et dépendante de l'heure du
+  téléphone) ; formats natifs, plus intrusifs dans un écran d'apprentissage.
+- **Conséquences** : le SDK ajoute une WebView et, sur Android, la permission
+  d'identifiant publicitaire (`AD_ID`) à déclarer dans la fiche Play. iOS : sans demande
+  ATT, les publicités ne sont pas personnalisées ; liste SKAdNetwork de Google à ajouter
+  avant publication (Inc-9). La bannière apparaît une à deux secondes après l'écran
+  (chargement réseau), sans décaler la saisie.
+- **Impact** : fonctionnel et financier (réversible).
+
+## ADR-029 — Achats à l'unité : portefeuille côté serveur, repris au remboursement
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : Claude (rôles : backend-engineer, security-engineer)
+- **Contexte** : INTAKE §4 et §5.3 : packs de 10 et 50 corrections, accès à une langue
+  pendant 30 jours, Pack Examinateur, sans publicité. Comme pour les abonnements
+  (ADR-021), l'app ne doit jamais pouvoir s'attribuer un achat.
+- **Décision** : (1) La notification RevenueCat `NON_RENEWING_PURCHASE` crédite un
+  portefeuille en base (`wallets`, `language_passes`) ; chaque achat est gardé par son
+  `transaction_id` (`one_time_purchases`) : reçu deux fois, il ne compte qu'une fois ;
+  remboursé (`CANCELLATION` pour `CUSTOMER_SUPPORT`), il est repris, sans descendre sous
+  zéro si les crédits sont déjà utilisés. (2) Un crédit prend le relais du quota du jour
+  une fois celui-ci épuisé (hypothèse H6) ; il est retenu par la correction en cours et
+  débité seulement si elle aboutit : exactement un crédit par correction réussie, jamais
+  deux pour un même envoi rejoué. (3) Un produit par langue pour l'accès de 30 jours
+  (`language_pass_en`, `_es`, `_de`, `_fr`) : le store ne transmet que l'identifiant du
+  produit. La langue débloquée s'ajoute à la limite de l'offre et se verrouille au
+  31e jour ; une langue ouverte seulement par un accès ne prend jamais la place de la
+  langue choisie par l'utilisateur. Un nouvel achat prolonge l'accès. (4) La boutique
+  n'est proposée qu'après une première correction, comme les abonnements.
+- **Alternatives écartées** : débiter le crédit à la réservation (il faudrait le rendre
+  à chaque échec ou abandon) ; un seul produit « accès langue » avec la langue choisie
+  avant l'achat (rien ne relie ce choix à la notification du store).
+- **Conséquences** : 8 produits à créer à l'identique dans les stores
+  (`docs/manual-tasks.md`). Le transfert d'achats entre comptes (`TRANSFER`) n'est pas
+  traité : à voir avec le SDK RevenueCat (Inc-4b). Les crédits n'expirent pas.
+- **Impact** : financier et fonctionnel (réversible).
+
+## ADR-028 — Simulation d'examen : un pack, un sujet, une copie notée
+
+- **Date** : 2026-11-19
+- **Statut** : Accepté
+- **Décideur** : utilisateur pour « un pack = une simulation » (ADR-008, Q2) ; Claude
+  pour le reste
+- **Contexte** : US-20 : un sujet, une rédaction, une correction renforcée notée et un
+  plan de révision ; une simulation interrompue reste disponible.
+- **Décision** : l'utilisateur choisit le niveau visé (A2, B1, B2 ou C1) ; la fonction
+  `exam` utilise un pack, demande à Claude un sujet de production écrite dans la langue
+  apprise, au format des examens officiels, puis corrige la copie : note sur 20, quatre
+  critères sur 5 (tâche, cohérence, vocabulaire, grammaire), niveau estimé, copie
+  corrigée, fautes expliquées dans la langue de l'interface et plan de révision en 3 à
+  5 étapes. Modèle supérieur (`EXAM_MODEL`, Claude Sonnet 5.5 par défaut) : c'est la
+  « correction renforcée ». Une seule simulation ouverte à la fois ; son brouillon est
+  enregistré en base pendant la saisie et la retrouve sur tout appareil. Si le sujet ne
+  peut pas être créé, le pack est rendu ; si la correction échoue, la copie est gardée et
+  peut être renvoyée. Les notes et critères hors bornes renvoyés par le modèle sont
+  ramenés dans leurs bornes.
+- **Alternatives écartées** : niveau imposé (moins utile à un candidat) ; brouillon
+  gardé seulement sur l'appareil (perdu en changeant de téléphone, et un effacement de
+  plus à gérer à la suppression du compte).
+- **Conséquences** : coût d'une simulation : deux appels au modèle supérieur, couverts
+  par le prix du pack (7,99 €). Qualité des sujets et des notes à relire avec une clé
+  API.
+- **Impact** : fonctionnel et financier (réversible).
+
 ## ADR-027 — Voix et export PDF : paquets, permissions, contrainte de version
 
 - **Date** : 2026-11-19
@@ -407,7 +679,7 @@
 ## ADR-007 — Développement sous Docker
 
 - **Date** : 2026-11-19
-- **Statut** : Accepté
+- **Statut** : Remplacé par ADR-037 (Docker seulement pour la base locale)
 - **Décideur** : Utilisateur (exigence) ; périmètre précisé par Claude (interprétation)
 - **Contexte** : L'utilisateur demande que le développement utilise Docker.
 - **Décision** : Backend Supabase local dans Docker (`supabase start`) ; conteneur Flutter à

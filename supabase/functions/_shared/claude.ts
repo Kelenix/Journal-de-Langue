@@ -23,6 +23,8 @@ interface Question<T> {
   /** Données de l'utilisateur, transmises en JSON : elles ne peuvent pas sortir de leur champ. */
   input: unknown;
   schema: z.ZodType<T>;
+  /** Délai d'une tentative ; 25 s par défaut. */
+  timeoutMs?: number;
 }
 
 const REQUEST_TIMEOUT_MS = 25_000;
@@ -34,7 +36,10 @@ const REQUEST_TIMEOUT_MS = 25_000;
 export async function askClaude<T>(question: Question<T>): Promise<Answer<T>> {
   // Créé à la demande : une clé absente doit produire une erreur gérée, pas empêcher la
   // fonction de démarrer.
-  const anthropic = new Anthropic({ maxRetries: 1, timeout: REQUEST_TIMEOUT_MS });
+  const anthropic = new Anthropic({
+    maxRetries: 1,
+    timeout: question.timeoutMs ?? REQUEST_TIMEOUT_MS,
+  });
 
   const response = await anthropic.messages.parse({
     model: question.model,

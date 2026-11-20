@@ -18,7 +18,9 @@ mixin _$LearningStats {
  bool get isPremium;/// Jours consécutifs avec un journal corrigé, toutes langues confondues,
 /// jusqu'à aujourd'hui ou hier.
  int get streakDays;/// Journaux corrigés dans cette langue.
- int get journals; int? get wordsLearned; int? get wordsTotal;/// Du type de faute le plus fréquent au moins fréquent.
+ int get journals;/// Jours de la semaine en cours (du lundi à aujourd'hui) avec un journal
+/// corrigé, toutes langues confondues.
+ List<DateTime> get weekDays; int? get wordsLearned; int? get wordsTotal;/// Du type de faute le plus fréquent au moins fréquent.
  List<CategoryCount> get mistakesByCategory;/// Semaines des 8 dernières, de la plus ancienne à la plus récente.
  List<WeeklyMistakeRate> get weeklyMistakeRate;
 /// Create a copy of LearningStats
@@ -33,16 +35,16 @@ $LearningStatsCopyWith<LearningStats> get copyWith => _$LearningStatsCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LearningStats&&(identical(other.isPremium, isPremium) || other.isPremium == isPremium)&&(identical(other.streakDays, streakDays) || other.streakDays == streakDays)&&(identical(other.journals, journals) || other.journals == journals)&&(identical(other.wordsLearned, wordsLearned) || other.wordsLearned == wordsLearned)&&(identical(other.wordsTotal, wordsTotal) || other.wordsTotal == wordsTotal)&&const DeepCollectionEquality().equals(other.mistakesByCategory, mistakesByCategory)&&const DeepCollectionEquality().equals(other.weeklyMistakeRate, weeklyMistakeRate));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LearningStats&&(identical(other.isPremium, isPremium) || other.isPremium == isPremium)&&(identical(other.streakDays, streakDays) || other.streakDays == streakDays)&&(identical(other.journals, journals) || other.journals == journals)&&const DeepCollectionEquality().equals(other.weekDays, weekDays)&&(identical(other.wordsLearned, wordsLearned) || other.wordsLearned == wordsLearned)&&(identical(other.wordsTotal, wordsTotal) || other.wordsTotal == wordsTotal)&&const DeepCollectionEquality().equals(other.mistakesByCategory, mistakesByCategory)&&const DeepCollectionEquality().equals(other.weeklyMistakeRate, weeklyMistakeRate));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,isPremium,streakDays,journals,wordsLearned,wordsTotal,const DeepCollectionEquality().hash(mistakesByCategory),const DeepCollectionEquality().hash(weeklyMistakeRate));
+int get hashCode => Object.hash(runtimeType,isPremium,streakDays,journals,const DeepCollectionEquality().hash(weekDays),wordsLearned,wordsTotal,const DeepCollectionEquality().hash(mistakesByCategory),const DeepCollectionEquality().hash(weeklyMistakeRate));
 
 @override
 String toString() {
-  return 'LearningStats(isPremium: $isPremium, streakDays: $streakDays, journals: $journals, wordsLearned: $wordsLearned, wordsTotal: $wordsTotal, mistakesByCategory: $mistakesByCategory, weeklyMistakeRate: $weeklyMistakeRate)';
+  return 'LearningStats(isPremium: $isPremium, streakDays: $streakDays, journals: $journals, weekDays: $weekDays, wordsLearned: $wordsLearned, wordsTotal: $wordsTotal, mistakesByCategory: $mistakesByCategory, weeklyMistakeRate: $weeklyMistakeRate)';
 }
 
 
@@ -53,7 +55,7 @@ abstract mixin class $LearningStatsCopyWith<$Res>  {
   factory $LearningStatsCopyWith(LearningStats value, $Res Function(LearningStats) _then) = _$LearningStatsCopyWithImpl;
 @useResult
 $Res call({
- bool isPremium, int streakDays, int journals, int? wordsLearned, int? wordsTotal, List<CategoryCount> mistakesByCategory, List<WeeklyMistakeRate> weeklyMistakeRate
+ bool isPremium, int streakDays, int journals, List<DateTime> weekDays, int? wordsLearned, int? wordsTotal, List<CategoryCount> mistakesByCategory, List<WeeklyMistakeRate> weeklyMistakeRate
 });
 
 
@@ -70,12 +72,13 @@ class _$LearningStatsCopyWithImpl<$Res>
 
 /// Create a copy of LearningStats
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? isPremium = null,Object? streakDays = null,Object? journals = null,Object? wordsLearned = freezed,Object? wordsTotal = freezed,Object? mistakesByCategory = null,Object? weeklyMistakeRate = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? isPremium = null,Object? streakDays = null,Object? journals = null,Object? weekDays = null,Object? wordsLearned = freezed,Object? wordsTotal = freezed,Object? mistakesByCategory = null,Object? weeklyMistakeRate = null,}) {
   return _then(_self.copyWith(
 isPremium: null == isPremium ? _self.isPremium : isPremium // ignore: cast_nullable_to_non_nullable
 as bool,streakDays: null == streakDays ? _self.streakDays : streakDays // ignore: cast_nullable_to_non_nullable
 as int,journals: null == journals ? _self.journals : journals // ignore: cast_nullable_to_non_nullable
-as int,wordsLearned: freezed == wordsLearned ? _self.wordsLearned : wordsLearned // ignore: cast_nullable_to_non_nullable
+as int,weekDays: null == weekDays ? _self.weekDays : weekDays // ignore: cast_nullable_to_non_nullable
+as List<DateTime>,wordsLearned: freezed == wordsLearned ? _self.wordsLearned : wordsLearned // ignore: cast_nullable_to_non_nullable
 as int?,wordsTotal: freezed == wordsTotal ? _self.wordsTotal : wordsTotal // ignore: cast_nullable_to_non_nullable
 as int?,mistakesByCategory: null == mistakesByCategory ? _self.mistakesByCategory : mistakesByCategory // ignore: cast_nullable_to_non_nullable
 as List<CategoryCount>,weeklyMistakeRate: null == weeklyMistakeRate ? _self.weeklyMistakeRate : weeklyMistakeRate // ignore: cast_nullable_to_non_nullable
@@ -164,10 +167,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool isPremium,  int streakDays,  int journals,  int? wordsLearned,  int? wordsTotal,  List<CategoryCount> mistakesByCategory,  List<WeeklyMistakeRate> weeklyMistakeRate)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool isPremium,  int streakDays,  int journals,  List<DateTime> weekDays,  int? wordsLearned,  int? wordsTotal,  List<CategoryCount> mistakesByCategory,  List<WeeklyMistakeRate> weeklyMistakeRate)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LearningStats() when $default != null:
-return $default(_that.isPremium,_that.streakDays,_that.journals,_that.wordsLearned,_that.wordsTotal,_that.mistakesByCategory,_that.weeklyMistakeRate);case _:
+return $default(_that.isPremium,_that.streakDays,_that.journals,_that.weekDays,_that.wordsLearned,_that.wordsTotal,_that.mistakesByCategory,_that.weeklyMistakeRate);case _:
   return orElse();
 
 }
@@ -185,10 +188,10 @@ return $default(_that.isPremium,_that.streakDays,_that.journals,_that.wordsLearn
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool isPremium,  int streakDays,  int journals,  int? wordsLearned,  int? wordsTotal,  List<CategoryCount> mistakesByCategory,  List<WeeklyMistakeRate> weeklyMistakeRate)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool isPremium,  int streakDays,  int journals,  List<DateTime> weekDays,  int? wordsLearned,  int? wordsTotal,  List<CategoryCount> mistakesByCategory,  List<WeeklyMistakeRate> weeklyMistakeRate)  $default,) {final _that = this;
 switch (_that) {
 case _LearningStats():
-return $default(_that.isPremium,_that.streakDays,_that.journals,_that.wordsLearned,_that.wordsTotal,_that.mistakesByCategory,_that.weeklyMistakeRate);case _:
+return $default(_that.isPremium,_that.streakDays,_that.journals,_that.weekDays,_that.wordsLearned,_that.wordsTotal,_that.mistakesByCategory,_that.weeklyMistakeRate);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +208,10 @@ return $default(_that.isPremium,_that.streakDays,_that.journals,_that.wordsLearn
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool isPremium,  int streakDays,  int journals,  int? wordsLearned,  int? wordsTotal,  List<CategoryCount> mistakesByCategory,  List<WeeklyMistakeRate> weeklyMistakeRate)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool isPremium,  int streakDays,  int journals,  List<DateTime> weekDays,  int? wordsLearned,  int? wordsTotal,  List<CategoryCount> mistakesByCategory,  List<WeeklyMistakeRate> weeklyMistakeRate)?  $default,) {final _that = this;
 switch (_that) {
 case _LearningStats() when $default != null:
-return $default(_that.isPremium,_that.streakDays,_that.journals,_that.wordsLearned,_that.wordsTotal,_that.mistakesByCategory,_that.weeklyMistakeRate);case _:
+return $default(_that.isPremium,_that.streakDays,_that.journals,_that.weekDays,_that.wordsLearned,_that.wordsTotal,_that.mistakesByCategory,_that.weeklyMistakeRate);case _:
   return null;
 
 }
@@ -220,7 +223,7 @@ return $default(_that.isPremium,_that.streakDays,_that.journals,_that.wordsLearn
 
 @JsonSerializable(fieldRename: FieldRename.snake)
 class _LearningStats implements LearningStats {
-  const _LearningStats({required this.isPremium, required this.streakDays, required this.journals, this.wordsLearned, this.wordsTotal, final  List<CategoryCount> mistakesByCategory = const <CategoryCount>[], final  List<WeeklyMistakeRate> weeklyMistakeRate = const <WeeklyMistakeRate>[]}): _mistakesByCategory = mistakesByCategory,_weeklyMistakeRate = weeklyMistakeRate;
+  const _LearningStats({required this.isPremium, required this.streakDays, required this.journals, final  List<DateTime> weekDays = const <DateTime>[], this.wordsLearned, this.wordsTotal, final  List<CategoryCount> mistakesByCategory = const <CategoryCount>[], final  List<WeeklyMistakeRate> weeklyMistakeRate = const <WeeklyMistakeRate>[]}): _weekDays = weekDays,_mistakesByCategory = mistakesByCategory,_weeklyMistakeRate = weeklyMistakeRate;
   factory _LearningStats.fromJson(Map<String, dynamic> json) => _$LearningStatsFromJson(json);
 
 @override final  bool isPremium;
@@ -229,6 +232,17 @@ class _LearningStats implements LearningStats {
 @override final  int streakDays;
 /// Journaux corrigés dans cette langue.
 @override final  int journals;
+/// Jours de la semaine en cours (du lundi à aujourd'hui) avec un journal
+/// corrigé, toutes langues confondues.
+ final  List<DateTime> _weekDays;
+/// Jours de la semaine en cours (du lundi à aujourd'hui) avec un journal
+/// corrigé, toutes langues confondues.
+@override@JsonKey() List<DateTime> get weekDays {
+  if (_weekDays is EqualUnmodifiableListView) return _weekDays;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_weekDays);
+}
+
 @override final  int? wordsLearned;
 @override final  int? wordsTotal;
 /// Du type de faute le plus fréquent au moins fréquent.
@@ -263,16 +277,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LearningStats&&(identical(other.isPremium, isPremium) || other.isPremium == isPremium)&&(identical(other.streakDays, streakDays) || other.streakDays == streakDays)&&(identical(other.journals, journals) || other.journals == journals)&&(identical(other.wordsLearned, wordsLearned) || other.wordsLearned == wordsLearned)&&(identical(other.wordsTotal, wordsTotal) || other.wordsTotal == wordsTotal)&&const DeepCollectionEquality().equals(other._mistakesByCategory, _mistakesByCategory)&&const DeepCollectionEquality().equals(other._weeklyMistakeRate, _weeklyMistakeRate));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LearningStats&&(identical(other.isPremium, isPremium) || other.isPremium == isPremium)&&(identical(other.streakDays, streakDays) || other.streakDays == streakDays)&&(identical(other.journals, journals) || other.journals == journals)&&const DeepCollectionEquality().equals(other._weekDays, _weekDays)&&(identical(other.wordsLearned, wordsLearned) || other.wordsLearned == wordsLearned)&&(identical(other.wordsTotal, wordsTotal) || other.wordsTotal == wordsTotal)&&const DeepCollectionEquality().equals(other._mistakesByCategory, _mistakesByCategory)&&const DeepCollectionEquality().equals(other._weeklyMistakeRate, _weeklyMistakeRate));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,isPremium,streakDays,journals,wordsLearned,wordsTotal,const DeepCollectionEquality().hash(_mistakesByCategory),const DeepCollectionEquality().hash(_weeklyMistakeRate));
+int get hashCode => Object.hash(runtimeType,isPremium,streakDays,journals,const DeepCollectionEquality().hash(_weekDays),wordsLearned,wordsTotal,const DeepCollectionEquality().hash(_mistakesByCategory),const DeepCollectionEquality().hash(_weeklyMistakeRate));
 
 @override
 String toString() {
-  return 'LearningStats(isPremium: $isPremium, streakDays: $streakDays, journals: $journals, wordsLearned: $wordsLearned, wordsTotal: $wordsTotal, mistakesByCategory: $mistakesByCategory, weeklyMistakeRate: $weeklyMistakeRate)';
+  return 'LearningStats(isPremium: $isPremium, streakDays: $streakDays, journals: $journals, weekDays: $weekDays, wordsLearned: $wordsLearned, wordsTotal: $wordsTotal, mistakesByCategory: $mistakesByCategory, weeklyMistakeRate: $weeklyMistakeRate)';
 }
 
 
@@ -283,7 +297,7 @@ abstract mixin class _$LearningStatsCopyWith<$Res> implements $LearningStatsCopy
   factory _$LearningStatsCopyWith(_LearningStats value, $Res Function(_LearningStats) _then) = __$LearningStatsCopyWithImpl;
 @override @useResult
 $Res call({
- bool isPremium, int streakDays, int journals, int? wordsLearned, int? wordsTotal, List<CategoryCount> mistakesByCategory, List<WeeklyMistakeRate> weeklyMistakeRate
+ bool isPremium, int streakDays, int journals, List<DateTime> weekDays, int? wordsLearned, int? wordsTotal, List<CategoryCount> mistakesByCategory, List<WeeklyMistakeRate> weeklyMistakeRate
 });
 
 
@@ -300,12 +314,13 @@ class __$LearningStatsCopyWithImpl<$Res>
 
 /// Create a copy of LearningStats
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? isPremium = null,Object? streakDays = null,Object? journals = null,Object? wordsLearned = freezed,Object? wordsTotal = freezed,Object? mistakesByCategory = null,Object? weeklyMistakeRate = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? isPremium = null,Object? streakDays = null,Object? journals = null,Object? weekDays = null,Object? wordsLearned = freezed,Object? wordsTotal = freezed,Object? mistakesByCategory = null,Object? weeklyMistakeRate = null,}) {
   return _then(_LearningStats(
 isPremium: null == isPremium ? _self.isPremium : isPremium // ignore: cast_nullable_to_non_nullable
 as bool,streakDays: null == streakDays ? _self.streakDays : streakDays // ignore: cast_nullable_to_non_nullable
 as int,journals: null == journals ? _self.journals : journals // ignore: cast_nullable_to_non_nullable
-as int,wordsLearned: freezed == wordsLearned ? _self.wordsLearned : wordsLearned // ignore: cast_nullable_to_non_nullable
+as int,weekDays: null == weekDays ? _self._weekDays : weekDays // ignore: cast_nullable_to_non_nullable
+as List<DateTime>,wordsLearned: freezed == wordsLearned ? _self.wordsLearned : wordsLearned // ignore: cast_nullable_to_non_nullable
 as int?,wordsTotal: freezed == wordsTotal ? _self.wordsTotal : wordsTotal // ignore: cast_nullable_to_non_nullable
 as int?,mistakesByCategory: null == mistakesByCategory ? _self._mistakesByCategory : mistakesByCategory // ignore: cast_nullable_to_non_nullable
 as List<CategoryCount>,weeklyMistakeRate: null == weeklyMistakeRate ? _self._weeklyMistakeRate : weeklyMistakeRate // ignore: cast_nullable_to_non_nullable

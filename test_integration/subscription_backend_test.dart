@@ -129,10 +129,14 @@ void main() {
 
     await submit('One. Two. Three. Four. Five. Six. Seven. Eight.');
     await submit('A second entry the same day.');
-    expect(await journal.recentEntries(), hasLength(2));
+    expect(await journal.historyPage(offset: 0, limit: 20), hasLength(2));
     expect(
       await journal.historyOverview(),
-      const HistoryOverview(historyDays: null, lockedEntries: 0),
+      const HistoryOverview(
+        historyDays: null,
+        lockedEntries: 0,
+        correctedEntries: 2,
+      ),
     );
   });
 
@@ -179,7 +183,7 @@ void main() {
       expect(allowance.plan, isNull);
       expect(allowance.maxSentences, 7);
       expect(allowance.correctionsLeft, 0);
-      expect(await journal.recentEntries(), hasLength(1));
+      expect(await journal.historyPage(offset: 0, limit: 20), hasLength(1));
       await expectLater(
         submit('Another one.'),
         throwsA(isA<CorrectionDeniedFailure>()),

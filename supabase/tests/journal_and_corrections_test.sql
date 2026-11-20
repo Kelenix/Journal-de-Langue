@@ -153,7 +153,7 @@ select is(
 );
 select is(
   public.get_entitlements(current_date),
-  '{"plan": null, "max_sentences": 7, "max_characters": 1000, "corrections_left": 0}'::jsonb,
+  '{"plan": null, "max_sentences": 7, "max_characters": 1000, "corrections_left": 0, "credits": 0, "reward_corrections": 0}'::jsonb,
   'A voit ses limites et qu''il ne lui reste aucune correction aujourd''hui'
 );
 select throws_ok(

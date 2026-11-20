@@ -7,7 +7,6 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../routing/app_routes.dart';
 import '../../../shared/presentation/failure_message.dart';
-import '../../../shared/widgets/brand_header.dart';
 import '../../../shared/widgets/error_message.dart';
 import '../../../shared/widgets/form_page.dart';
 import '../../../shared/widgets/primary_button.dart';
@@ -49,9 +48,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
     return FormPage(
       title: l10n.authSignInTitle,
+      withBrand: true,
       children: [
-        const BrandHeader(),
-        const SizedBox(height: AppSpacing.xxl),
         Form(
           key: _formKey,
           child: AutofillGroup(

@@ -82,6 +82,7 @@ void main() {
 
       expect(fromFunction('premium_required'), isA<PremiumRequiredFailure>());
       expect(fromFunction('rewrite_limit'), isA<UsageLimitFailure>());
+      expect(fromFunction('no_exam_credit'), isA<NoExamCreditFailure>());
     });
   });
 

@@ -106,13 +106,13 @@ Seul le brouillon du journal est conservé localement. Les écrans de lecture af
   secrets des Edge Functions. Jamais dans le dépôt ni dans le binaire.
 - `env/*.json` est ignoré par Git ; `env/example.json` documente les clés.
 
-## Environnement de développement (ADR-007)
+## Environnement de développement (ADR-037)
 
 | Élément | Où | Commande |
 |---------|----|----------|
 | Postgres, Auth, Edge Functions, Studio | Docker (Supabase CLI) | `supabase start` |
-| Analyse, tests, génération de code, build Android | Conteneur `flutter` (`docker compose`) | `docker compose run --rm flutter <cmd>` |
-| Exécution sur émulateur ou appareil | Hôte | `flutter run --dart-define-from-file=env/dev.json` |
+| Analyse, tests, génération de code, compilation | Poste (Flutter 3.41.7) | `flutter analyze`, `flutter test`, `flutter build apk` |
+| Exécution sur émulateur ou appareil | Poste | `flutter run --dart-define-from-file=env/dev.json` |
 
 L'émulateur Android joint le Supabase local par `http://10.0.2.2:55321`.
 

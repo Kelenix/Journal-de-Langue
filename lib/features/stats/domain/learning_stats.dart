@@ -19,6 +19,10 @@ abstract class LearningStats with _$LearningStats {
 
     /// Journaux corrigés dans cette langue.
     required int journals,
+
+    /// Jours de la semaine en cours (du lundi à aujourd'hui) avec un journal
+    /// corrigé, toutes langues confondues.
+    @Default(<DateTime>[]) List<DateTime> weekDays,
     int? wordsLearned,
     int? wordsTotal,
 
