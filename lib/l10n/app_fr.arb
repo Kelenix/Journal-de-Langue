@@ -96,7 +96,7 @@
     }
   },
   "journalSubmit": "Corriger mon journal",
-  "journalSubmitting": "Claude lit ton journal…",
+  "journalSubmitting": "Correction en cours…",
   "journalDailyLimitReached": "Tu as utilisé ta correction gratuite du jour. Continue ta série avec Premium.",
   "journalViewCorrection": "Voir la correction",
   "correctionTitle": "Correction",
@@ -123,7 +123,7 @@
     }
   },
   "correctionDone": "Terminé",
-  "errorAiUnavailable": "Claude n'a pas pu répondre. Rien n'a été décompté de ton offre. Réessaie dans un instant.",
+  "errorAiUnavailable": "Le service ne répond pas pour le moment. Rien n'a été décompté de ton offre : réessaie dans un instant.",
   "errorTooManySentences": "Ce journal dépasse le nombre de phrases de ton offre.",
   "errorInvalidText": "Ce texte est vide ou trop long.",
   "errorLanguageNotActive": "Cette langue n'est pas active sur ton compte.",
