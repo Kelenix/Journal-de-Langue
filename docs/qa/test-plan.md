@@ -118,7 +118,7 @@ non-régression quand le comportement est vérifiable sans appareil.
 | Textes refusés en boucle : quota rendu, coût sans limite | `retries_and_limits_test.sql` |
 | Reprise d'un journal hors de l'historique gratuit | `retries_and_limits_test.sql` |
 | Exercices offerts déjà faits comptés deux fois | `ads_and_rewards_test.sql` |
-| Réponse renvoyée après une coupure : un exercice de plus décompté | `ads_and_rewards_test.sql`, `premium_ai_test.sql` |
+| Réponse renvoyée après une coupure : un exercice de plus décompté | `ads_and_rewards_test.sql`, `premium_ai_test.sql`, `premium_ai_backend_test` |
 | Expiration d'une formule remplacée qui coupe l'abonnement actif | `retries_and_limits_test.sql` |
 | Exercice généré mal formé : tout le lot perdu | `retries_and_limits_test.sql` |
 | App restée ouverte : limite d'hier affichée le lendemain | `journal_journey_test` |

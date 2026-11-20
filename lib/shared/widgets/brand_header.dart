@@ -7,8 +7,6 @@ import '../../l10n/app_localizations.dart';
 class BrandHeader extends StatelessWidget {
   const BrandHeader({super.key});
 
-  /// Généré par tool/generate_app_icons.py, sur un fond plus foncé que l'aplat.
-  static const _logoAsset = 'assets/brand/logo.png';
   static const _logoSize = 104.0;
 
   @override
@@ -19,15 +17,7 @@ class BrandHeader extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.sheet),
-          child: Image.asset(
-            _logoAsset,
-            width: _logoSize,
-            height: _logoSize,
-            excludeFromSemantics: true,
-          ),
-        ),
+        const BrandLogo(size: _logoSize),
         const SizedBox(height: AppSpacing.xl),
         Semantics(
           header: true,
@@ -48,4 +38,28 @@ class BrandHeader extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Symbole de la marque, carré aux coins arrondis.
+class BrandLogo extends StatelessWidget {
+  const BrandLogo({required this.size, super.key});
+
+  /// Généré par tool/generate_app_icons.py, sur un fond plus foncé que l'aplat.
+  static const _asset = 'assets/brand/logo.png';
+
+  // Coins à l'échelle du logo : 28 points pour sa taille sur l'accueil (104).
+  static const _cornerRatio = AppRadius.sheet / 104;
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.circular(size * _cornerRatio),
+    child: Image.asset(
+      _asset,
+      width: size,
+      height: size,
+      excludeFromSemantics: true,
+    ),
+  );
 }

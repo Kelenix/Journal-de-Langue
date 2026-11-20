@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'app_colors.dart';
 import 'app_spacing.dart';
@@ -9,6 +10,25 @@ import 'app_spacing.dart';
 abstract final class AppTheme {
   static const titleFont = 'DM Sans';
   static const bodyFont = 'Inter';
+
+  /// Barres du système transparentes et sans voile : l'app se dessine dessous
+  /// (bord à bord) et garde sa couleur jusqu'en bas de l'écran (ADR-042).
+  static const systemBars = SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+    systemStatusBarContrastEnforced: false,
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarDividerColor: Colors.transparent,
+    systemNavigationBarIconBrightness: Brightness.dark,
+    systemNavigationBarContrastEnforced: false,
+  );
+
+  /// Même chose sous un aplat vert en haut de l'écran : icônes claires.
+  static final systemBarsOnHero = systemBars.copyWith(
+    statusBarIconBrightness: Brightness.light,
+    statusBarBrightness: Brightness.dark,
+  );
 
   static const _journalLineHeight = 1.55;
   static const _buttonHeight = 56.0;

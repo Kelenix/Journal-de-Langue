@@ -88,9 +88,14 @@ Espacements : 4, 8, 12, 16, 24, 32 (`AppSpacing`). Rayons : 12, 18, 20, 24, 28
 - **Accueil** (première page sans compte) : logo, nom et signature sur l'aplat vert,
   puis une feuille ivoire aux coins arrondis : « Apprends en écrivant », trois atouts,
   « Créer mon compte » et « J'ai déjà un compte ».
-- **Compte** (connexion, inscription, code, mot de passe, langue) : titre sur un en-tête
-  vert arrondi, formulaire sur l'ivoire (`FormPage`). Le chargement du compte se fait
-  sur l'aplat vert.
+- **Compte** (connexion, inscription, code, mot de passe, langue) : au style de
+  l'accueil (ADR-042), logo et titre au milieu de l'aplat vert, formulaire et boutons sur
+  une feuille ivoire calée en bas (`FormPage`). La place libre va au vert ; clavier
+  ouvert, tout défile. Le chargement du compte se fait sur l'aplat vert.
+- **Profil** : ordre et blocs de la maquette ; sur un téléphone plus haut que la
+  maquette, la place libre se répartit entre les blocs (ADR-042).
+- **Barres du système** : transparentes et sans voile, l'app dessinée bord à bord dès le
+  démarrage (`AppTheme.systemBars`, ADR-042).
 
 ## Logo et icône
 

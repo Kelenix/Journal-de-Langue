@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../routing/app_routes.dart';
 import '../../../shared/widgets/badges.dart';
@@ -24,7 +25,7 @@ class WelcomeScreen extends StatelessWidget {
     final theme = Theme.of(context);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: AppTheme.systemBarsOnHero,
       child: Scaffold(
         backgroundColor: theme.extension<AppColors>()!.hero,
         // Défile seulement si l'écran est trop petit (ou le texte très grand).

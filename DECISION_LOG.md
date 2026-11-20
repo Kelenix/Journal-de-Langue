@@ -5,6 +5,32 @@
 
 ---
 
+## ADR-042 — Plus de vide sur les grands téléphones, plus de bande grise en bas
+
+- **Date** : 2026-11-20
+- **Statut** : Accepté
+- **Décideur** : Claude (rôle : ui-ux-designer), à la demande de l'utilisateur
+- **Contexte** : Essai sur le téléphone de l'utilisateur (environ 434 × 961 points, plus
+  haut que la maquette de 390 × 844) : écrans de compte à moitié vides sous le
+  formulaire, grand vide sous les actions du Profil, et une bande grise en bas de
+  l'écran : le voile qu'Android pose sous la barre de navigation quand l'app ne
+  demande pas de barre transparente (l'accueil la passait même en noir).
+- **Décision** :
+  1. Barres du système transparentes et sans voile (`AppTheme.systemBars`, mode bord
+     à bord dès le démarrage) ; l'accueil ne force plus une barre noire.
+  2. Écrans de compte (connexion, inscription, code, mot de passe oublié, choix de la
+     langue) au style de l'accueil validé : logo et titre au milieu de l'aplat vert,
+     formulaire et boutons sur une feuille ivoire calée en bas. La place libre va au
+     vert ; clavier ouvert, tout défile.
+  3. Profil : l'ordre et les blocs de la maquette, la place libre répartie entre eux
+     au lieu de rester sous « Supprimer mon compte ».
+- **Alternatives écartées** : boutons calés en bas sous un formulaire resté en haut (le
+  vide passe au milieu) ; actions du compte calées en bas du Profil (un trou au
+  milieu, vérifié en rendu) ; contenu ajouté pour remplir (absent des maquettes).
+- **Conséquences** : sur un écran de la taille de la maquette, le Profil reste celui de
+  la maquette ; sur un écran plus haut, les écarts entre blocs grandissent.
+- **Impact** : interface seulement.
+
 ## ADR-041 — Phase 5 : corrections de la revue, limites des appels à Claude, reports
 
 - **Date** : 2026-11-20

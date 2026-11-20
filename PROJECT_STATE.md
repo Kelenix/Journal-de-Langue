@@ -19,15 +19,17 @@
   français et en anglais (ADR-039). Inc-9 est terminé pour tout ce qui ne dépend pas
   des comptes des stores. Le 2026-11-20, écrans alignés exactement sur les maquettes
   (ADR-040) : thème clair seul, barre d'onglets sans vide, journaux par semaine dans
-  Progrès, Profil de la maquette ; validés par l'utilisateur sur son téléphone.
+  Progrès, Profil de la maquette ; validés par l'utilisateur sur son téléphone. Puis
+  ADR-042 : écrans de compte au style de l'accueil, barres du système transparentes,
+  Profil réparti sur les grands téléphones.
   **Phase 5** (feu vert du 2026-11-20) : taille mesurée, trois relectures complètes,
-  corrections et tests faits (ADR-041). Reste : relancer les tests SQL, d'intégration
-  et Deno quand la base locale sera recréée (Docker Desktop a été réinitialisé :
-  images et volumes disparus ; recréation reportée par l'utilisateur) ; mesurer le
-  démarrage sur le téléphone. **Projet Supabase hébergé** (Paris, organisation
-  « Application Mobile », `hdkqjzermucxevhritkk`) créé et rempli le 2026-11-20, à la
-  demande de l'utilisateur avant ces tests : 14 migrations, six fonctions, réglages
-  d'auth, `env/prod.json`. Le dépôt y est relié : `supabase db push` vise la production ;
+  corrections faites (ADR-041), tous les tests verts sur la base locale recréée (SQL,
+  écrans, intégration, Deno). Reste, sur le téléphone de l'utilisateur : mesurer le
+  démarrage, essayer la dictée, la lecture à voix haute et l'interstitiel.
+  **Projet Supabase hébergé** (Paris, organisation « Application Mobile »,
+  `hdkqjzermucxevhritkk`) créé et rempli le 2026-11-20, à la demande de l'utilisateur,
+  avant ces tests ; ils n'ont rien changé à ce qui est en ligne : 14 migrations, six
+  fonctions, réglages d'auth, `env/prod.json`. Le dépôt y est relié : `supabase db push` vise la production ;
   pour la base locale, toujours `--local`. Une migration en ligne ne se modifie plus
   (toute correction SQL passe par une nouvelle) et une fonction modifiée est à
   redéployer. Reste côté utilisateur : secret `ANTHROPIC_API_KEY`, SMTP
@@ -50,7 +52,7 @@
 | 2 — Planification           | ✅ fait | `docs/risks.md`, backlog ci-dessous |
 | 3 — Architecture & design   | ✅ fait | `docs/architecture.md`, `system-design.md`, `data-model.md`, `design/` |
 | 4 — Implémentation          | 🔄 en cours | Inc-0 à Inc-8 livrés : jalons J1 (boucle gratuite), J2 (Premium complet) et J3 (monétisation complète) atteints ; restent Inc-1b et Inc-4b, bloqués par des comptes |
-| 5 — Qualité & performance   | 🔄 en cours | Revue complète et corrections faites (ADR-041), `docs/performance.md`, `docs/qa/test-plan.md` ; restent les tests sur base locale et la mesure du démarrage sur téléphone |
+| 5 — Qualité & performance   | ⏸️ en attente (téléphone de l'utilisateur) | Revue complète, corrections (ADR-041) et tous les tests verts, `docs/performance.md`, `docs/qa/test-plan.md` ; restent la mesure du démarrage et les essais de dictée, de voix et d'interstitiel sur téléphone |
 | 6 — Publication (stores)    | ⬜ à faire | |
 | 7 — Documentation           | ⬜ à faire | README et docs tenus au fil de l'eau |
 | 8 — Maintenance             | ⬜ à faire | |
@@ -79,11 +81,11 @@
 | Vérification | Résultat |
 |--------------|----------|
 | `flutter analyze`, `dart format` (hôte) | 0 problème |
-| `flutter test` (hôte) | 194 tests verts (phase 5) |
-| Phase 5 : `supabase test db`, tests d'intégration, Deno après la migration `20261121140000` | `deno check` des 6 fonctions et 5 tests Deno verts avant la réinitialisation de Docker ; tests SQL et d'intégration à relancer (base locale à recréer) |
+| `flutter test` (hôte) | 194 tests verts (phase 5, puis après ADR-042) |
+| Phase 5 : tous les tests relancés sur la base locale recréée (2026-11-20) | verts, chiffres ci-dessous ; un test d'intégration corrigé : il attendait un refus pour une réponse d'exercice renvoyée, rendue telle quelle depuis ADR-041 |
 | Projet hébergé `hdkqjzermucxevhritkk` (vérifié par la session d'origine, 2026-11-20) | 14 migrations identiques en ligne et en local ; `profiles` refusé sans compte (42501) ; `correct-entry` 401 sans jeton ; `admob-reward` 200 à la requête de la console |
 | `flutter test test_integration --concurrency=1` (Supabase local, fonctions de correction, d'achat, de reformulation, d'exercices, d'examen et de récompense, langues, statistiques, achats à l'unité, faux Claude) | 52 tests verts |
-| `supabase test db` (RLS et fonctions) | 244 tests verts |
+| `supabase test db` (RLS et fonctions) | 264 tests verts (11 fichiers) |
 | Tests Deno (vérification des signatures AdMob) et `deno check` des 6 fonctions | 5 tests verts, types corrects |
 | `supabase db reset` (migrations rejouées depuis zéro, données de démonstration) | réussi |
 | Build APK | réussi (conteneur Flutter jusqu'au 2026-11-19, remplacé par le poste : ADR-037) |
@@ -151,6 +153,19 @@
 - voir `docs/manual-tasks.md`
 
 ## Journal de session (résumé court, le plus récent en haut)
+
+- 2026-11-20 — Interface reprise par la session d'origine après l'essai sur le
+  téléphone de l'utilisateur (ADR-042) : écrans de compte au style de l'accueil, barres
+  du système transparentes et sans voile, Profil réparti sur les grands téléphones.
+  Vérifié ensuite : format et analyse propres, 194 tests d'écran verts. Doc de design
+  alignée (`design-system.md`, `flows.md`).
+
+- 2026-11-20 — Tests de la phase 5 relancés sur la base locale recréée par la session
+  d'origine : 264 tests SQL, 194 tests d'écran, 52 tests d'intégration, 5 tests Deno et
+  `deno check` des 6 fonctions, verts. Un test d'intégration attendait encore un refus
+  pour une réponse d'exercice renvoyée (rendue telle quelle depuis ADR-041) : corrigé,
+  il vérifie aussi qu'un exercice jamais fait reste refusé au-delà de la limite. Aucune
+  migration ni fonction modifiée : rien à redéployer.
 
 - 2026-11-20 — Projet Supabase hébergé créé et rempli par la session d'origine, à la
   demande de l'utilisateur : « Journal de Langue », organisation « Application Mobile »,

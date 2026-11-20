@@ -55,73 +55,90 @@ class ProfileScreen extends ConsumerWidget {
         subtitle: email,
         leading: _Avatar(email: email),
       ),
-      body: ListView(
-        padding: tabPagePadding,
-        children: [
-          const _PlanCard(),
-          const SizedBox(height: AppSpacing.lg),
-          SettingsGroup(
-            children: [
-              SettingsTile(
-                icon: Icons.language,
-                title: l10n.profileLanguagesTitle,
-                value: languages.isEmpty
-                    ? null
-                    : [
-                        for (final language in languages)
-                          languageName(l10n, language),
-                      ].join(', '),
-                onTap: () => _showLanguagePicker(context),
-              ),
-              // Les achats à l'unité et leur restauration.
-              SettingsTile(
-                icon: Icons.shopping_bag_outlined,
-                warm: true,
-                title: l10n.profilePurchases,
-                subtitle: wallet.isEmpty
-                    ? null
-                    : [
-                        if (wallet.correctionCredits > 0)
-                          l10n.shopCredits(wallet.correctionCredits),
-                        if (wallet.examCredits > 0)
-                          l10n.shopExamCredits(wallet.examCredits),
-                        if (wallet.adsRemoved) l10n.shopAdsRemoved,
-                      ].join(' · '),
-                onTap: () => context.push(AppRoutes.shop),
-              ),
-              SettingsTile(
-                icon: Icons.shield_outlined,
-                title: l10n.profilePrivacy,
-                onTap: () =>
-                    _showPrivacy(context, ref, showsAdPrivacy: showsAdPrivacy),
-              ),
-            ],
+      // Sur un écran plus haut que la maquette, la place libre se répartit
+      // entre les blocs au lieu de rester en bas (ADR-042).
+      body: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          padding: tabPagePadding,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: (constraints.maxHeight - tabPagePadding.vertical)
+                  .clamp(0, double.infinity),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const _PlanCard(),
+                const SizedBox(height: AppSpacing.lg),
+                SettingsGroup(
+                  children: [
+                    SettingsTile(
+                      icon: Icons.language,
+                      title: l10n.profileLanguagesTitle,
+                      value: languages.isEmpty
+                          ? null
+                          : [
+                              for (final language in languages)
+                                languageName(l10n, language),
+                            ].join(', '),
+                      onTap: () => _showLanguagePicker(context),
+                    ),
+                    // Les achats à l'unité et leur restauration.
+                    SettingsTile(
+                      icon: Icons.shopping_bag_outlined,
+                      warm: true,
+                      title: l10n.profilePurchases,
+                      subtitle: wallet.isEmpty
+                          ? null
+                          : [
+                              if (wallet.correctionCredits > 0)
+                                l10n.shopCredits(wallet.correctionCredits),
+                              if (wallet.examCredits > 0)
+                                l10n.shopExamCredits(wallet.examCredits),
+                              if (wallet.adsRemoved) l10n.shopAdsRemoved,
+                            ].join(' · '),
+                      onTap: () => context.push(AppRoutes.shop),
+                    ),
+                    SettingsTile(
+                      icon: Icons.shield_outlined,
+                      title: l10n.profilePrivacy,
+                      onTap: () => _showPrivacy(
+                        context,
+                        ref,
+                        showsAdPrivacy: showsAdPrivacy,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                SettingsGroup(
+                  children: [
+                    SettingsTile(
+                      icon: Icons.logout,
+                      title: l10n.profileSignOut,
+                      plain: true,
+                      onTap: isBusy
+                          ? null
+                          : () => ref
+                                .read(accountControllerProvider.notifier)
+                                .signOut(),
+                    ),
+                    SettingsTile(
+                      icon: Icons.delete_outline,
+                      title: l10n.profileDeleteAccount,
+                      plain: true,
+                      isDestructive: true,
+                      onTap: isBusy
+                          ? null
+                          : () => _confirmAccountDeletion(context, ref),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          SettingsGroup(
-            children: [
-              SettingsTile(
-                icon: Icons.logout,
-                title: l10n.profileSignOut,
-                plain: true,
-                onTap: isBusy
-                    ? null
-                    : () => ref
-                          .read(accountControllerProvider.notifier)
-                          .signOut(),
-              ),
-              SettingsTile(
-                icon: Icons.delete_outline,
-                title: l10n.profileDeleteAccount,
-                plain: true,
-                isDestructive: true,
-                onTap: isBusy
-                    ? null
-                    : () => _confirmAccountDeletion(context, ref),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

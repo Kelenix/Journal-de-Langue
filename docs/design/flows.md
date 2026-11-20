@@ -152,9 +152,10 @@ phrases par jour, chaque faute corrigée et expliquée, les mots du jour à rév
 **Créer mon compte** et **J'ai déjà un compte**.
 
 ### Authentification
-Connexion, inscription, saisie du code reçu par e-mail, mot de passe oublié : titre sur un
-en-tête vert arrondi, formulaire sur l'ivoire. Connexion et inscription se remplacent
-l'une l'autre ; le retour ramène à l'accueil. Google et Apple en Inc-1b ; liens vers les textes légaux à l'inscription.
+Connexion, inscription, saisie du code reçu par e-mail, mot de passe oublié : au style de
+l'accueil, logo et titre sur l'aplat vert, formulaire et boutons sur une feuille ivoire en
+bas (ADR-042). Connexion et inscription se remplacent l'une l'autre ; le retour ramène à
+l'accueil. Google et Apple en Inc-1b ; liens vers les textes légaux à l'inscription.
 L'interface suit la langue du téléphone (français ou anglais).
 
 ### Onboarding

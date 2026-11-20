@@ -83,8 +83,10 @@ Puis dans un second :
 flutter test test_integration --concurrency=1
 ```
 
-Ces tests ne consomment aucun crédit Anthropic. Après eux, relancer `supabase start`
-pour retrouver la configuration normale des fonctions.
+Ces tests ne consomment aucun crédit Anthropic. Après eux, arrêter `functions serve`,
+puis `supabase stop` et `supabase start` (avec les mêmes `-x` si des services sont
+exclus) : un simple `supabase start` ne recrée pas les fonctions. Les données locales
+sont gardées.
 
 Les e-mails envoyés en local sont visibles sur http://127.0.0.1:55324.
 

@@ -34,6 +34,9 @@ Première version.
 - Progrès Premium : journaux écrits par semaine sur les 8 dernières semaines.
 - Profil : carte de l'offre, langues, achats et confidentialité regroupés ; l'app reste
   en mode clair.
+- Écrans de compte au style de l'accueil (logo et titre sur le vert, formulaire en bas) ;
+  plus de bande grise sous l'app ; Profil réparti sur toute la hauteur des grands
+  téléphones.
 
 ### Corrigé (phase 5, qualité et performance)
 
